@@ -74,6 +74,13 @@ export type SpaceKicked = z.infer<typeof SpaceKickedSchema>;
 export const SpaceThemeSchema = z.object({ themeId: ThemeIdSchema });
 export type SpaceTheme = z.infer<typeof SpaceThemeSchema>;
 
+/**
+ * `room:updated` — a meeting room got or changed its Meet link (created through the API or pasted
+ * by the owner, E2-S7 / E6-S2), so connected people see it without reloading.
+ */
+export const RoomUpdatedSchema = MeetingRoomDtoSchema;
+export type RoomUpdated = z.infer<typeof RoomUpdatedSchema>;
+
 /** `desk:updated` — desk claimed, freed or decorated (RF-17, RF-18). */
 export const DeskUpdatedSchema = DeskStateSchema;
 export type DeskUpdated = z.infer<typeof DeskUpdatedSchema>;

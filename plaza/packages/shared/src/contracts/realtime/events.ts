@@ -27,6 +27,7 @@ import {
   RealtimeErrorSchema,
   ReactionEventSchema,
   RingReceivedSchema,
+  RoomUpdatedSchema,
   SpaceKickedSchema,
   SpaceSnapshotSchema,
   SpaceThemeSchema,
@@ -38,6 +39,7 @@ import {
   type RealtimeError,
   type ReactionEvent,
   type RingReceived,
+  type RoomUpdated,
   type SpaceKicked,
   type SpaceSnapshot,
   type SpaceTheme,
@@ -70,6 +72,7 @@ export interface ServerToClientEvents {
   'ring:received': (payload: RingReceived) => void;
   'space:kicked': (payload: SpaceKicked) => void;
   'space:theme': (payload: SpaceTheme) => void;
+  'room:updated': (payload: RoomUpdated) => void;
   'desk:updated': (payload: DeskUpdated) => void;
   error: (payload: RealtimeError) => void;
 }
@@ -100,6 +103,7 @@ export const SERVER_EVENT_SCHEMAS = {
   'ring:received': RingReceivedSchema,
   'space:kicked': SpaceKickedSchema,
   'space:theme': SpaceThemeSchema,
+  'room:updated': RoomUpdatedSchema,
   'desk:updated': DeskUpdatedSchema,
   error: RealtimeErrorSchema,
 } as const satisfies Record<ServerEventName, z.ZodType>;

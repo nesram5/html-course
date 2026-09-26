@@ -41,6 +41,9 @@ export const API_PATHS = {
 
   // E6-S2 / E8-S7 · Product events (no personal data)
   events: '/api/spaces/:spaceId/events',
+
+  // E8-S7 · In-app feedback form
+  feedback: '/api/feedback',
 } as const;
 
 export type ApiPathTemplate = (typeof API_PATHS)[keyof typeof API_PATHS];

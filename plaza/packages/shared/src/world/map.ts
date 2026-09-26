@@ -7,11 +7,20 @@ export interface RoomArea extends TileRect {
   readonly name: string;
 }
 
+/** A position in map pixels (Tiled object coordinates). */
+export interface PixelPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
 /** An assignable desk: rectangle of the `desks` object layer over blocking furniture (E9-S2). */
 export interface DeskArea extends TileRect {
   readonly deskId: string;
-  /** Pixel positions (map coordinates) of the 3 decoration slots, in slot order (E9-S3). */
-  readonly decorSlots: readonly Tile[];
+  /**
+   * Positions of the 3 decoration slots in map PIXELS (not tiles: items sit inside a desk tile),
+   * in slot order (E9-S3).
+   */
+  readonly decorSlots: readonly PixelPoint[];
 }
 
 /** Domain model of a Tiled map, shared by client and server (architecture §8). */

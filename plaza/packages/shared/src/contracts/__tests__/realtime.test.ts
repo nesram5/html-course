@@ -41,7 +41,7 @@ describe('realtime contracts', () => {
       ServerEventPayload<'world:delta'>
     >();
     expect(Object.keys(CLIENT_EVENT_SCHEMAS)).toHaveLength(8);
-    expect(Object.keys(SERVER_EVENT_SCHEMAS)).toHaveLength(11);
+    expect(Object.keys(SERVER_EVENT_SCHEMAS)).toHaveLength(12);
   });
 
   it('carries the protocol version in client payloads', () => {
@@ -66,6 +66,18 @@ describe('realtime contracts', () => {
     expect(SpaceSnapshotSchema.parse(snapshot)).toEqual(snapshot);
     expect(PlayerChangedSchema.safeParse({ userId: 'u1', away: true }).success).toBe(true);
     expect(PlayerChangedSchema.safeParse({ away: true }).success).toBe(false);
+  });
+
+  it('broadcasts updated meeting rooms with a Meet link', () => {
+    const schema = SERVER_EVENT_SCHEMAS['room:updated'];
+    const room = {
+      areaId: 'sala-1',
+      name: 'Sala 1',
+      meetUri: 'https://meet.google.com/abc-defg-hij',
+      source: 'manual',
+    };
+    expect(schema.parse(room)).toEqual(room);
+    expect(schema.safeParse({ ...room, meetUri: 'https://evil.example/x' }).success).toBe(false);
   });
 
   it('builds ack schemas', () => {

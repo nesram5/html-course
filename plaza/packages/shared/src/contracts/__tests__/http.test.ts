@@ -8,6 +8,7 @@ import {
   CreateSpaceBodySchema,
   DeskDecorSchema,
   EMPTY_DESK_DECOR,
+  FeedbackBodySchema,
   HealthResponseSchema,
   MapTemplateIdSchema,
   MediaTokenResponseSchema,
@@ -119,6 +120,16 @@ describe('rooms, media and desks', () => {
 });
 
 describe('misc', () => {
+  it('validates in-app feedback (E8-S7)', () => {
+    expect(FeedbackBodySchema.parse({ message: '  Muy útil  ', rating: 5 })).toEqual({
+      message: 'Muy útil',
+      rating: 5,
+    });
+    expect(FeedbackBodySchema.safeParse({ message: '   ' }).success).toBe(false);
+    expect(FeedbackBodySchema.safeParse({ message: 'ok', rating: 6 }).success).toBe(false);
+    expect(FeedbackBodySchema.safeParse({ message: 'x'.repeat(2001) }).success).toBe(false);
+  });
+
   it('validates product events and health', () => {
     expect(TrackEventBodySchema.safeParse({ name: 'room_meet_opened' }).success).toBe(true);
     expect(TrackEventBodySchema.safeParse({ name: 'clicked' }).success).toBe(false);

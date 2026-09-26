@@ -3,6 +3,7 @@ export * from './avatars.js';
 export * from './common.js';
 export * from './desks.js';
 export * from './events.js';
+export * from './feedback.js';
 export * from './health.js';
 export * from './invitations.js';
 export * from './map-templates.js';

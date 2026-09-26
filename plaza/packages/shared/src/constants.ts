@@ -71,6 +71,9 @@ export const DEFAULT_THEME_ID = 'pixel';
 /** Every Google Meet link starts with this prefix (E2-S7). */
 export const MEET_URI_PREFIX = 'https://meet.google.com/';
 
+/** Maximum length of an in-app feedback message (E8-S7). */
+export const FEEDBACK_MAX_LEN = 2000;
+
 /** Limits of user-provided text fields. */
 export const DISPLAY_NAME_MAX_LEN = 40;
 export const SPACE_NAME_MAX_LEN = 60;
