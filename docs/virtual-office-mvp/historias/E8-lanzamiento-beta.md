@@ -3,11 +3,11 @@
 | Campo | Valor |
 |---|---|
 | Objetivo | Llevar el MVP a una calidad apta para equipos reales: seguro, rápido, accesible, desplegado y medido |
-| Depende de | E6, E7 |
+| Depende de | E6, E7 (E8-S5 y E8-S7 también de E9) |
 | Cubre | RNF-01 a RNF-10 y los criterios de aceptación del MVP (brief §11) |
 | Puntos | 22 |
-| Sprint | 5 |
-| Resultado demostrable | **Hito M4**: 5 equipos piloto trabajando en Plaza y un panel con las métricas O1–O6 |
+| Sprints | 5–6 (E8-S5 y E8-S7 en el sprint 6) |
+| Resultado demostrable | **Hito M5**: 5 equipos piloto trabajando en Plaza y un panel con las métricas O1–O6 |
 
 ---
 

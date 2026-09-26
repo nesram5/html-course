@@ -32,6 +32,7 @@
 **Criterios de aceptación**
 - **Dado** `packages/maps`, **cuando** reviso el `manifest.json`, **entonces** hay 2 plantillas: "Oficina pequeña" (≈ 40×30 casillas, 1 sala) y "Campus" (≈ 80×60, 3 salas), cada una con miniatura y al menos 2 `spawns`.
 - **Dado** un mapa sin la capa `collision`, con una sala no rectangular o sin `areaId`, **cuando** corre `pnpm validate:maps` en CI, **entonces** falla indicando el problema.
+- Cada plantilla genera su estilo `pixel` (`below.png` / `above.png`) en el *build* con `tmxrasterizer`; los demás estilos llegan en E9-S1.
 
 **Tareas técnicas**
 - [ ] Mapas en Tiled con *tilesets* CC0 (licencias en `packages/maps/LICENSES.md`).

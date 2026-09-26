@@ -30,12 +30,14 @@ Los documentos se escribieron en este orden y cada uno se apoya en los anteriore
 | E6 | [E6-salas-reunion-meet.md](./historias/E6-salas-reunion-meet.md) | Entrar en una sala, aislarse del pasillo y unirse a su Google Meet |
 | E7 | [E7-presencia-chat-reacciones.md](./historias/E7-presencia-chat-reacciones.md) | Estados con auto-silencio, *ring*, lista de miembros, chat y emojis |
 | E8 | [E8-lanzamiento-beta.md](./historias/E8-lanzamiento-beta.md) | Beta privada desplegada y medida |
+| E9 | [E9-personalizacion-oficina.md](./historias/E9-personalizacion-oficina.md) | Cambiar el estilo de la oficina en directo; reclamar y decorar mi escritorio |
 
 ## Historial de versiones
 
 | Versión | Cambios |
 |---|---|
-| **2.1** (actual) | Servidor de medios **propio en la beta**: LiveKit (código abierto) + TURN en una VM de 4 vCPU (~20–40 US$/mes) en lugar de LiveKit Cloud de pago; LiveKit Cloud gratuito solo en desarrollo. Dos historias nuevas (E5-S7, E5-S8). **166 → 174 puntos**, mismos 5 sprints (sin margen en el sprint 5). |
+| **2.2** (actual) | **Personalización de la oficina** (analizada en [E9](./historias/E9-personalizacion-oficina.md)): estilos visuales intercambiables en directo como "pieles" sobre la misma geometría, escritorio propio con nombre y decoración con objetos de un catálogo. Nuevos RF-16..RF-18. **174 → 189 puntos, 5 → 6 sprints** (el sexto también absorbe el lanzamiento y da margen). |
+| 2.1 | Servidor de medios **propio en la beta**: LiveKit (código abierto) + TURN en una VM de 4 vCPU (~20–40 US$/mes) en lugar de LiveKit Cloud de pago; LiveKit Cloud gratuito solo en desarrollo. Dos historias nuevas (E5-S7, E5-S8). **166 → 174 puntos**, mismos 5 sprints (sin margen en el sprint 5). |
 | 2.0 | Alcance simplificado tras revisar la complejidad: **login solo con Google**; charla de pasillo con **LiveKit Cloud** (sin servidores de medios propios); **salas de reunión con Google Meet** (un Meet permanente por sala, en pestaña nueva) en lugar de salas de medios propias, pantalla compartida y vigilancia de suscripciones; fuera del MVP: escritorios, seguir, *spotlight*, objetos interactivos y chat cercano; algoritmos y herramientas más simples. **242 → 166 puntos, 7 → 5 sprints.** |
 | 1.0 | Primera propuesta: identidad propia con contraseña, LiveKit *self-hosted* con áreas privadas garantizadas por el servidor, *spotlight*, pantalla compartida propia y funciones *Should*. Disponible en el historial de git. |
 
@@ -80,9 +82,9 @@ oficina en Gather. Transcripción completa con marcas de tiempo: [transcripcion-
 | Reacciones con emojis | ✅ MVP | RF-14 |
 | Chat de texto | ✅ MVP (solo chat del espacio) | RF-13 |
 | Onboarding en segundos | ✅ MVP (login con Google, meta < 30 s) | RF-01, RF-04, O5 |
-| Varios estilos de mapa | ✅ vía plantillas (2) | RF-03 |
+| Varios estilos de la oficina, cambio en directo | ✅ MVP (mín. 2 por plantilla) | RF-16 |
 | Seguir a una persona | ⏭️ Post-MVP | — |
-| Escritorios personales con nombre | ⏭️ Post-MVP | — |
+| Escritorios personales con nombre y decoración | ✅ MVP | RF-17, RF-18 |
 | *Spotlight tile* (hablar a todo el espacio) | ⏭️ Post-MVP | — |
 | Objetos interactivos con contenido incrustado | ⏭️ Post-MVP | — |
 | Editor de mapas, calendario, grabación e IA propios | ⛔ Fuera (la grabación y transcripción de las salas las da Meet) | — |

@@ -4,7 +4,7 @@
 |---|---|
 | Producto | Plaza (nombre en clave) — oficina virtual 2D con vídeo por proximidad |
 | Referencia | Gather Virtual Offices ([vídeo](https://youtu.be/zbllvQZRyh0), [análisis](./README.md#análisis-del-vídeo-de-referencia)) |
-| Versión del documento | 2.1 — alcance simplificado y servidor de medios propio (ver [historial](./README.md#historial-de-versiones)) |
+| Versión del documento | 2.2 — alcance simplificado, servidor de medios propio y personalización de la oficina (ver [historial](./README.md#historial-de-versiones)) |
 | Alcance | Primera versión MVP (beta privada) |
 | Stack obligatorio | TypeScript en frontend y backend |
 | Decisiones clave | Login solo con Google · Charla de pasillo con LiveKit (servidor propio en la beta) · Salas de reunión con Google Meet |
@@ -73,13 +73,15 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | RF-13 | Chat del espacio | Chat de texto para todo el espacio; se guardan los últimos 100 mensajes. |
 | RF-14 | Reacciones | Emojis efímeros sobre el avatar durante 3 s, visibles para todo el espacio. |
 | RF-15 | Llamar (*ring*) | Botón "Llamar" en la tarjeta de alguien *Ausente* o lejano: le suena un aviso y una notificación del navegador. |
+| RF-16 | Estilo de la oficina | El *owner* elige el estilo visual del espacio entre los de su plantilla (mín. 2: p. ej. *pixel art* y acuarela). El cambio se ve en directo para todos y no altera la distribución. |
+| RF-17 | Mi escritorio | Cada miembro puede reclamar un escritorio libre (o el *owner* asignarlo). Su nombre aparece sobre la mesa, entra al espacio junto a él y tiene un botón "Mi escritorio" para volver. |
+| RF-18 | Decorar mi escritorio | Cada persona coloca hasta 3 objetos de un catálogo (planta, lámpara, cuadro…) sobre su escritorio; todos los ven. |
 
 ### 5.2 Fuera del MVP — backlog post-MVP (priorizado)
 
-1. Escritorios asignados con nombre · 2. Seguir a una persona · 3. *Spotlight* (hablar a todo el espacio) ·
-4. Objetos interactivos (web, vídeo, nota) · 5. Compartir pantalla en el pasillo · 6. Chat cercano ·
-7. Mostrar quién está realmente conectado a cada Meet (API de Meet) · 8. Minimapa ·
-9. Privacidad reforzada en el pasillo (permisos de suscripción) · 10. Editor de mapas ·
+1. Seguir a una persona · 2. *Spotlight* (hablar a todo el espacio) · 3. Objetos interactivos (web, vídeo, nota) ·
+4. Compartir pantalla en el pasillo · 5. Chat cercano · 6. Mostrar quién está realmente conectado a cada Meet (API de Meet) ·
+7. Minimapa · 8. Privacidad reforzada en el pasillo (permisos de suscripción) · 9. Editor de mapas (mover muebles, crear salas) · 10. Subir decoración propia ·
 11. Otros proveedores de identidad (Microsoft) y SSO empresarial.
 
 ## 6. Reglas de negocio
@@ -98,6 +100,9 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | RN-10 | Dos avatares pueden compartir casilla (evita bloqueos en pasillos). |
 | RN-11 | Solo se puede llamar (*ring*) a la misma persona una vez cada 30 s. |
 | RN-12 | Las conversaciones de pasillo **no son privadas** (como en una oficina abierta). La privacidad se ofrece en las salas (Google Meet). Esto se comunica en la interfaz. |
+| RN-13 | Una persona tiene como máximo un escritorio por espacio y un escritorio tiene como máximo un dueño. Si alguien sale del espacio o borra su cuenta, su escritorio queda libre. |
+| RN-14 | Solo el *owner* cambia el estilo de la oficina y asigna o libera escritorios de otras personas; cada miembro puede reclamar uno libre y liberar el suyo. |
+| RN-15 | La decoración solo usa objetos del catálogo (sin subir imágenes, para no necesitar moderación); máximo 3 por escritorio. |
 
 ## 7. Requisitos no funcionales
 
@@ -122,6 +127,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 4. **Reunión:** entrar en "Sala de reuniones" → aviso y corte del pasillo → "Unirse a la reunión" → Google Meet en otra pestaña (pantalla compartida, grabación, etc.) → volver al mapa y salir de la sala.
 5. **Concentración:** estado *Ocupado* → quien pasa cerca no se conecta contigo.
 6. **Llamar a quien no está atento:** tarjeta "Ausente" → *Llamar* → aviso sonoro → vuelve a la pestaña y se reactivan sus medios.
+7. **Hacer la oficina propia:** Ana elige el estilo acuarela → todos lo ven cambiar → Luis reclama un escritorio junto a la ventana, pone una planta y una taza → al día siguiente entra directamente en su mesa.
 
 ## 9. Supuestos, restricciones y dependencias
 
@@ -134,6 +140,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
   En desarrollo se usa el plan gratuito de LiveKit Cloud; en la beta, **LiveKit y TURN en una VM propia**
   (4 vCPU optimizada para cómputo, IP pública, tráfico incluido; ~20–40 US$/mes). Cambiar entre ambos no requiere tocar el código.
 - **Dependencia — mapas y sprites:** *tilesets* con licencia libre (CC0) y mapas creados en [Tiled](https://www.mapeditor.org/).
+- **Dependencia — arte de los estilos:** al menos un segundo estilo por plantilla (comprado con licencia comercial o encargado a un ilustrador). Si no llega a tiempo, se usan variantes de color del estilo por defecto ("Día", "Noche").
 - **Restricción técnica:** Google Meet **no se puede incrustar** en otra web; las reuniones se abren en otra pestaña (ver [ADR-010](./02-arquitectura.md#adr-010--salas-de-reunión-con-google-meet)).
 
 ## 10. Riesgos principales
@@ -146,10 +153,11 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | Operar el servidor de medios propio (caídas, certificados, TURN en redes corporativas) | Medio | TURN/TLS en 443 validado antes de invitar a pilotos; monitor de disponibilidad; contingencia: pasar a LiveKit Cloud cambiando variables. |
 | Tráfico de red del servidor de medios | Bajo | Proveedor con tráfico incluido; alerta al 80 % del tráfico mensual. |
 | Consumo de CPU con muchos vídeos | Medio | Límite RN-07 (8) y capa baja del simulcast para las miniaturas. |
+| El arte de los estilos no llega a tiempo o su licencia no permite uso comercial | Medio | Encargarlo en el sprint 3; plan B con variantes de color; `validate:maps` exige declarar la licencia. |
 
 ## 11. Criterios de aceptación del MVP
 
-- [ ] Requisitos RF-01 a RF-15 implementados y con pruebas de aceptación.
+- [ ] Requisitos RF-01 a RF-18 implementados y con pruebas de aceptación.
 - [ ] Prueba E2E de dos navegadores: se ven moverse, se conectan por proximidad y se desconectan al alejarse.
 - [ ] Prueba de salas: al entrar en una sala, el servidor silencia las pistas de pasillo de esa persona y nadie del pasillo la oye.
 - [ ] Prueba de carga: 50 clientes simulados en un espacio con RNF-01 cumplido.

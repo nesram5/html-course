@@ -1,6 +1,6 @@
 # 04 · Plan de desarrollo — Plaza MVP
 
-Plan sistemático por **etapas (épicas)** derivado del [brief](./01-brief-requerimiento.md) (v2.1) y de la
+Plan sistemático por **etapas (épicas)** derivado del [brief](./01-brief-requerimiento.md) (v2.2) y de la
 [arquitectura](./02-arquitectura.md). Cada etapa termina en algo **demostrable** y deja el sistema desplegable.
 
 ---
@@ -13,7 +13,7 @@ Plan sistemático por **etapas (épicas)** derivado del [brief](./01-brief-reque
 | Sprint | 2 semanas |
 | Velocidad estimada | ~35 puntos netos por sprint, ya descontado un 15 % para errores y revisión (se recalibra tras el sprint 2) |
 | Estimación | Puntos de historia en Fibonacci (ver [DoR](./03-estandares-codigo.md#10-definition-of-ready-dor-de-una-historia)) |
-| Duración total | 5 sprints ≈ **10 semanas** hasta la beta privada (antes: 7 sprints) |
+| Duración total | 6 sprints ≈ **12 semanas** hasta la beta privada (5 sprints de base + 1 de personalización y lanzamiento) |
 
 ## 2. Etapas y dependencias
 
@@ -29,6 +29,8 @@ flowchart LR
     E5 --> E7[E7 Presencia, ring, chat]
     E6 --> E8[E8 Lanzamiento beta]
     E7 --> E8
+    E4 --> E9[E9 Personalización]
+    E9 --> E8
 ```
 
 | Etapa | Objetivo | Requisitos que cubre | Puntos | Resultado demostrable |
@@ -42,7 +44,8 @@ flowchart LR
 | [E6](./historias/E6-salas-reunion-meet.md) | Reuniones | RF-10, RN-03, RNF-06, O6 | 12 | Entrar en una sala → aislado del pasillo → Google Meet |
 | [E7](./historias/E7-presencia-chat-reacciones.md) | Etiqueta social | RF-11..RF-15, RN-05, RN-11 | 16 | Estados con auto-silencio, *ring*, miembros, chat y emojis |
 | [E8](./historias/E8-lanzamiento-beta.md) | Calidad y lanzamiento | RNF-01..RNF-10, brief §11 | 22 | Beta privada con pilotos y métricas |
-| | | **Total** | **174** | |
+| [E9](./historias/E9-personalizacion-oficina.md) | Personalización de la oficina | RF-16, RF-17, RF-18, RN-13..RN-15 | 15 | Cambiar el estilo de la oficina en directo; reclamar y decorar mi escritorio |
+| | | **Total** | **189** | |
 
 ## 3. Plan por sprints
 
@@ -55,11 +58,13 @@ Dos carriles en paralelo cuando las dependencias lo permiten
 | 2 | 3–4 | E2-S4..S7 | E2-S1, S3 · E3-S2, S3, S6 | 34 | Crear espacio con salas de Meet + invitar; caminar por el mapa |
 | 3 | 5–6 | E4 completo · E5-S1, S3 | E3-S4, S5 · E5-S4 | 33 | **M2 · "Caminamos juntos"**: varias personas en el mismo mapa; pre-join listo |
 | 4 | 7–8 | E5-S2, S5, S7 · E6-S1, S3 | E5-S6 · E6-S2, S4 · E7-S1 | 35 | **M3 · "Hablamos y nos reunimos"**: el equipo trabaja a diario en Plaza (*dogfooding*) sobre el LiveKit propio |
-| 5 | 9–10 | E5-S8 · E7-S3, S5 · E8-S1..S3, S5 | E7-S2, S4 · E8-S4, S6, S7 | 36 | **M4 · Beta privada** con 5 equipos piloto |
+| 5 | 9–10 | E5-S8 · E7-S3, S5 · E8-S1..S3 | E7-S2, S4 · E8-S4, S6 | 30 | **M4 · Base completa**: RF-01..RF-15 en *staging* |
+| 6 | 11–12 | E9-S1, S2 · E8-S5 | E9-S3 · E8-S7 · correcciones del *dogfooding* | 21 | **M5 · Beta privada** con 5 equipos piloto y oficina personalizable |
 
-> Alojar LiveKit en la beta añade 8 puntos (E5-S7 y E5-S8) y deja el sprint 5 sin margen. Si hay retraso,
-> lo primero que se recorta es E7-S4 (reacciones) y la personalización de E5-S4; si no basta, la beta se
-> retrasa una semana o se lanza con LiveKit Cloud (plan de pago) y se migra a la VM propia justo después.
+> La personalización (E9) añade un sexto sprint, que también absorbe el despliegue de la beta (E8-S5) y el
+> onboarding de pilotos (E8-S7). Así el sprint 5 recupera ~5 puntos de margen y el sprint 6 deja ~14 para
+> corregir lo que salga del *dogfooding*. Si hay retraso, se recorta primero E9-S3 (decoración), que puede
+> llegar a los pilotos una o dos semanas después sin afectar al resto.
 
 ## 4. Estrategia de ejecución
 
@@ -73,6 +78,7 @@ Dos carriles en paralelo cuando las dependencias lo permiten
 4. **Delegar antes que construir:** antes de construir UI de medios, comprobar si `@livekit/components-react`
    ya la resuelve; antes de construir algo de reuniones, comprobar si Google Meet ya lo hace.
 5. **Dogfooding desde M3:** el equipo trabaja dentro de Plaza desde la semana 9.
+6. **Arte con antelación:** el segundo estilo de cada plantilla se encarga o compra en el sprint 3, para tenerlo en el sprint 6 (E9-S1); si no llega, se usan variantes de color.
 
 ## 5. Matriz de trazabilidad (requisito → historias)
 
@@ -93,6 +99,9 @@ Dos carriles en paralelo cuando las dependencias lo permiten
 | RF-13 Chat del espacio | E7-S3 |
 | RF-14 Reacciones | E7-S4 |
 | RF-15 Llamar (*ring*) | E7-S5 |
+| RF-16 Estilo de la oficina | E3-S2, E9-S1 |
+| RF-17 Mi escritorio | E9-S2 |
+| RF-18 Decorar mi escritorio | E9-S3 |
 | RN-03 Sala aísla del pasillo | E5-S1, E6-S2, E6-S3 |
 | RN-07 Máx. 8 en el pasillo | E5-S1 |
 | RN-12 Pasillo no privado (aviso) | E5-S6 |
@@ -116,6 +125,7 @@ Dos carriles en paralelo cuando las dependencias lo permiten
 | E5 | Permisos de cámara/micrófono en Safari | Fallos en pre-join | Probar en todos los navegadores desde E5-S4 |
 | E6 | La gente no pulsa "Unirse a la reunión" (cambio de pestaña) | O6 < 70 % en el *dogfooding* | Mejorar la tarjeta; plan B post-MVP: salas con LiveKit dentro del mapa |
 | E8 | Límite de 60 min de Meet en cuentas gratuitas | Pilotos sin Workspace de pago | Elegir pilotos con Workspace de pago |
+| E9 | El arte del segundo estilo no llega o no tiene licencia comercial | Sin entrega al final del sprint 5 | Variantes de color ("Día", "Noche") como estilos del MVP |
 
 ## 7. Ceremonias y seguimiento
 

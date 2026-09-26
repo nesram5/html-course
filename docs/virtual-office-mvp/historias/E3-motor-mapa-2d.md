@@ -31,13 +31,14 @@
 **Como** persona usuaria **quiero** ver la oficina con su suelo, paredes y decoración **para** orientarme.
 
 **Criterios de aceptación**
-- **Dado** `/s/:slug`, **cuando** carga, **entonces** veo el mapa de su plantilla con `decor-above` por encima de los avatares.
+- **Dado** `/s/:slug`, **cuando** carga, **entonces** veo el mapa dibujado con las imágenes del estilo del espacio (`below.png` debajo y `above.png` encima de los avatares; ver arquitectura §8.1).
 - **Dado** que los recursos tardan o fallan, **cuando** ocurre, **entonces** veo progreso o un "Reintentar".
 - El *pixel art* se ve nítido (sin suavizado) en pantallas HiDPI.
 - Las salas se dibujan con un borde suave y su nombre en el suelo.
 
 **Tareas técnicas**
 - [ ] `PreloadScene`, `WorldScene`; `pixelArt: true`, `roundPixels: true`.
+- [ ] Dibujar por imágenes de estilo desde el principio (no *tiles* en tiempo de ejecución), para que E9-S1 solo tenga que cambiarlas.
 
 ---
 

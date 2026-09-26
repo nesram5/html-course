@@ -1,6 +1,6 @@
 # 02 · Arquitectura — Plaza MVP
 
-Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.1) a una arquitectura concreta.
+Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.2) a una arquitectura concreta.
 Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 
 ---
@@ -65,6 +65,7 @@ plaza/
 │   │   │   ├── media/           # LiveKit, pre-join, tira de vídeos
 │   │   │   ├── rooms/           # tarjeta de sala y "Unirse a la reunión"
 │   │   │   ├── presence/        # estados, lista de miembros, localizar, ring
+│   │   │   ├── personalization/ # estilo de la oficina, mi escritorio, decoración
 │   │   │   └── chat/            # chat del espacio, reacciones
 │   │   └── shared/              # ui kit, hooks, api client, i18n
 │   └── server/
@@ -114,7 +115,8 @@ modules/<modulo>/
 |---|---|
 | `auth` | Flujo OAuth con Google, sesiones en BD, `requireUser` (HTTP y socket), logout. |
 | `users` | Perfil (nombre visible, avatar). |
-| `spaces` | Crear espacio, membresías, roles, enlace de invitación, dominio permitido, expulsión. |
+| `spaces` | Crear espacio, membresías, roles, enlace de invitación, dominio permitido, expulsión, estilo de la oficina. |
+| `desks` | Reclamar, asignar y liberar escritorios; decoración (valida contra el catálogo). |
 | `rooms` | Salas de reunión: crear los Meet de un espacio, sustituir un enlace a mano. |
 | `world` | Estado vivo de cada espacio en memoria (`SpaceRuntime`), validación de movimientos, *tick*, motor de proximidad. |
 | `media` | Tokens de LiveKit; silenciar pistas al entrar en una sala. |
@@ -200,6 +202,7 @@ model Space {
   ownerId         String
   inviteTokenHash String        @unique         // regenerar = revocar el anterior
   allowedDomain   String?                       // "empresa.com" → entrada automática
+  themeId         String        @default("pixel") // estilo de la oficina (RF-16)
   createdAt       DateTime      @default(now())
   memberships     Membership[]
   rooms           MeetingRoom[]
@@ -213,10 +216,13 @@ model Membership {
   spaceId  String
   role     Role     @default(MEMBER)
   status   String   @default("available")     // available | busy
+  deskId   String?                            // escritorio del mapa (RF-17)
+  deskDecor Json?                             // { slots: [itemId|null ×3] } validado con zod (RF-18)
   joinedAt DateTime @default(now())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   space    Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   @@id([userId, spaceId])
+  @@unique([spaceId, deskId])
 }
 
 model MeetingRoom {
@@ -254,9 +260,30 @@ Las posiciones no se guardan en BD (son efímeras). **No se guarda ningún *toke
 | `collision` | tiles | Cualquier tile ≠ 0 bloquea el paso |
 | `rooms` | objetos (**solo rectángulos**) | Salas de reunión. Propiedades: `areaId`, `name` |
 | `spawns` | objetos (puntos) | Puntos de aparición |
+| `desks` | objetos (rectángulos) | Escritorios asignables sobre muebles que ya bloquean el paso. Propiedad: `deskId`; 3 huecos de decoración en posiciones fijas |
 
-- `shared/world` expone `parseMap(tmj) → WorldMap { width, height, collisionGrid, rooms, spawns }` y
+- `shared/world` expone `parseMap(tmj) → WorldMap { width, height, collisionGrid, rooms, spawns, desks }` y
   `roomAt(map, x, y)`, usados igual en cliente y servidor.
+
+### 8.1 Estilos (temas) de la oficina
+
+Un estilo es una **piel** sobre la misma geometría: cambia el arte, nunca las colisiones, salas, escritorios ni *spawns*
+(ver el análisis en [E9](./historias/E9-personalizacion-oficina.md)).
+
+```text
+packages/maps/templates/<id>/
+├── map.tmj                      # única fuente de la geometría
+└── themes/
+    ├── pixel/                   # generado desde las capas de tiles con tmxrasterizer en el build
+    │   ├── below.png  above.png  thumbnail.png  theme.json
+    └── watercolor/              # arte pintado sobre la misma base
+        ├── below.png  above.png  thumbnail.png  theme.json   # theme.json: name, author, license
+```
+
+- `below.png` y `above.png` miden `ancho × 32` por `alto × 32` px (máx. 4096 px por lado); el cliente dibuja
+  `below` → avatares → `above`. Esto sustituye al dibujado de *tiles* en tiempo de ejecución y es más simple.
+- Un estilo puede ser también una **variante de color** (`theme.json` con una matriz de color aplicada como filtro de Phaser).
+- La decoración de escritorios usa el catálogo `packages/maps/decor/` (sprites neutros que encajan en todos los estilos).
 
 ## 9. Protocolo de tiempo real
 
@@ -271,7 +298,7 @@ Las posiciones no se guardan en BD (son efímeras). **No se guarda ningún *toke
 | Dirección | Evento | Payload (resumen) | Notas |
 |---|---|---|---|
 | C→S | `space:join` | `{ spaceId }` | *ack* con `space:snapshot` |
-| S→C | `space:snapshot` | `{ self, players[], rooms[], mapTemplateId }` | Estado inicial (incluye los `meetUri`) |
+| S→C | `space:snapshot` | `{ self, players[], rooms[], desks[], mapTemplateId, themeId }` | Estado inicial (incluye los `meetUri` y los escritorios ocupados con su decoración) |
 | C→S | `player:move` | `{ x, y, dir }` | Una casilla por evento; máx. 10/s |
 | S→C | `player:correct` | `{ x, y }` | Paso rechazado: el cliente recoloca el avatar |
 | S→C | `world:delta` | `{ moved[], joined[], left[], changed[] }` | Cada *tick* (15 Hz) solo si hay cambios |
@@ -282,6 +309,8 @@ Las posiciones no se guardan en BD (son efímeras). **No se guarda ningún *toke
 | C→S / S→C | `reaction` | `{ emoji }` / `{ userId, emoji }` | Efímero |
 | C→S / S→C | `ring:send` / `ring:received` | `{ toUserId }` / `{ fromUserId }` | RN-11 |
 | S→C | `space:kicked` | `{ reason }` | Expulsión o sesión reemplazada |
+| S→C | `space:theme` | `{ themeId }` | El *owner* cambió el estilo (RF-16) |
+| S→C | `desk:updated` | `{ deskId, userId \| null, decor }` | Escritorio reclamado, liberado o decorado (RF-17, RF-18) |
 | S→C | `error` | `{ code, message }` | Códigos en `shared` |
 
 ### 9.3 Movimiento
@@ -476,6 +505,14 @@ suscriptores de vídeo en 16 núcleos; la carga de Plaza es una fracción de eso
   - *Todo con Meet* (cada persona siempre en su propio Meet): se pierde la conexión automática sobre el mapa,
     obliga a estar todo el día en una llamada y cambiar de pestaña para cada charla.
   - *Salas con LiveKit dentro del mapa*: mejor experiencia pero más desarrollo; es el plan B si O6 sale bajo.
+
+### ADR-011 · Estilos de la oficina como "pieles" sobre la misma geometría
+- **Decisión:** un estilo es un par de imágenes (`below` / `above`) del tamaño del mapa, o una variante de color;
+  la geometría vive solo en el `.tmj`. El cliente dibuja imágenes, no *tiles*.
+- **Motivo:** es lo que muestra el vídeo (misma distribución, distinto arte); permite arte pintado libre (acuarela,
+  realista) sin rehacer colisiones, y cambiar de estilo en directo es solo cambiar dos texturas.
+- **Alternativas:** *tilesets* intercambiables con el mismo índice (limita el arte a la cuadrícula), un editor de mapas
+  (mucho más alcance, post-MVP).
 
 ## 13. Evolución post-MVP
 

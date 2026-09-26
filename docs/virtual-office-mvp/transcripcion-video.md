@@ -16,13 +16,13 @@ requisito del [brief](./01-brief-requerimiento.md).
 | 0:41 | Jeff | Hey, what's this meeting about? | |
 | 0:44 | Sam | Just showing how a Gather office allows us to feel more present during the work day. | |
 | 0:47 | Jeff | Sure beats video calls. | |
-| 0:49 | Sam | Hey, while I've got you, can you show us your custom workspace? | Escritorios (post-MVP) |
+| 0:49 | Sam | Hey, while I've got you, can you show us your custom workspace? | Mi escritorio (RF-17, RF-18) |
 | 0:52 | Jeff | Definitely. | |
 | 0:53 | Sam | I just hit the follow button and now Jeff is leading the way. This makes it easier to have a conversation while you're moving around. | Seguir (post-MVP) |
 | 0:59 | Sam | Whoa, is that a moat? | |
 | 1:02 | Jeff | It's a koi pond. | |
 | 1:03 | Sam | Never going to have this at our old office. | |
-| 1:05 | Jeff | That's the beauty of a Gather office. It can look like this, or this, or even this. Choosing your style is as easy as that. | Plantillas / estilos (RF-03) |
+| 1:05 | Jeff | That's the beauty of a Gather office. It can look like this, or this, or even this. Choosing your style is as easy as that. | Estilo de la oficina (RF-16) |
 | 1:13 | Jeff | Do you want to join an actual meeting? | |
 | 1:15 | Sam | Sure. These private spaces are great for meetings. We can have a larger conversation without disturbing anyone else in the office. | Salas de reunión con Google Meet (RF-10) |
 | 1:22 | Sam | Looks like Mary is working in another window, so Gather automatically mutes her mic and camera. Let's give her a ring. | Fuera de la pestaña + auto-silencio (RF-11), *ring* (RF-15) |
