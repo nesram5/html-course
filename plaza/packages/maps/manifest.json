@@ -1,0 +1,7 @@
+{
+  "$comment": "Catalog of map templates, avatars and desk decoration. Formats: README.md. Validated by `pnpm validate:maps`.",
+  "version": 1,
+  "templates": [],
+  "avatars": [],
+  "decor": []
+}

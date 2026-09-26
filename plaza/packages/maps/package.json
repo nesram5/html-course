@@ -1,0 +1,41 @@
+{
+  "name": "@plaza/maps",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Map templates (Tiled .tmj + themes), avatar sprites and desk decoration catalog.",
+  "exports": {
+    ".": {
+      "@plaza/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./manifest.json": "./manifest.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "manifest.json",
+    "templates",
+    "avatars",
+    "decor"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "validate": "tsx --conditions=@plaza/source scripts/validate-maps.ts"
+  },
+  "dependencies": {
+    "@plaza/shared": "workspace:*",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  }
+}
