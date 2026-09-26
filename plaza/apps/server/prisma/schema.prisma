@@ -1,0 +1,130 @@
+// Plaza data model — architecture §7, including E9 personalization fields.
+// Positions are ephemeral and never stored. No Google token is ever stored.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  /// Stable Google identifier (`sub` claim, ADR-007).
+  googleSub      String        @unique
+  email          String
+  displayName    String
+  avatarId       String        @default("avatar-01")
+  /// Set when the person picks an avatar; until then the picker is shown before the map (E1-S4).
+  avatarChosenAt DateTime?
+  /// Google profile picture URL (not a credential).
+  pictureUrl     String?
+  createdAt      DateTime      @default(now())
+  sessions       Session[]
+  memberships    Membership[]
+  messages       ChatMessage[]
+}
+
+model Session {
+  /// SHA-256 of the `plaza_sid` cookie token; the raw token is never stored.
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Sliding expiry: 30 days from the last use.
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Space {
+  id              String        @id @default(cuid())
+  name            String
+  slug            String        @unique
+  /// Versioned template id, e.g. "office-small@1" (ADR-006).
+  mapTemplateId   String
+  ownerId         String
+  /// SHA-256 of the current invite token; regenerating revokes the previous one (E2-S4).
+  inviteTokenHash String        @unique
+  /// Incremented on each regeneration. Lets the server re-derive the current token
+  /// (HMAC of SESSION_SECRET, id and version) to show "Copy link" without storing it.
+  inviteVersion   Int           @default(1)
+  /// "acme.com": verified e-mails of this domain join without invitation (E2-S4).
+  allowedDomain   String?
+  /// Office style (RF-16).
+  themeId         String        @default("pixel")
+  createdAt       DateTime      @default(now())
+  memberships     Membership[]
+  rooms           MeetingRoom[]
+  messages        ChatMessage[]
+
+  @@index([ownerId])
+}
+
+enum Role {
+  OWNER
+  MEMBER
+}
+
+model Membership {
+  userId    String
+  spaceId   String
+  role      Role     @default(MEMBER)
+  /// Chosen status: "available" | "busy" (E7-S1).
+  status    String   @default("available")
+  /// Desk of the map owned by this member (RF-17). Unique per space.
+  deskId    String?
+  /// { slots: [itemId | null ×3] }, validated with DeskDecorSchema (RF-18).
+  deskDecor Json?
+  joinedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, spaceId])
+  @@unique([spaceId, deskId])
+  @@index([spaceId])
+}
+
+model MeetingRoom {
+  id      String @id @default(cuid())
+  spaceId String
+  /// Area id of the `rooms` layer of the map.
+  areaId  String
+  /// https://meet.google.com/abc-defg-hij
+  meetUri String
+  /// "api" | "manual"
+  source  String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, areaId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  spaceId   String
+  /// null once the author deleted their account ("Usuario eliminado", E8-S6).
+  authorId  String?
+  body      String   @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([spaceId, createdAt])
+}
+
+/// Product events without personal data, aggregated for the O1–O6 metrics (E8-S7).
+model ProductEvent {
+  id        String   @id @default(cuid())
+  /// space_joined | conversation_started | conversation_ended | room_entered | room_meet_opened
+  name      String
+  spaceId   String?
+  /// Pseudonymous actor id (no foreign key, survives account deletion as an opaque id).
+  actorId   String?
+  props     Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([spaceId, createdAt])
+}
