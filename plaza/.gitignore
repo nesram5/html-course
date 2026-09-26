@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.vite/
+playwright-report/
+test-results/
+e2e/.auth/
+*.log
+.DS_Store
+
+# Probe files of scripts/verify-lint-rules.mjs (deleted after each run)
+**/lint-probe-*.ts

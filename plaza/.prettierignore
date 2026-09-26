@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+playwright-report
+test-results
+apps/server/prisma/migrations/**/migration.sql
+packages/maps/templates/**/*.tmj

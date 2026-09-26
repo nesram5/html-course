@@ -1,0 +1,57 @@
+{
+  "name": "plaza",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12 <23"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @plaza/server --filter @plaza/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint --max-warnings=0 .",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e/tsconfig.json",
+    "test": "pnpm -r test && pnpm test:lint-rules",
+    "test:lint-rules": "node scripts/verify-lint-rules.mjs",
+    "test:unit": "pnpm -r test:unit",
+    "test:coverage": "pnpm --filter @plaza/shared test:coverage",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "pnpm --filter @plaza/server db:migrate",
+    "db:deploy": "pnpm --filter @plaza/server db:deploy",
+    "db:reset": "pnpm --filter @plaza/server db:reset",
+    "db:seed": "pnpm --filter @plaza/server db:seed",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "infra:up:livekit": "docker compose -f infra/docker-compose.yml --profile livekit up -d --wait",
+    "infra:down": "docker compose -f infra/docker-compose.yml --profile livekit down",
+    "validate:maps": "pnpm --filter @plaza/maps validate",
+    "prepare": "node scripts/install-git-hooks.mjs"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --max-warnings=0 --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css,html}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.0.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.19.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
+}
