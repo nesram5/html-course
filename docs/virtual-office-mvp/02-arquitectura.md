@@ -1,6 +1,6 @@
 # 02 · Arquitectura — Plaza MVP
 
-Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.0) a una arquitectura concreta.
+Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.1) a una arquitectura concreta.
 Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 
 ---
@@ -8,7 +8,8 @@ Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 ## 1. Principios de arquitectura
 
 1. **Construir lo que nos diferencia, delegar el resto.** Hacemos el mapa, la presencia y la charla de
-   pasillo. La identidad (Google), las reuniones (Google Meet) y la infraestructura de medios (LiveKit Cloud) son servicios externos.
+   pasillo. La identidad (Google) y las reuniones (Google Meet) son servicios externos; el servidor de medios es
+   LiveKit de código abierto (gratis), en LiveKit Cloud durante el desarrollo y en una VM propia en la beta.
 2. **Un solo lenguaje, tipos compartidos.** TypeScript de punta a punta; los contratos (REST y
    tiempo real) se definen **una vez** con `zod` en un paquete compartido.
 3. **El servidor decide.** Posiciones, sala actual y quién debe conectarse con quién se deciden en el servidor.
@@ -28,7 +29,7 @@ flowchart LR
     end
     G[Google<br/>OIDC + API de Meet]
     M[Google Meet<br/>pestaña nueva]
-    L[LiveKit Cloud<br/>SFU gestionado]
+    L[LiveKit Server + TURN<br/>VM propia en la beta]
 
     U -->|HTTPS| W
     W -->|REST /api| S
@@ -47,7 +48,7 @@ flowchart LR
 | **web** (`apps/web`) | Vite, React 19, Phaser 3, Zustand, TanStack Query, Tailwind CSS, `livekit-client`, `@livekit/components-react` | UI (login, espacios, paneles, barra de medios) y mundo 2D (render, input). |
 | **server** (`apps/server`) | Node.js 22 LTS, Fastify 5, Socket.IO 4, Prisma, zod, pino, `@fastify/oauth2`, `google-auth-library`, `livekit-server-sdk` | API REST, login con Google y sesiones, estado vivo de cada espacio, validación de movimiento, motor de proximidad, tokens de LiveKit, creación de salas de Meet, chat. |
 | **postgres** | PostgreSQL 16 | Usuarios, sesiones, espacios, membresías, salas y chat. |
-| *externo* **LiveKit Cloud** | SFU gestionado (con TURN) | Reenvío de audio/vídeo de la charla de pasillo. |
+| **livekit** | LiveKit Server (código abierto, Apache 2.0) con TURN integrado, en su propia VM | Reenvío de audio/vídeo de la charla de pasillo. En desarrollo se usa el plan gratuito de LiveKit Cloud o un contenedor local. |
 | *externo* **Google** | OpenID Connect + API REST de Meet (`spaces.create`) | Identidad y salas de reunión permanentes. |
 
 ## 4. Estructura del monorepo
@@ -80,7 +81,10 @@ plaza/
 │   │   └── constants.ts
 │   └── maps/                    # mapas Tiled (.tmj), tilesets, avatares, manifest
 ├── e2e/                         # Playwright
-├── infra/docker-compose.yml     # solo PostgreSQL (LiveKit y Google son externos)
+├── infra/
+│   ├── docker-compose.yml       # local: PostgreSQL (+ LiveKit en modo dev, opcional)
+│   ├── app/                     # beta VM 1: Caddy + web + server
+│   └── livekit/                 # beta VM 2: livekit.yaml, Caddy, docker-compose (generados con livekit/generate)
 ├── eslint.config.js · tsconfig.base.json · pnpm-workspace.yaml
 └── docs/
 ```
@@ -305,7 +309,7 @@ export function computePeers(
 3. Recortar a `maxPeers` (8) por distancia (RN-07).
 4. El servidor compara con el resultado anterior y solo emite `media:peers` a quien cambie.
 
-### 10.2 Medios del pasillo con LiveKit Cloud
+### 10.2 Medios del pasillo con LiveKit
 
 - **Una sala de LiveKit por espacio** (`space_<spaceId>`); identidad = `userId`. El servidor emite el token.
 - El cliente publica micro y cámara (simulcast) y **se suscribe solo a las pistas de sus `peers`**
@@ -335,7 +339,7 @@ sequenceDiagram
 sequenceDiagram
     participant L as Luis
     participant S as Servidor
-    participant K as LiveKit Cloud
+    participant K as LiveKit
     L->>S: player:move (pisa la Sala 1)
     S->>S: roomId = "sala-1" → sale de computePeers
     S->>K: mutePublishedTrack(Luis, audio y vídeo)
@@ -368,7 +372,7 @@ sequenceDiagram
 | Validación | zod en **todas** las entradas REST y de socket. |
 | Rate limit | *Token bucket* por socket para `player:move`, `chat:send`, `reaction`, `ring:send`. |
 | Autorización | Guardas `assertOwner`, `assertMember` en los servicios. |
-| Cabeceras | `@fastify/helmet` con CSP (orígenes propios + LiveKit Cloud). |
+| Cabeceras | `@fastify/helmet` con CSP (orígenes propios + dominio de LiveKit). |
 | Secretos | Variables de entorno validadas con zod al arrancar. |
 | Tests | Ruta de login de prueba **solo** si `AUTH_TEST_LOGIN=true` (nunca en producción; el arranque falla si está activa con `NODE_ENV=production`). |
 
@@ -386,9 +390,35 @@ Logs JSON con `pino` (`requestId`, `userId`, `spaceId`), errores de cliente y se
 
 | Entorno | Descripción |
 |---|---|
-| `local` | `pnpm dev` + `docker compose up` (solo Postgres); proyecto de LiveKit Cloud y cliente OAuth de desarrollo. |
-| `ci` | Postgres en contenedor; Playwright con medios falsos y login de prueba. |
-| `beta` | Una VM o PaaS con Docker (Caddy para TLS), Postgres gestionado o con copia diaria. |
+| `local` | `pnpm dev` + `docker compose up` (Postgres); LiveKit Cloud plan gratuito (máx. 5 conexiones) o `livekit-server --dev` en contenedor; cliente OAuth de desarrollo. |
+| `ci` | Postgres y `livekit-server --dev` en contenedores; Playwright con medios falsos y login de prueba. |
+| `staging` / `beta` | **VM 1** (app): Caddy + web + server, Postgres gestionado o con copia diaria. **VM 2** (medios): LiveKit + TURN propios (ver §11.5). |
+
+El código es idéntico en todos los entornos: solo cambian `LIVEKIT_URL`, `LIVEKIT_API_KEY` y `LIVEKIT_API_SECRET`.
+
+### 11.5 Servidor de medios propio (beta)
+
+Dimensionado para la beta: unas 50 personas por espacio y hasta ~150 conectadas en total, en conversaciones
+de 2 a 8. Como referencia, el *benchmark* oficial de LiveKit sostiene una reunión de 150 publicadores y 150
+suscriptores de vídeo en 16 núcleos; la carga de Plaza es una fracción de eso.
+
+| Recurso | Especificación | Motivo |
+|---|---|---|
+| Máquina | VM **optimizada para cómputo, 4 vCPU, 8 GB RAM**, dedicada a LiveKit | LiveKit consume sobre todo CPU y red |
+| Red | **IP pública**, puerto ≥ 1 Gbps, proveedor con **tráfico incluido** (≥ 2 TB/mes) | Los medios salen directamente de la VM; en nubes que cobran la salida, el tráfico puede costar más que la máquina |
+| Puertos | TCP 443 y 7881 · UDP 443 · UDP 50000–60000 | Medios por UDP; TURN/TLS en 443 para redes corporativas |
+| Dominios | `livekit.<dominio>` y `turn.<dominio>` con certificados válidos (Let's Encrypt vía Caddy) | LiveKit no acepta certificados autofirmados |
+| Docker | `network_mode: host` | Evita latencia añadida en los medios |
+| Redis | No en la beta (una sola VM) | Solo hace falta con varias VMs de LiveKit |
+| Coste estimado | ~20–40 US$/mes (según proveedor) | Frente a ~240 US$/mes estimados en LiveKit Cloud |
+
+- **Por qué una VM separada:** LiveKit usa la red del *host* y el puerto 443 para TURN, que chocaría con Caddy de la app.
+- **Monitorización:** LiveKit expone métricas Prometheus; en la beta basta con un monitor externo de disponibilidad
+  y alertas de CPU > 70 % y tráfico mensual > 80 % de lo incluido.
+- **Si la VM de medios cae:** se pierde el audio/vídeo del pasillo (el mapa, el chat y las salas de Meet siguen
+  funcionando). Plan de contingencia en el *runbook*: cambiar las variables a LiveKit Cloud (plan de pago) y reiniciar el servidor.
+- **Conexión permanente:** con servidor propio el coste no depende de los minutos, así que cada persona se conecta a
+  LiveKit al entrar al espacio y se mantiene conectada (las conversaciones empiezan más rápido).
 
 ## 12. Registro de decisiones (ADR)
 
@@ -401,10 +431,14 @@ Logs JSON con `pino` (`requestId`, `userId`, `spaceId`), errores de cliente y se
 - **Decisión:** Socket.IO 4 sobre Fastify.
 - **Motivo:** salas, *acks* y reconexión listos. **Alternativas:** `ws` puro, Colyseus.
 
-### ADR-003 · Charla de pasillo con LiveKit Cloud
-- **Decisión:** LiveKit Cloud, una sala por espacio, suscripción selectiva desde el cliente según `media:peers`.
-- **Motivo:** cero servidores de medios y TURN que operar; mismo SDK que LiveKit *self-hosted* para migrar si el coste crece.
-- **Alternativas:** LiveKit propio (más operación), malla P2P (no escala a grupos), Google Meet (no se puede incrustar, ver ADR-010).
+### ADR-003 · Charla de pasillo con LiveKit
+- **Decisión:** LiveKit (SFU de código abierto), una sala por espacio, suscripción selectiva desde el cliente según `media:peers`.
+  **Desarrollo:** plan gratuito de LiveKit Cloud o contenedor local. **Staging y beta:** LiveKit + TURN en una VM propia (§11.5).
+- **Motivo:** el software es gratuito; alojarlo nosotros cuesta ~20–40 US$/mes frente a ~240 US$/mes estimados en
+  LiveKit Cloud para la beta. Usar Cloud en desarrollo evita montar infraestructura antes de tiempo, y el código es el mismo.
+- **Coste asumido:** ~8 puntos de trabajo (desplegar la VM de medios y validar TURN en redes corporativas) y su mantenimiento.
+- **Alternativas:** LiveKit Cloud también en la beta (sin operación, más caro), malla P2P (no escala a grupos),
+  Google Meet (no se puede incrustar, ver ADR-010).
 - **Riesgo aceptado:** privacidad del pasillo basada en el cliente (RN-12).
 
 ### ADR-004 · Phaser 3 para el mundo + React para la UI
@@ -448,4 +482,4 @@ Logs JSON con `pino` (`requestId`, `userId`, `spaceId`), errores de cliente y se
 1. Si la métrica O6 es baja → salas dentro del mapa con LiveKit (una sala de LiveKit por área).
 2. Privacidad del pasillo con permisos de suscripción por publicador.
 3. Varias instancias de `server` con adaptador Redis de Socket.IO y afinidad por espacio.
-4. LiveKit *self-hosted* si el coste de LiveKit Cloud lo justifica.
+4. Varias VMs de LiveKit con Redis, o LiveKit Cloud, si la carga supera una sola VM.

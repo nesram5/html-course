@@ -4,9 +4,9 @@
 |---|---|
 | Objetivo | La función estrella: acercar tu avatar a alguien conecta audio y vídeo sobre el mapa; alejarte lo corta |
 | Depende de | E4 (y el *spike* E0-S7) |
-| Cubre | RF-08, RF-09, RN-01, RN-02, RN-04, RN-07, RN-12, RNF-02 |
-| Puntos | 21 |
-| Sprints | 3–4 |
+| Cubre | RF-08, RF-09, RN-01, RN-02, RN-04, RN-07, RN-12, RNF-02, RNF-04 |
+| Puntos | 29 (21 de la charla + 8 del servidor de medios propio) |
+| Sprints | 3–5 (E5-S7 en el sprint 4, E5-S8 en el sprint 5) |
 | Resultado demostrable | Dos personas se cruzan en el pasillo y se ven y oyen en < 1,5 s; al separarse, los vídeos se desvanecen y se cortan |
 
 ## Contratos nuevos
@@ -41,9 +41,9 @@
 
 ---
 
-### E5-S3 · Token de LiveKit Cloud — 2 pts
+### E5-S3 · Token de LiveKit — 2 pts
 
-**Como** cliente **quiero** credenciales de medios para mi espacio **para** conectarme a LiveKit Cloud.
+**Como** cliente **quiero** credenciales de medios para mi espacio **para** conectarme al servidor de medios (LiveKit Cloud en desarrollo, LiveKit propio en *staging* y beta).
 
 **Criterios de aceptación**
 - **Dado** que soy miembro, **cuando** pido el token, **entonces** recibo uno para la sala `space_<spaceId>` con identidad = mi `userId`, válido 1 h y sin permisos de administración.
@@ -94,3 +94,32 @@
 
 **Tareas técnicas**
 - [ ] `VideoStrip`, `BottomBar` con componentes de `@livekit/components-react` (`VideoTrack`, `useIsSpeaking`); `ConversationBubble` en Phaser.
+
+---
+
+### E5-S7 · Servidor de medios propio (LiveKit en VM) — 5 pts
+
+**Como** equipo **queremos** alojar LiveKit en nuestra propia VM **para** no pagar el servicio gestionado en la beta ([ADR-003](../02-arquitectura.md#adr-003--charla-de-pasillo-con-livekit), arquitectura §11.5).
+
+**Criterios de aceptación**
+- **Dado** una VM de 4 vCPU optimizada para cómputo con IP pública, **cuando** aplico la configuración de `infra/livekit/`, **entonces** LiveKit queda funcionando con `network_mode: host`, certificados válidos en `livekit.<dominio>` y `turn.<dominio>`, y los puertos TCP 443/7881 y UDP 443/50000–60000 abiertos (el resto cerrados).
+- **Dado** *staging*, **cuando** cambio `LIVEKIT_URL` y las claves a la VM propia, **entonces** la charla de pasillo funciona igual que con LiveKit Cloud, sin cambios de código (test E2E de E5-S5 en verde contra *staging*).
+- **Dado** un monitor externo, **cuando** LiveKit deja de responder o la CPU supera el 70 % durante 5 min, **entonces** el equipo recibe una alerta.
+- **Dado** que la VM se reinicia, **cuando** vuelve, **entonces** LiveKit arranca solo y los clientes reconectan sin intervención.
+- Desde el sprint 4, el *dogfooding* del equipo ya usa este servidor.
+
+**Tareas técnicas**
+- [ ] Generar la configuración base con `livekit/generate` (LiveKit + Caddy) y versionarla en `infra/livekit/` (sin secretos: se inyectan por variables).
+- [ ] Elegir proveedor con tráfico incluido; registrar la decisión y el coste en `docs/runbook.md`.
+- [ ] Actualizaciones de LiveKit fijadas por versión y aplicadas de forma manual y documentada.
+
+---
+
+### E5-S8 · TURN y redes corporativas — 3 pts
+
+**Como** persona en una red corporativa **quiero** que el audio y el vídeo funcionen aunque se bloquee UDP **para** poder usar Plaza desde la oficina de mi empresa.
+
+**Criterios de aceptación**
+- **Dado** una red que solo permite TCP 443 (simulada con un contenedor que bloquea el resto), **cuando** me conecto, **entonces** los medios fluyen por TURN/TLS en `turn.<dominio>:443`.
+- **Dado** la red real de al menos un equipo piloto, **cuando** hacemos una prueba antes de invitarlos, **entonces** la charla de pasillo funciona (resultado registrado en `docs/runbook.md`).
+- Guía de requisitos de red de 1 página para el área de TI de los pilotos (dominios y puertos a permitir).

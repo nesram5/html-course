@@ -167,7 +167,7 @@ Reglas:
 Pipeline de GitHub Actions en cada PR y en `main`:
 
 ```text
-install (pnpm, caché) → lint → typecheck → test:unit → test:int (Postgres service)
+install (pnpm, caché) → lint → typecheck → test:unit → test:int (servicios: Postgres y `livekit-server --dev`)
   → build → validate:maps → test:e2e (Playwright, solo en main y PR con label e2e)
 ```
 

@@ -4,10 +4,10 @@
 |---|---|
 | Producto | Plaza (nombre en clave) — oficina virtual 2D con vídeo por proximidad |
 | Referencia | Gather Virtual Offices ([vídeo](https://youtu.be/zbllvQZRyh0), [análisis](./README.md#análisis-del-vídeo-de-referencia)) |
-| Versión del documento | 2.0 — alcance simplificado (ver [historial](./README.md#historial-de-versiones)) |
+| Versión del documento | 2.1 — alcance simplificado y servidor de medios propio (ver [historial](./README.md#historial-de-versiones)) |
 | Alcance | Primera versión MVP (beta privada) |
 | Stack obligatorio | TypeScript en frontend y backend |
-| Decisiones clave | Login solo con Google · Charla de pasillo con LiveKit Cloud · Salas de reunión con Google Meet |
+| Decisiones clave | Login solo con Google · Charla de pasillo con LiveKit (servidor propio en la beta) · Salas de reunión con Google Meet |
 
 ---
 
@@ -130,7 +130,9 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 - **Dependencia — Google Cloud:** proyecto con pantalla de consentimiento OAuth y la API de Google Meet habilitada.
   El *scope* para crear salas (`meetings.space.created`) requiere **verificación de Google** si la app es "externa";
   en la beta se usa el modo de pruebas (hasta 100 usuarios) o se registra como app interna de cada Workspace piloto.
-- **Dependencia — LiveKit Cloud:** servidor de medios gestionado para la charla de pasillo (sin servidores propios ni TURN). Se puede migrar a LiveKit *self-hosted* sin cambiar el código.
+- **Dependencia — LiveKit:** servidor de medios de código abierto (sin licencia de pago) para la charla de pasillo.
+  En desarrollo se usa el plan gratuito de LiveKit Cloud; en la beta, **LiveKit y TURN en una VM propia**
+  (4 vCPU optimizada para cómputo, IP pública, tráfico incluido; ~20–40 US$/mes). Cambiar entre ambos no requiere tocar el código.
 - **Dependencia — mapas y sprites:** *tilesets* con licencia libre (CC0) y mapas creados en [Tiled](https://www.mapeditor.org/).
 - **Restricción técnica:** Google Meet **no se puede incrustar** en otra web; las reuniones se abren en otra pestaña (ver [ADR-010](./02-arquitectura.md#adr-010--salas-de-reunión-con-google-meet)).
 
@@ -141,7 +143,8 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | El cambio de pestaña a Meet rompe la sensación de "estar en la oficina" | Medio | Métrica O6; al volver a Plaza, el avatar sigue en la sala. Plan B: reuniones dentro del mapa con LiveKit (post-MVP). |
 | Verificación de Google para el *scope* de Meet | Medio | Modo de pruebas en la beta; alternativa sin *scope*: el *owner* pega un enlace de Meet por sala. |
 | Dependencia de Google (identidad y reuniones) | Medio | Adaptadores en el código; identidad por `sub` de OIDC para poder añadir otros proveedores. |
-| Coste de LiveKit Cloud al crecer | Bajo en la beta | Métrica de minutos de uso; migración a *self-hosted* documentada. |
+| Operar el servidor de medios propio (caídas, certificados, TURN en redes corporativas) | Medio | TURN/TLS en 443 validado antes de invitar a pilotos; monitor de disponibilidad; contingencia: pasar a LiveKit Cloud cambiando variables. |
+| Tráfico de red del servidor de medios | Bajo | Proveedor con tráfico incluido; alerta al 80 % del tráfico mensual. |
 | Consumo de CPU con muchos vídeos | Medio | Límite RN-07 (8) y capa baja del simulcast para las miniaturas. |
 
 ## 11. Criterios de aceptación del MVP
@@ -150,7 +153,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 - [ ] Prueba E2E de dos navegadores: se ven moverse, se conectan por proximidad y se desconectan al alejarse.
 - [ ] Prueba de salas: al entrar en una sala, el servidor silencia las pistas de pasillo de esa persona y nadie del pasillo la oye.
 - [ ] Prueba de carga: 50 clientes simulados en un espacio con RNF-01 cumplido.
-- [ ] Desplegado en la beta con HTTPS, monitorización de errores y copias de seguridad.
+- [ ] Desplegado en la beta con HTTPS, monitorización de errores, copias de seguridad y servidor de medios propio con TURN validado en al menos una red corporativa.
 - [ ] 5 equipos piloto invitados.
 
 ## 12. Glosario

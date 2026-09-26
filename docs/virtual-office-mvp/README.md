@@ -21,12 +21,12 @@ Los documentos se escribieron en este orden y cada uno se apoya en los anteriore
 
 | Etapa | Archivo | Resultado demostrable |
 |-------|---------|-----------------------|
-| E0 | [E0-fundaciones.md](./historias/E0-fundaciones.md) | Monorepo, CI y entorno local; *spike* con LiveKit Cloud |
+| E0 | [E0-fundaciones.md](./historias/E0-fundaciones.md) | Monorepo, CI y entorno local; *spike* con LiveKit Cloud (plan gratuito) |
 | E1 | [E1-login-google-perfil.md](./historias/E1-login-google-perfil.md) | "Entrar con Google" y elegir avatar |
 | E2 | [E2-espacios-acceso-salas.md](./historias/E2-espacios-acceso-salas.md) | Crear un espacio con sus salas de Google Meet e invitar al equipo |
 | E3 | [E3-motor-mapa-2d.md](./historias/E3-motor-mapa-2d.md) | Caminar por el mapa con colisiones y cámara |
 | E4 | [E4-multijugador-tiempo-real.md](./historias/E4-multijugador-tiempo-real.md) | Ver a otras personas moverse en tiempo real |
-| E5 | [E5-charla-pasillo.md](./historias/E5-charla-pasillo.md) | Acercarse a alguien y hablar por vídeo automáticamente |
+| E5 | [E5-charla-pasillo.md](./historias/E5-charla-pasillo.md) | Acercarse a alguien y hablar por vídeo automáticamente, sobre un LiveKit propio |
 | E6 | [E6-salas-reunion-meet.md](./historias/E6-salas-reunion-meet.md) | Entrar en una sala, aislarse del pasillo y unirse a su Google Meet |
 | E7 | [E7-presencia-chat-reacciones.md](./historias/E7-presencia-chat-reacciones.md) | Estados con auto-silencio, *ring*, lista de miembros, chat y emojis |
 | E8 | [E8-lanzamiento-beta.md](./historias/E8-lanzamiento-beta.md) | Beta privada desplegada y medida |
@@ -35,7 +35,8 @@ Los documentos se escribieron en este orden y cada uno se apoya en los anteriore
 
 | Versión | Cambios |
 |---|---|
-| **2.0** (actual) | Alcance simplificado tras revisar la complejidad: **login solo con Google**; charla de pasillo con **LiveKit Cloud** (sin servidores de medios propios); **salas de reunión con Google Meet** (un Meet permanente por sala, en pestaña nueva) en lugar de salas de medios propias, pantalla compartida y vigilancia de suscripciones; fuera del MVP: escritorios, seguir, *spotlight*, objetos interactivos y chat cercano; algoritmos y herramientas más simples. **242 → 166 puntos, 7 → 5 sprints.** |
+| **2.1** (actual) | Servidor de medios **propio en la beta**: LiveKit (código abierto) + TURN en una VM de 4 vCPU (~20–40 US$/mes) en lugar de LiveKit Cloud de pago; LiveKit Cloud gratuito solo en desarrollo. Dos historias nuevas (E5-S7, E5-S8). **166 → 174 puntos**, mismos 5 sprints (sin margen en el sprint 5). |
+| 2.0 | Alcance simplificado tras revisar la complejidad: **login solo con Google**; charla de pasillo con **LiveKit Cloud** (sin servidores de medios propios); **salas de reunión con Google Meet** (un Meet permanente por sala, en pestaña nueva) en lugar de salas de medios propias, pantalla compartida y vigilancia de suscripciones; fuera del MVP: escritorios, seguir, *spotlight*, objetos interactivos y chat cercano; algoritmos y herramientas más simples. **242 → 166 puntos, 7 → 5 sprints.** |
 | 1.0 | Primera propuesta: identidad propia con contraseña, LiveKit *self-hosted* con áreas privadas garantizadas por el servidor, *spotlight*, pantalla compartida propia y funciones *Should*. Disponible en el historial de git. |
 
 ---
@@ -70,7 +71,7 @@ oficina en Gather. Transcripción completa con marcas de tiempo: [transcripcion-
 |---|---|---|
 | Mapa 2D, avatares con nombre, movimiento, cámara | ✅ MVP | RF-05, RF-06 |
 | Multijugador en tiempo real | ✅ MVP | RF-07 |
-| Audio/vídeo por proximidad con desvanecimiento e indicador 💬 | ✅ MVP (LiveKit Cloud) | RF-08, RF-09 |
+| Audio/vídeo por proximidad con desvanecimiento e indicador 💬 | ✅ MVP (LiveKit propio) | RF-08, RF-09 |
 | Salas privadas + aviso al entrar | ✅ MVP, **con Google Meet** | RF-10 |
 | Compartir pantalla con vista ampliada | ✅ MVP, **dentro de Google Meet** | RF-10 |
 | Estados + "fuera de la pestaña" con auto-silencio | ✅ MVP | RF-11 |

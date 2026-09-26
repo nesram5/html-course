@@ -75,10 +75,10 @@
 
 **Criterios de aceptación**
 - **Dado** Docker, **cuando** ejecuto `pnpm infra:up && pnpm db:migrate`, **entonces** Postgres está listo con las migraciones aplicadas.
-- **Dado** `.env.example`, **cuando** lo leo, **entonces** explica cómo obtener el cliente OAuth de Google (desarrollo), el proyecto de LiveKit Cloud (desarrollo) y el DSN de Sentry.
+- **Dado** `.env.example`, **cuando** lo leo, **entonces** explica cómo obtener el cliente OAuth de Google (desarrollo), el proyecto gratuito de LiveKit Cloud (desarrollo) y el DSN de Sentry, y cómo usar en su lugar LiveKit local (`livekit-server --dev` en el `docker-compose`).
 
 **Tareas técnicas**
-- [ ] `infra/docker-compose.yml` (solo Postgres), Prisma inicializado, *seed*.
+- [ ] `infra/docker-compose.yml` (Postgres + LiveKit en modo dev con un *profile* opcional), Prisma inicializado, *seed*.
 - [ ] Proyecto de Google Cloud "plaza-dev" con la API de Meet habilitada y la pantalla de consentimiento en modo de pruebas.
 
 ---
@@ -97,9 +97,9 @@
 
 ### E0-S7 · *Spike*: proximidad con LiveKit Cloud — 3 pts (limitado a 3 días)
 
-**Como** equipo **queremos** un prototipo desechable de suscripción selectiva con LiveKit Cloud **para** confirmar el [ADR-003](../02-arquitectura.md#adr-003--charla-de-pasillo-con-livekit-cloud) antes de construir encima.
+**Como** equipo **queremos** un prototipo desechable de suscripción selectiva con LiveKit Cloud **para** confirmar el [ADR-003](../02-arquitectura.md#adr-003--charla-de-pasillo-con-livekit) antes de construir encima (el plan gratuito admite 5 conexiones, suficiente para el *spike*).
 
 **Criterios de aceptación**
 - **Dado** dos pestañas con dos cuadrados movibles en un canvas, **cuando** se acercan a < 3 casillas, **entonces** se ven y oyen en < 1,5 s; al alejarse, se corta.
 - **Dado** que uno "entra en una sala", **cuando** el servidor llama a `mutePublishedTrack`, **entonces** el otro deja de oírle aunque siga suscrito.
-- Resultado en `docs/spikes/E0-S7-livekit.md` (latencias, coste estimado por minuto, recomendación).
+- Resultado en `docs/spikes/E0-S7-livekit.md` (latencias, consumo de ancho de banda por persona en conversación —dato para dimensionar la VM de medios de E5-S7— y recomendación).

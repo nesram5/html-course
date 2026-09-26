@@ -17,7 +17,8 @@
 
 **Criterios de aceptación**
 - **Dado** un error en cliente o servidor, **cuando** ocurre, **entonces** llega a Sentry con versión, `userId` y `spaceId` (sin contenido de chat ni *tokens*).
-- **Dado** `GET /api/health`, **cuando** lo consulto, **entonces** veo conectados por espacio y la duración media del *tick*; un monitor externo avisa si falla.
+- **Dado** `GET /api/health`, **cuando** lo consulto, **entonces** veo conectados por espacio y la duración media del *tick*; un monitor externo avisa si falla (el de la VM de medios se configura en E5-S7).
+- **Dado** el tráfico mensual de la VM de medios, **cuando** supera el 80 % de lo incluido por el proveedor, **entonces** llega una alerta.
 
 ---
 
@@ -37,6 +38,7 @@
 
 **Criterios de aceptación**
 - **Dado** 50 bots y 3 navegadores reales en *staging*, **cuando** se mueven 15 min, **entonces**: latencia de movimiento p95 < 200 ms, 60 fps en el portátil de referencia y sin fugas de memoria.
+- **Dado** 12 conversaciones simultáneas de 4 personas con vídeo (clientes con medios falsos), **cuando** duran 10 min, **entonces** la CPU de la VM de medios se mantiene < 60 % y se anota el ancho de banda para confirmar el dimensionado.
 - Informe breve en `docs/load-test.md`.
 
 **Tareas técnicas**
@@ -60,9 +62,9 @@
 
 **Criterios de aceptación**
 - **Dado** un *merge* en `main`, **cuando** pasa el CI, **entonces** se despliega en *staging*; la beta se despliega con una etiqueta `v0.x` y aprobación manual.
-- HTTPS, Postgres con copia diaria (restauración probada una vez), secretos de Google y LiveKit Cloud de producción configurados.
+- HTTPS, Postgres con copia diaria (restauración probada una vez), secretos de Google y de LiveKit de producción configurados; VM de medios de E5-S7 con claves distintas a las de *staging*.
 - Proyecto de Google Cloud de producción con la pantalla de consentimiento lista (modo de pruebas con los usuarios piloto o app interna por Workspace).
-- *Runbook* en `docs/runbook.md`: desplegar, revertir, restaurar la BD, rotar claves, qué hacer si cae LiveKit Cloud o Google.
+- *Runbook* en `docs/runbook.md`: desplegar, revertir, restaurar la BD, rotar claves, actualizar LiveKit, qué hacer si cae la VM de medios (contingencia: pasar a LiveKit Cloud cambiando variables) o Google.
 
 ---
 
