@@ -1,4 +1,6 @@
 // @ts-check
+import { builtinModules } from 'node:module';
+
 import js from '@eslint/js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -16,9 +18,22 @@ const SHARED_FORBIDDEN_IMPORTS = {
     { name: 'livekit-client', message: '@plaza/shared must not depend on network libraries.' },
     { name: 'fastify', message: '@plaza/shared must not depend on the server.' },
     { name: '@prisma/client', message: '@plaza/shared must not depend on the server.' },
+    { name: 'livekit-server-sdk', message: '@plaza/shared must not depend on network libraries.' },
+    { name: 'google-auth-library', message: '@plaza/shared must not depend on network libraries.' },
+    { name: 'ws', message: '@plaza/shared must not depend on network libraries.' },
+    { name: 'undici', message: '@plaza/shared must not depend on network libraries.' },
+    { name: 'axios', message: '@plaza/shared must not depend on network libraries.' },
+    // Node built-ins imported without the `node:` prefix (`fs`, `path`, ...).
+    ...builtinModules
+      .filter((name) => !name.startsWith('_'))
+      .map((name) => ({ name, message: '@plaza/shared must not use Node.js APIs.' })),
   ],
   patterns: [
     { group: ['node:*'], message: '@plaza/shared must not use Node.js APIs.' },
+    {
+      group: ['@fastify/*', '@livekit/*', '@sentry/*', 'socket.io/*', 'socket.io-client/*'],
+      message: '@plaza/shared must not depend on network or server libraries.',
+    },
     {
       group: ['react/*', 'react-dom/*', 'phaser/*'],
       message: '@plaza/shared must stay framework-free.',
@@ -26,6 +41,26 @@ const SHARED_FORBIDDEN_IMPORTS = {
     { group: ['@plaza/*'], message: '@plaza/shared must not depend on other workspace packages.' },
   ],
 };
+
+/** Features import each other only through their public `index.ts` (standards §5). */
+const FEATURE_BOUNDARY_PATTERN = {
+  group: ['@/features/*/*', '@/features/*/**'],
+  message: "Import other features only through their public index: '@/features/<name>'.",
+};
+const PHASER_ONLY_IN_WORLD = {
+  name: 'phaser',
+  message: 'Only features/world may import Phaser (standards §5).',
+};
+const LIVEKIT_ONLY_IN_MEDIA = [
+  {
+    name: 'livekit-client',
+    message: 'Only features/media may import livekit-client (architecture §6).',
+  },
+  {
+    name: '@livekit/components-react',
+    message: 'Only features/media may import @livekit/components-react (architecture §6).',
+  },
+];
 
 export default tseslint.config(
   {
@@ -126,34 +161,20 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            { name: 'phaser', message: 'Only features/world may import Phaser (standards §5).' },
-            {
-              name: 'livekit-client',
-              message: 'Only features/media may import livekit-client (architecture §6).',
-            },
-          ],
-          patterns: [
-            {
-              group: ['@/features/*/*', '@/features/*/**'],
-              message:
-                "Import other features only through their public index: '@/features/<name>'.",
-            },
-          ],
+          paths: [PHASER_ONLY_IN_WORLD, ...LIVEKIT_ONLY_IN_MEDIA],
+          patterns: [FEATURE_BOUNDARY_PATTERN],
         },
       ],
     },
   },
+  // A later `no-restricted-imports` entry replaces the earlier one entirely, so each override
+  // repeats the feature boundary pattern.
   {
     files: ['apps/web/src/features/world/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          paths: [
-            { name: 'livekit-client', message: 'Only features/media may import livekit-client.' },
-          ],
-        },
+        { paths: LIVEKIT_ONLY_IN_MEDIA, patterns: [FEATURE_BOUNDARY_PATTERN] },
       ],
     },
   },
@@ -162,7 +183,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: [{ name: 'phaser', message: 'Only features/world may import Phaser.' }] },
+        { paths: [PHASER_ONLY_IN_WORLD], patterns: [FEATURE_BOUNDARY_PATTERN] },
       ],
     },
   },

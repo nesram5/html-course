@@ -41,6 +41,46 @@ const probes = [
     'no-restricted-imports',
   ],
   [
+    'packages/shared/src/lint-probe-bare-node.ts',
+    "import { readFileSync } from 'fs';\nexport const probe = readFileSync;\n",
+    'no-restricted-imports',
+  ],
+  [
+    'packages/shared/src/lint-probe-network.ts',
+    "import { AccessToken } from 'livekit-server-sdk';\nexport const probe = AccessToken;\n",
+    'no-restricted-imports',
+  ],
+  [
+    'apps/web/src/features/world/lint-probe-boundary.ts',
+    "import { chatRoutes } from '@/features/chat/index';\nexport const probe = chatRoutes;\n",
+    'no-restricted-imports',
+  ],
+  [
+    'apps/web/src/features/media/lint-probe-boundary.ts',
+    "import { chatRoutes } from '@/features/chat/index';\nexport const probe = chatRoutes;\n",
+    'no-restricted-imports',
+  ],
+  [
+    'apps/web/src/features/chat/lint-probe-livekit.ts',
+    "import { Room } from 'livekit-client';\nexport const probe = Room;\n",
+    'no-restricted-imports',
+  ],
+  [
+    'apps/server/src/lint-probe-default-export.ts',
+    'const probe = 1;\nexport default probe;\n',
+    'no-restricted-exports',
+  ],
+  [
+    'apps/server/src/lint-probe-non-null.ts',
+    'const values: string[] = [];\nexport const probe = values[0]!;\n',
+    '@typescript-eslint/no-non-null-assertion',
+  ],
+  [
+    'apps/server/src/lint-probe-enum.ts',
+    "export enum Probe {\n  A = 'a',\n}\n",
+    'no-restricted-syntax',
+  ],
+  [
     'apps/server/src/lint-probe-console.ts',
     "console.log('x');\nexport const probe = 1;\n",
     'no-console',
