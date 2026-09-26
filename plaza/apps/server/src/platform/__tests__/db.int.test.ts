@@ -52,7 +52,7 @@ describe('database schema (integration)', () => {
     expect(membership).toMatchObject({ role: 'OWNER', status: 'available', deskId: null });
   });
 
-  it('deletes sessions and memberships in cascade and keeps messages anonymous', async () => {
+  it('deletes sessions, memberships and feedback in cascade and keeps messages anonymous', async () => {
     const owner = await createUser('owner@acme.com');
     const user = await createUser('luis@acme.com');
     const space = await createSpace(owner.id);
@@ -62,11 +62,13 @@ describe('database schema (integration)', () => {
     const message = await db.chatMessage.create({
       data: { spaceId: space.id, authorId: user.id, body: 'hola' },
     });
+    await db.feedback.create({ data: { userId: user.id, spaceId: space.id, message: 'Genial' } });
 
     await db.user.delete({ where: { id: user.id } });
 
     expect(await db.session.count()).toBe(0);
     expect(await db.membership.count({ where: { userId: user.id } })).toBe(0);
+    expect(await db.feedback.count()).toBe(0);
     expect(
       (await db.chatMessage.findUniqueOrThrow({ where: { id: message.id } })).authorId,
     ).toBeNull();

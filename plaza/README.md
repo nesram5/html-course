@@ -80,7 +80,7 @@ Code, identifiers, comments and commits in English; UI texts in Spanish through 
   texts in `features/<name>/i18n/es.json`). Import other features only through their `index.ts`.
   Only `features/world` imports Phaser and only `features/media` imports `livekit-client`.
 - **Database**: the Prisma schema already contains the whole MVP data model (architecture §7 + E9 +
-  product events). Prefer not to add migrations; if one is unavoidable, create it with `pnpm db:migrate`.
+  product events + in-app feedback of E8-S7). Prefer not to add migrations; if one is unavoidable, create it with `pnpm db:migrate`.
 - **Commits**: Conventional Commits (`feat(world): ...`), checked by commitlint. The pre-commit hook runs
   ESLint and Prettier on staged files under `plaza/`. Both hooks only act on commits that touch `plaza/`.
 
