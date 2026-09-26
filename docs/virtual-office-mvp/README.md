@@ -21,15 +21,22 @@ Los documentos se escribieron en este orden y cada uno se apoya en los anteriore
 
 | Etapa | Archivo | Resultado demostrable |
 |-------|---------|-----------------------|
-| E0 | [E0-fundaciones.md](./historias/E0-fundaciones.md) | Monorepo, CI y entorno local con un solo comando |
-| E1 | [E1-autenticacion-perfiles.md](./historias/E1-autenticacion-perfiles.md) | Registro, login y elección de avatar |
-| E2 | [E2-espacios-invitaciones.md](./historias/E2-espacios-invitaciones.md) | Crear un espacio desde plantilla e invitar gente |
-| E3 | [E3-motor-mapa-2d.md](./historias/E3-motor-mapa-2d.md) | Caminar por el mapa con colisiones, cámara y objetos interactivos |
+| E0 | [E0-fundaciones.md](./historias/E0-fundaciones.md) | Monorepo, CI y entorno local; *spike* con LiveKit Cloud |
+| E1 | [E1-login-google-perfil.md](./historias/E1-login-google-perfil.md) | "Entrar con Google" y elegir avatar |
+| E2 | [E2-espacios-acceso-salas.md](./historias/E2-espacios-acceso-salas.md) | Crear un espacio con sus salas de Google Meet e invitar al equipo |
+| E3 | [E3-motor-mapa-2d.md](./historias/E3-motor-mapa-2d.md) | Caminar por el mapa con colisiones y cámara |
 | E4 | [E4-multijugador-tiempo-real.md](./historias/E4-multijugador-tiempo-real.md) | Ver a otras personas moverse en tiempo real |
-| E5 | [E5-audio-video-proximidad.md](./historias/E5-audio-video-proximidad.md) | Acercarse a alguien y hablar por vídeo automáticamente |
-| E6 | [E6-areas-privadas-pantalla.md](./historias/E6-areas-privadas-pantalla.md) | Salas privadas, *spotlight* y compartir pantalla |
-| E7 | [E7-presencia-chat-reacciones.md](./historias/E7-presencia-chat-reacciones.md) | Estados, *ring*, seguir, lista de miembros, chat y emojis |
-| E8 | [E8-endurecimiento-lanzamiento.md](./historias/E8-endurecimiento-lanzamiento.md) | Beta privada desplegada, observada y segura |
+| E5 | [E5-charla-pasillo.md](./historias/E5-charla-pasillo.md) | Acercarse a alguien y hablar por vídeo automáticamente |
+| E6 | [E6-salas-reunion-meet.md](./historias/E6-salas-reunion-meet.md) | Entrar en una sala, aislarse del pasillo y unirse a su Google Meet |
+| E7 | [E7-presencia-chat-reacciones.md](./historias/E7-presencia-chat-reacciones.md) | Estados con auto-silencio, *ring*, lista de miembros, chat y emojis |
+| E8 | [E8-lanzamiento-beta.md](./historias/E8-lanzamiento-beta.md) | Beta privada desplegada y medida |
+
+## Historial de versiones
+
+| Versión | Cambios |
+|---|---|
+| **2.0** (actual) | Alcance simplificado tras revisar la complejidad: **login solo con Google**; charla de pasillo con **LiveKit Cloud** (sin servidores de medios propios); **salas de reunión con Google Meet** (un Meet permanente por sala, en pestaña nueva) en lugar de salas de medios propias, pantalla compartida y vigilancia de suscripciones; fuera del MVP: escritorios, seguir, *spotlight*, objetos interactivos y chat cercano; algoritmos y herramientas más simples. **242 → 166 puntos, 7 → 5 sprints.** |
+| 1.0 | Primera propuesta: identidad propia con contraseña, LiveKit *self-hosted* con áreas privadas garantizadas por el servidor, *spotlight*, pantalla compartida propia y funciones *Should*. Disponible en el historial de git. |
 
 ---
 
@@ -59,31 +66,31 @@ oficina en Gather. Transcripción completa con marcas de tiempo: [transcripcion-
 
 ### Inventario de funciones y decisión para el MVP
 
-| Función observada en el vídeo | Decisión | Requisito |
+| Función observada en el vídeo | Decisión (v2.0) | Requisito |
 |---|---|---|
-| Mapa 2D, avatares con nombre, movimiento, cámara | ✅ Must | RF-05, RF-06 |
-| Multijugador en tiempo real | ✅ Must | RF-07 |
-| Audio/vídeo por proximidad con desvanecimiento por distancia | ✅ Must | RF-08, RF-09 |
-| Indicador 💬 "en conversación" sobre los avatares | ✅ Must | RF-08 |
-| Áreas privadas + aviso al entrar | ✅ Must | RF-10 |
-| Compartir pantalla con vista ampliada | ✅ Must | RF-11 |
-| Estados + "fuera de la pestaña" con auto-silencio | ✅ Must | RF-12 |
-| Llamar (*ring*) a una persona | ✅ Must | RF-18 |
-| Barra inferior con estado, mapa, pantalla, emoji | ✅ Must | RF-13, RF-11, RF-15 |
-| Reacciones con emojis | ✅ Must | RF-15 |
-| Chat de texto (implícito en la barra) | ✅ Must | RF-14 |
-| Onboarding en segundos (enlace → dentro) | ✅ Must (meta < 60 s) | RF-04, O5 |
-| Seguir a una persona | 🟡 Should | RF-17 |
-| Escritorios personales con nombre | 🟡 Should | RF-16 |
-| *Spotlight tile* (hablar a todo el espacio) | 🟡 Should | RF-20 |
-| Objetos interactivos con contenido incrustado | 🟡 Should | RF-21 |
-| Varios estilos de mapa | ✅ vía plantillas (≥ 2) | RF-03 |
-| Editor de mapas propio, integraciones de calendario, grabación, IA | ⛔ Post-MVP | — |
+| Mapa 2D, avatares con nombre, movimiento, cámara | ✅ MVP | RF-05, RF-06 |
+| Multijugador en tiempo real | ✅ MVP | RF-07 |
+| Audio/vídeo por proximidad con desvanecimiento e indicador 💬 | ✅ MVP (LiveKit Cloud) | RF-08, RF-09 |
+| Salas privadas + aviso al entrar | ✅ MVP, **con Google Meet** | RF-10 |
+| Compartir pantalla con vista ampliada | ✅ MVP, **dentro de Google Meet** | RF-10 |
+| Estados + "fuera de la pestaña" con auto-silencio | ✅ MVP | RF-11 |
+| Llamar (*ring*) a una persona | ✅ MVP | RF-15 |
+| Barra inferior con estado, personas, emoji | ✅ MVP | RF-11, RF-12, RF-14 |
+| Reacciones con emojis | ✅ MVP | RF-14 |
+| Chat de texto | ✅ MVP (solo chat del espacio) | RF-13 |
+| Onboarding en segundos | ✅ MVP (login con Google, meta < 30 s) | RF-01, RF-04, O5 |
+| Varios estilos de mapa | ✅ vía plantillas (2) | RF-03 |
+| Seguir a una persona | ⏭️ Post-MVP | — |
+| Escritorios personales con nombre | ⏭️ Post-MVP | — |
+| *Spotlight tile* (hablar a todo el espacio) | ⏭️ Post-MVP | — |
+| Objetos interactivos con contenido incrustado | ⏭️ Post-MVP | — |
+| Editor de mapas, calendario, grabación e IA propios | ⛔ Fuera (la grabación y transcripción de las salas las da Meet) | — |
 
 ### Conclusión del análisis
 
 El mensaje del vídeo es "*echaba de menos la compañía de mi compañía*". El valor está en tres cosas:
 **(1)** un espacio persistente donde **ves** a tu equipo, **(2)** la conversación espontánea que se activa
 con solo **acercarte**, y **(3)** zonas que imitan la oficina real: salas privadas, escritorios, tarima.
-El MVP se centra en esas tres cosas y en las funciones de "etiqueta social" que las hacen usables
-(auto-silencio al salir de la pestaña, *ring*, estados, reacciones). Lo demás se deja fuera.
+El MVP construye **(1)** y **(2)** —lo que diferencia al producto— y resuelve **(3)** apoyándose en
+Google Meet para las salas de reunión, más las funciones de "etiqueta social" que lo hacen usable
+(auto-silencio al salir de la pestaña, *ring*, estados, reacciones). Lo demás queda para después.

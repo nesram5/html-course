@@ -4,9 +4,10 @@
 |---|---|
 | Producto | Plaza (nombre en clave) — oficina virtual 2D con vídeo por proximidad |
 | Referencia | Gather Virtual Offices ([vídeo](https://youtu.be/zbllvQZRyh0), [análisis](./README.md#análisis-del-vídeo-de-referencia)) |
-| Versión del documento | 1.0 |
+| Versión del documento | 2.0 — alcance simplificado (ver [historial](./README.md#historial-de-versiones)) |
 | Alcance | Primera versión MVP (beta privada) |
 | Stack obligatorio | TypeScript en frontend y backend |
+| Decisiones clave | Login solo con Google · Charla de pasillo con LiveKit Cloud · Salas de reunión con Google Meet |
 
 ---
 
@@ -25,131 +26,131 @@ lo que genera:
 > "Entra a la oficina, mira quién está y **camina hasta él para hablar**. Sin enlaces, sin agendas."
 
 Plaza ofrece un mapa 2D persistente donde cada persona es un avatar. Al acercar tu avatar al
-de otra persona, el audio y el vídeo se conectan solos; al alejarte, se desconectan.
-Las salas privadas funcionan como salas de reuniones reales.
+de otra persona, el audio y el vídeo se conectan solos **dentro del mapa**; al alejarte, se desconectan.
+Para reuniones formales, cada sala del mapa tiene su propio **Google Meet** permanente: entras en la sala
+y un clic te lleva a la reunión, con la pantalla compartida, la grabación y la transcripción de Meet.
+
+**Principio del MVP:** construir solo lo que nos diferencia (el mapa y la charla espontánea) y
+delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 
 ## 3. Objetivos del MVP y métricas de éxito
 
 | # | Objetivo | Métrica | Meta en la beta |
 |---|----------|---------|-----------------|
-| O1 | Validar que la conversación por proximidad es útil | Conversaciones espontáneas (≥ 2 personas conectadas > 30 s, sin sala privada) por usuario activo y día | ≥ 3 |
+| O1 | Validar que la conversación por proximidad es útil | Conversaciones espontáneas (≥ 2 personas conectadas > 30 s en el pasillo) por usuario activo y día | ≥ 3 |
 | O2 | Validar la retención de un equipo real | Equipos piloto que usan Plaza ≥ 3 días/semana durante 4 semanas | ≥ 3 de 5 equipos |
 | O3 | Calidad técnica suficiente | Tiempo desde "entrar en proximidad" hasta oír/ver al otro (p95) | < 1,5 s |
 | O4 | Estabilidad | Sesiones sin errores críticos (desconexión o pérdida de A/V no recuperada) | ≥ 98 % |
-| O5 | Onboarding simple | Tiempo desde el enlace de invitación hasta estar dentro del mapa | < 60 s |
+| O5 | Onboarding simple | Tiempo desde el enlace de invitación hasta estar dentro del mapa | < 30 s |
+| O6 | Validar las salas con Meet | % de entradas a una sala que terminan en "Unirse a la reunión" | ≥ 70 % (si es menor, revisar [ADR-010](./02-arquitectura.md#adr-010--salas-de-reunión-con-google-meet)) |
 
 ## 4. Usuarios y personas
 
 | Persona | Descripción | Necesidad principal |
 |---|---|---|
-| **Ana — Administradora del espacio** | Responsable de equipo o de operaciones; crea la oficina | Crear el espacio en minutos, invitar al equipo y asignar escritorios |
-| **Luis — Miembro del equipo** | Desarrollador o diseñador que trabaja en remoto | Ver quién está, hablar rápido sin agendar, poder concentrarse (estado "ocupado") |
-| **Marta — Invitada** | Cliente o candidata que entra puntualmente | Entrar con un enlace, sin fricción, y encontrar la sala de reunión |
+| **Ana — Administradora del espacio** | Responsable de equipo; su empresa usa Google Workspace | Crear la oficina en minutos y que su equipo entre con su cuenta de Google |
+| **Luis — Miembro del equipo** | Desarrollador que trabaja en remoto | Ver quién está, hablar rápido sin agendar, poder concentrarse (estado "ocupado") |
+| **Marta — Invitada** | Cliente o candidata con una cuenta de Google | Entrar con un enlace y encontrar la sala de reunión |
 
-## 5. Alcance funcional del MVP (MoSCoW)
+## 5. Alcance funcional del MVP
 
-### 5.1 Must have — imprescindible para lanzar la beta
+### 5.1 Must have — el MVP completo
 
 | ID | Requisito | Descripción |
 |---|---|---|
-| RF-01 | Registro e inicio de sesión | Email + contraseña. Cierre de sesión. Sesión persistente. |
-| RF-02 | Perfil y avatar | Nombre visible y elección de avatar entre un catálogo de sprites predefinidos. |
-| RF-03 | Crear espacio | Un usuario crea un espacio eligiendo una plantilla de mapa (mín. 2 plantillas). Se convierte en *owner*. |
-| RF-04 | Invitar al espacio | Enlace de invitación con caducidad; al aceptarlo se entra como *member*. El *owner* puede revocar el enlace y expulsar miembros. |
-| RF-05 | Mapa 2D | Renderizado del mapa por *tiles*, cámara que sigue al avatar propio, nombres sobre los avatares. |
-| RF-06 | Movimiento | Flechas / WASD, movimiento por casillas con animación de caminar y colisiones con paredes y muebles. |
-| RF-07 | Multijugador en tiempo real | Todas las personas conectadas al mismo espacio ven los movimientos de las demás con fluidez. |
-| RF-08 | Audio/vídeo por proximidad | Si dos avatares están a ≤ *R* casillas (por defecto 3), su audio y vídeo se conectan automáticamente; al alejarse, el vídeo se desvanece y se desconectan. Quien está en una conversación muestra a los demás un globo 💬 sobre su avatar. |
-| RF-09 | Controles de medios | Silenciar micrófono, apagar cámara, elegir dispositivos y **pantalla de prueba previa** (pre-join) con vista previa. |
-| RF-10 | Áreas privadas | Zonas definidas en el mapa: quien está dentro solo oye/ve a quien está en la misma área, y nadie de fuera le oye. Al entrar se muestra el aviso "Has entrado en un espacio privado: <nombre>". |
-| RF-11 | Compartir pantalla | Compartir pantalla con las personas conectadas en ese momento (proximidad o área privada), con vista ampliada para quien la recibe. |
-| RF-12 | Presencia y estados | Estados *Disponible*, *Ocupado* (no molestar: no se conecta A/V por proximidad) y *Ausente*. El estado **"Fuera de la pestaña"** se activa solo al cambiar de ventana y **silencia automáticamente micro y cámara**; al volver se restauran. Indicador de color sobre el avatar y en la barra inferior. |
-| RF-13 | Lista de miembros | Panel con miembros conectados/desconectados y botón **Localizar** (la cámara se mueve hasta la persona). |
-| RF-14 | Chat de texto | Chat del espacio (todos) y chat cercano (quienes están conectados contigo). Se guardan los últimos 200 mensajes del espacio. |
-| RF-15 | Reacciones | Emojis efímeros que aparecen sobre el avatar durante 3 s (visibles para todo el espacio). |
-| RF-18 | Llamar (*ring*) | Botón "Llamar" en la tarjeta de alguien que está fuera de la pestaña o lejos (lista de miembros): le suena un aviso y una notificación del navegador "Sam te está llamando". |
+| RF-01 | Login con Google | Inicio de sesión **solo** con cuenta de Google (OpenID Connect). Sin contraseñas. Cierre de sesión. Sesión persistente. |
+| RF-02 | Perfil y avatar | Nombre visible (tomado de Google, editable) y elección de avatar entre un catálogo de sprites. |
+| RF-03 | Crear espacio | Un usuario crea un espacio eligiendo una plantilla de mapa (mín. 2). Se convierte en *owner*. Al crearlo se genera un Google Meet permanente para cada sala de reunión del mapa. |
+| RF-04 | Acceso al espacio | Un enlace de invitación por espacio, que el *owner* puede regenerar (el anterior deja de funcionar). Opcional: "cualquier persona con email de `@empresa.com` puede entrar". El *owner* puede expulsar miembros. |
+| RF-05 | Mapa 2D | Renderizado por *tiles*, cámara que sigue al avatar propio, nombres sobre los avatares. |
+| RF-06 | Movimiento | Flechas / WASD, movimiento por casillas con animación y colisiones con paredes y muebles. |
+| RF-07 | Multijugador en tiempo real | Todas las personas del espacio ven los movimientos de las demás con fluidez. |
+| RF-08 | Audio/vídeo por proximidad | En el pasillo (fuera de las salas), si dos avatares están a ≤ *R* casillas (por defecto 3), su audio y vídeo se conectan automáticamente y se ven sobre el mapa; al alejarse, el vídeo se desvanece y se desconecta. Quien conversa muestra un globo 💬 a los demás. |
+| RF-09 | Controles de medios | Silenciar micrófono, apagar cámara, elegir dispositivos y **pantalla previa** (pre-join) con vista previa. |
+| RF-10 | Salas de reunión con Google Meet | Áreas del mapa enlazadas a un Google Meet permanente. Al entrar: aviso "Estás en Sala 1", se corta el audio/vídeo del pasillo y aparece **"Unirse a la reunión"** (abre Meet en una pestaña nueva). Desde fuera se ve quién está dentro. El *owner* puede sustituir el enlace de Meet de una sala. |
+| RF-11 | Estados | *Disponible*, *Ocupado* (no se conecta por proximidad) y *Ausente*. Al cambiar de pestaña se pasa a *Ausente* y se **silencian automáticamente** micro y cámara; al volver se restauran. |
+| RF-12 | Lista de miembros | Panel con miembros conectados (estado y sala actual) y desconectados, con botón **Localizar**. |
+| RF-13 | Chat del espacio | Chat de texto para todo el espacio; se guardan los últimos 100 mensajes. |
+| RF-14 | Reacciones | Emojis efímeros sobre el avatar durante 3 s, visibles para todo el espacio. |
+| RF-15 | Llamar (*ring*) | Botón "Llamar" en la tarjeta de alguien *Ausente* o lejano: le suena un aviso y una notificación del navegador. |
 
-### 5.2 Should have — si hay capacidad dentro del MVP
+### 5.2 Fuera del MVP — backlog post-MVP (priorizado)
 
-| ID | Requisito |
-|---|---|
-| RF-16 | Escritorios asignados: el *owner* asigna un escritorio a un miembro; al entrar, el avatar aparece en su escritorio y su nombre se ve sobre la mesa. |
-| RF-17 | "Seguir" a una persona: tu avatar camina detrás de ella hasta que pulsas "Dejar de seguir" o te mueves. |
-| RF-19 | Minimapa. |
-| RF-20 | *Spotlight*: casillas especiales (tarima) desde las que quien habla se oye y se ve en **todo** el espacio (o en la zona definida), para anuncios y eventos. |
-| RF-21 | Objetos interactivos: objetos del mapa que, al acercarse y pulsar `X`, abren contenido incrustado (web, vídeo, nota) configurado en el mapa. |
-
-### 5.3 Won't have (en esta versión) — backlog post-MVP
-
-Editor de mapas (tipo *Gather Studio*) · Grabación y transcripción · Notas con IA ·
-Integración con calendario · Objetos interactivos editables por los usuarios (pizarras colaborativas) · Cambio de estilo del mapa en vivo · SSO y roles
-avanzados · Apps móviles nativas · *Mini mode* · API pública · Facturación.
+1. Escritorios asignados con nombre · 2. Seguir a una persona · 3. *Spotlight* (hablar a todo el espacio) ·
+4. Objetos interactivos (web, vídeo, nota) · 5. Compartir pantalla en el pasillo · 6. Chat cercano ·
+7. Mostrar quién está realmente conectado a cada Meet (API de Meet) · 8. Minimapa ·
+9. Privacidad reforzada en el pasillo (permisos de suscripción) · 10. Editor de mapas ·
+11. Otros proveedores de identidad (Microsoft) y SSO empresarial.
 
 ## 6. Reglas de negocio
 
 | ID | Regla |
 |---|---|
-| RN-01 | La proximidad es **por pares**: A se conecta con B si la distancia euclídea entre sus casillas es ≤ *R*. No es transitiva (A–B y B–C no implica A–C). |
+| RN-01 | La proximidad es **por pares**: A se conecta con B si la distancia euclídea entre sus casillas es ≤ *R*. No es transitiva. |
 | RN-02 | Para evitar parpadeos, la desconexión ocurre a distancia > *R* + 1 (histéresis). |
-| RN-03 | Si A está dentro de un área privada, A solo se conecta con quienes están en **la misma** área, sin importar la distancia. |
-| RN-04 | Un usuario en estado *Ocupado* no se conecta por proximidad, pero **sí** dentro de un área privada (una reunión). |
-| RN-05 | Al ocultar la pestaña, el estado pasa a *Fuera de la pestaña* y se silencian micro y cámara; al volver se restaura lo que había. Tras 10 min sin actividad de teclado/ratón pasa a *Ausente*. Cualquier interacción devuelve a *Disponible* (salvo que la persona eligiera *Ocupado*). |
-| RN-06 | Máximo 50 personas conectadas simultáneamente por espacio en el MVP. |
-| RN-07 | Máximo 12 personas en una misma conexión A/V (proximidad o área). Si se supera, se priorizan las 12 más cercanas / primeras en entrar al área. |
-| RN-08 | Solo *owner* puede invitar, revocar invitaciones, expulsar y asignar escritorios en el MVP. |
-| RN-09 | Nunca se graba audio ni vídeo. Los mensajes de chat se guardan (últimos 200 por espacio). |
-| RN-10 | Cada usuario ocupa una casilla; dos avatares **sí** pueden compartir casilla (evita bloqueos en pasillos). |
-| RN-11 | Quien está en una casilla *spotlight* se oye y se ve en todo el espacio (conexión **unidireccional**: el público no se oye entre sí por eso). No cuenta para el límite de RN-07. Máx. 3 personas en *spotlight* a la vez. |
-| RN-12 | Solo se puede llamar (*ring*) a la misma persona una vez cada 30 s. |
+| RN-03 | Quien está dentro de una **sala de reunión** no participa en la proximidad: ni oye el pasillo ni el pasillo le oye. Su conversación ocurre en Google Meet. |
+| RN-04 | Un usuario *Ocupado* no se conecta por proximidad. |
+| RN-05 | Pestaña oculta → *Ausente* con micro y cámara silenciados; al volver se restaura lo anterior. 10 min sin actividad → *Ausente*. Cualquier interacción devuelve al estado elegido (*Disponible* u *Ocupado*). |
+| RN-06 | Máximo 50 personas conectadas por espacio. |
+| RN-07 | Máximo 8 personas en una conversación de pasillo (se priorizan las más cercanas). Para grupos mayores, se usa una sala. |
+| RN-08 | Solo el *owner* puede regenerar el enlace, configurar el dominio permitido, expulsar y cambiar los enlaces de Meet. |
+| RN-09 | Plaza nunca graba audio ni vídeo. La grabación o transcripción en las salas depende de Google Meet y de la configuración de Workspace de cada empresa. |
+| RN-10 | Dos avatares pueden compartir casilla (evita bloqueos en pasillos). |
+| RN-11 | Solo se puede llamar (*ring*) a la misma persona una vez cada 30 s. |
+| RN-12 | Las conversaciones de pasillo **no son privadas** (como en una oficina abierta). La privacidad se ofrece en las salas (Google Meet). Esto se comunica en la interfaz. |
 
 ## 7. Requisitos no funcionales
 
 | ID | Categoría | Requisito |
 |---|---|---|
-| RNF-01 | Rendimiento | Latencia del movimiento de otros usuarios (emisión → render) p95 < 200 ms. Render a 60 fps en un portátil medio con 50 avatares. |
+| RNF-01 | Rendimiento | Latencia del movimiento de otros usuarios p95 < 200 ms. 60 fps en un portátil medio con 50 avatares. |
 | RNF-02 | Rendimiento | Conexión A/V tras entrar en proximidad p95 < 1,5 s. |
-| RNF-03 | Compatibilidad | Últimas 2 versiones de Chrome, Edge, Firefox y Safari de escritorio. Móvil fuera del alcance. |
+| RNF-03 | Compatibilidad | Últimas 2 versiones de Chrome, Edge, Firefox y Safari de escritorio. |
 | RNF-04 | Disponibilidad | 99 % mensual en la beta. Reconexión automática del socket y de los medios tras cortes < 30 s. |
-| RNF-05 | Seguridad | HTTPS/WSS/DTLS-SRTP en todo. Contraseñas con Argon2id. Cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Validación de toda entrada con esquemas. Rate limit en login y en eventos de socket. |
-| RNF-06 | Privacidad | Cumplimiento GDPR: consentimiento de cámara/micrófono explícito, borrado de cuenta, sin grabaciones. La privacidad de las áreas privadas se **garantiza en el servidor**, no solo en el cliente. |
-| RNF-07 | Accesibilidad | Navegación por teclado de toda la interfaz (no del mapa), contraste AA, textos alternativos, controles con `aria-label`. |
-| RNF-08 | Observabilidad | Logs estructurados, métricas (usuarios conectados, latencia, errores de medios) y trazas de errores del cliente. |
-| RNF-09 | Escalabilidad | Diseño preparado para escalar horizontalmente (estado de espacios detrás de una interfaz sustituible por Redis), aunque el MVP funcione en una sola instancia. |
-| RNF-10 | Idioma | Interfaz en español, preparada para i18n (claves de traducción, sin textos incrustados). |
+| RNF-05 | Seguridad | HTTPS/WSS en todo. OAuth 2.0 con PKCE y `state`; verificación del `id_token`. Cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Validación de toda entrada con esquemas. *Rate limit* en eventos de socket. |
+| RNF-06 | Privacidad | GDPR: consentimiento de cámara/micrófono, borrado de cuenta, sin grabaciones en Plaza. Al entrar en una sala, el servidor **silencia** las pistas de pasillo de esa persona (no depende solo del cliente). Plaza no guarda *tokens* de Google. |
+| RNF-07 | Accesibilidad | Navegación por teclado de toda la interfaz (no del mapa), contraste AA, `aria-label` en controles. |
+| RNF-08 | Observabilidad | Logs estructurados y errores de cliente y servidor en Sentry. |
+| RNF-09 | Mantenibilidad | Monolito modular; estado de espacios detrás de una interfaz sustituible; servicios externos (Google, LiveKit) detrás de adaptadores. |
+| RNF-10 | Idioma | Interfaz en español, preparada para i18n. |
 
 ## 8. Flujos principales
 
-1. **Primera vez (Ana):** registro → crear espacio → elegir plantilla → copiar enlace de invitación → entrar al mapa.
-2. **Unirse (Luis/Marta):** abrir enlace → login/registro → elegir avatar → pre-join (cámara/mic) → aparecer en el mapa.
-3. **Conversación espontánea:** caminar hacia alguien → a ≤ 3 casillas aparece su vídeo arriba → hablar → alejarse → se corta.
-4. **Reunión:** entrar al área "Sala de reuniones" → se ve/oye a todos los de dentro → compartir pantalla → salir.
-5. **Concentración:** poner estado *Ocupado* → los que pasan cerca no se conectan contigo.
-6. **Llamar a quien no está atento:** su tarjeta muestra "Fuera de la pestaña" → pulsar *Llamar* → recibe aviso sonoro → vuelve a la pestaña y se reactivan sus medios.
-7. **Anuncio a todos (Should):** subir a la tarima (*spotlight*) → todo el espacio te ve y te oye → el público reacciona con emojis.
+1. **Primera vez (Ana):** "Entrar con Google" → crear espacio → elegir plantilla → autorizar la creación de salas de Meet → copiar enlace → entrar al mapa.
+2. **Unirse (Luis/Marta):** abrir enlace → "Entrar con Google" → elegir avatar → pre-join → aparecer en el mapa (< 30 s).
+3. **Conversación espontánea:** caminar hacia alguien → a ≤ 3 casillas aparece su vídeo sobre el mapa → hablar → alejarse → se corta.
+4. **Reunión:** entrar en "Sala de reuniones" → aviso y corte del pasillo → "Unirse a la reunión" → Google Meet en otra pestaña (pantalla compartida, grabación, etc.) → volver al mapa y salir de la sala.
+5. **Concentración:** estado *Ocupado* → quien pasa cerca no se conecta contigo.
+6. **Llamar a quien no está atento:** tarjeta "Ausente" → *Llamar* → aviso sonoro → vuelve a la pestaña y se reactivan sus medios.
 
 ## 9. Supuestos, restricciones y dependencias
 
-- **Supuesto:** los equipos piloto usan portátiles con navegadores modernos y conexión ≥ 10 Mbps.
-- **Restricción:** todo en TypeScript; infraestructura de medios de código abierto y *self-hosteable* (sin coste por minuto en la beta).
-- **Dependencia:** servidor SFU de WebRTC (LiveKit, ver [ADR-003](./02-arquitectura.md#adr-003--medios-sfu-livekit-con-suscripción-controlada-por-el-servidor)) y servidor TURN para redes corporativas.
-- **Dependencia:** mapas y sprites. En el MVP se usan *tilesets* con licencia libre (p. ej. CC0) y mapas creados en [Tiled](https://www.mapeditor.org/).
+- **Supuesto:** los equipos piloto usan **Google Workspace de pago**. Con cuentas gratuitas, las llamadas de Meet de 3 o más personas se cortan a los 60 min.
+- **Restricción:** todo en TypeScript.
+- **Dependencia — Google Cloud:** proyecto con pantalla de consentimiento OAuth y la API de Google Meet habilitada.
+  El *scope* para crear salas (`meetings.space.created`) requiere **verificación de Google** si la app es "externa";
+  en la beta se usa el modo de pruebas (hasta 100 usuarios) o se registra como app interna de cada Workspace piloto.
+- **Dependencia — LiveKit Cloud:** servidor de medios gestionado para la charla de pasillo (sin servidores propios ni TURN). Se puede migrar a LiveKit *self-hosted* sin cambiar el código.
+- **Dependencia — mapas y sprites:** *tilesets* con licencia libre (CC0) y mapas creados en [Tiled](https://www.mapeditor.org/).
+- **Restricción técnica:** Google Meet **no se puede incrustar** en otra web; las reuniones se abren en otra pestaña (ver [ADR-010](./02-arquitectura.md#adr-010--salas-de-reunión-con-google-meet)).
 
 ## 10. Riesgos principales
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Calidad A/V en redes corporativas (firewalls/UDP bloqueado) | Alto | TURN sobre TLS/443 incluido desde E5; prueba en redes reales en E8 |
-| Consumo de CPU del navegador con muchos vídeos | Medio | Límite RN-07, simulcast y suscripción a calidad baja para miniaturas |
-| Fuga de privacidad en áreas privadas | Alto | Suscripciones de medios decididas por el servidor (no por el cliente) |
-| Alcance que crece (editor de mapas, integraciones) | Medio | MoSCoW estricto; todo lo nuevo va al backlog post-MVP |
+| El cambio de pestaña a Meet rompe la sensación de "estar en la oficina" | Medio | Métrica O6; al volver a Plaza, el avatar sigue en la sala. Plan B: reuniones dentro del mapa con LiveKit (post-MVP). |
+| Verificación de Google para el *scope* de Meet | Medio | Modo de pruebas en la beta; alternativa sin *scope*: el *owner* pega un enlace de Meet por sala. |
+| Dependencia de Google (identidad y reuniones) | Medio | Adaptadores en el código; identidad por `sub` de OIDC para poder añadir otros proveedores. |
+| Coste de LiveKit Cloud al crecer | Bajo en la beta | Métrica de minutos de uso; migración a *self-hosted* documentada. |
+| Consumo de CPU con muchos vídeos | Medio | Límite RN-07 (8) y capa baja del simulcast para las miniaturas. |
 
-## 11. Criterios de aceptación del MVP (Definition of Done del producto)
+## 11. Criterios de aceptación del MVP
 
-- [ ] Todos los requisitos **Must** (RF-01 a RF-15 y RF-18) implementados y con pruebas de aceptación.
+- [ ] Requisitos RF-01 a RF-15 implementados y con pruebas de aceptación.
 - [ ] Prueba E2E de dos navegadores: se ven moverse, se conectan por proximidad y se desconectan al alejarse.
-- [ ] Prueba de privacidad: un usuario fuera del área privada no recibe pistas de medios de quienes están dentro (verificado a nivel de servidor).
+- [ ] Prueba de salas: al entrar en una sala, el servidor silencia las pistas de pasillo de esa persona y nadie del pasillo la oye.
 - [ ] Prueba de carga: 50 clientes simulados en un espacio con RNF-01 cumplido.
-- [ ] Desplegado en un entorno de beta con HTTPS, TURN, monitorización y copias de seguridad.
+- [ ] Desplegado en la beta con HTTPS, monitorización de errores y copias de seguridad.
 - [ ] 5 equipos piloto invitados.
 
 ## 12. Glosario
@@ -158,7 +159,7 @@ avanzados · Apps móviles nativas · *Mini mode* · API pública · Facturació
 |---|---|
 | Espacio | Una oficina virtual (un mapa + sus miembros). |
 | Tile / casilla | Celda de la cuadrícula del mapa (32×32 px). |
-| Proximidad | Conexión A/V automática entre avatares cercanos. |
-| Área privada | Región del mapa que aísla la conversación de quienes están dentro. |
-| SFU | *Selective Forwarding Unit*: servidor que reenvía pistas de audio/vídeo entre participantes. |
+| Pasillo | Cualquier zona del mapa que no es una sala de reunión. |
+| Proximidad | Conexión A/V automática entre avatares cercanos en el pasillo. |
+| Sala de reunión | Área del mapa enlazada a un Google Meet permanente. |
 | Pre-join | Pantalla previa para probar cámara y micrófono antes de entrar. |

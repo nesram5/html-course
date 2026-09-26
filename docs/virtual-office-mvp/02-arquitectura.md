@@ -1,22 +1,20 @@
 # 02 · Arquitectura — Plaza MVP
 
-Este documento traduce el [brief](./01-brief-requerimiento.md) a una arquitectura concreta.
+Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.0) a una arquitectura concreta.
 Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 
 ---
 
 ## 1. Principios de arquitectura
 
-1. **Un solo lenguaje, tipos compartidos.** TypeScript de punta a punta; los contratos (REST y
-   tiempo real) se definen **una vez** con `zod` en un paquete compartido y se infieren los tipos.
-2. **El servidor es la autoridad.** Posiciones, pertenencia a áreas privadas y quién puede oír
-   a quién se decide en el servidor. El cliente predice para ser fluido, pero el servidor corrige.
-3. **Lógica de dominio pura y reutilizable.** Colisiones, proximidad y áreas son funciones puras
-   en un paquete (`world-core`) que usan tanto el cliente como el servidor, y se prueban sin red.
-4. **Monolito modular primero.** Un único proceso backend con módulos bien separados; se puede
-   partir más adelante sin reescribir (RNF-09).
-5. **No reinventar los medios.** El audio/vídeo se delega a un SFU de código abierto (LiveKit).
-6. **Privacidad por diseño.** Las áreas privadas se aplican en el SFU, no solo ocultando vídeos en la UI.
+1. **Construir lo que nos diferencia, delegar el resto.** Hacemos el mapa, la presencia y la charla de
+   pasillo. La identidad (Google), las reuniones (Google Meet) y la infraestructura de medios (LiveKit Cloud) son servicios externos.
+2. **Un solo lenguaje, tipos compartidos.** TypeScript de punta a punta; los contratos (REST y
+   tiempo real) se definen **una vez** con `zod` en un paquete compartido.
+3. **El servidor decide.** Posiciones, sala actual y quién debe conectarse con quién se deciden en el servidor.
+4. **Lógica de dominio pura.** Colisiones, áreas y proximidad son funciones puras que usan cliente y servidor.
+5. **Monolito modular.** Un proceso backend con módulos bien separados y adaptadores para los servicios externos.
+6. **Lo simple primero.** Algoritmos directos (O(n²) con n ≤ 50), sin optimizaciones que no hagan falta en el MVP.
 
 ## 2. Vista de contexto (C4 nivel 1)
 
@@ -26,91 +24,68 @@ flowchart LR
     subgraph Plaza
       W[Web App<br/>React + Phaser]
       S[API + Realtime<br/>Fastify + Socket.IO]
-      L[LiveKit SFU<br/>+ TURN]
       DB[(PostgreSQL)]
     end
-    E[Proveedor de email<br/>post-MVP]
+    G[Google<br/>OIDC + API de Meet]
+    M[Google Meet<br/>pestaña nueva]
+    L[LiveKit Cloud<br/>SFU gestionado]
 
     U -->|HTTPS| W
     W -->|REST /api| S
     W <-->|WebSocket /realtime| S
-    W <-->|WebRTC media| L
-    S -->|Server API: tokens y permisos| L
-    L -->|Webhooks| S
+    W <-->|WebRTC charla de pasillo| L
+    W -->|abre meetingUri| M
+    S -->|login y creación de salas| G
+    S -->|tokens y silenciado de pistas| L
     S --> DB
-    S -.-> E
 ```
 
 ## 3. Vista de contenedores (C4 nivel 2)
 
 | Contenedor | Tecnología | Responsabilidad |
 |---|---|---|
-| **web** (`apps/web`) | Vite, React 19, Phaser 3, Zustand, TanStack Query, Tailwind CSS, `livekit-client` | UI (login, espacios, paneles, barra de medios) y mundo 2D (render, input, predicción). |
-| **server** (`apps/server`) | Node.js 22 LTS, Fastify 5, Socket.IO 4, Prisma, zod, pino, `livekit-server-sdk` | API REST, sesiones, estado vivo de cada espacio, validación de movimiento, motor de proximidad, emisión de tokens y permisos de medios, chat. |
-| **livekit** | LiveKit Server (Go, imagen oficial) con TURN embebido | Reenvío de pistas de audio/vídeo/pantalla (SFU), simulcast, TURN/TLS. |
-| **postgres** | PostgreSQL 16 | Usuarios, sesiones, espacios, membresías, invitaciones, chat. |
-| **redis** *(opcional en MVP)* | Redis 7 | Reservado para escalar: adaptador de Socket.IO y estado de espacios compartido entre instancias. |
+| **web** (`apps/web`) | Vite, React 19, Phaser 3, Zustand, TanStack Query, Tailwind CSS, `livekit-client`, `@livekit/components-react` | UI (login, espacios, paneles, barra de medios) y mundo 2D (render, input). |
+| **server** (`apps/server`) | Node.js 22 LTS, Fastify 5, Socket.IO 4, Prisma, zod, pino, `@fastify/oauth2`, `google-auth-library`, `livekit-server-sdk` | API REST, login con Google y sesiones, estado vivo de cada espacio, validación de movimiento, motor de proximidad, tokens de LiveKit, creación de salas de Meet, chat. |
+| **postgres** | PostgreSQL 16 | Usuarios, sesiones, espacios, membresías, salas y chat. |
+| *externo* **LiveKit Cloud** | SFU gestionado (con TURN) | Reenvío de audio/vídeo de la charla de pasillo. |
+| *externo* **Google** | OpenID Connect + API REST de Meet (`spaces.create`) | Identidad y salas de reunión permanentes. |
 
 ## 4. Estructura del monorepo
 
 ```text
 plaza/
 ├── apps/
-│   ├── web/                      # Frontend
-│   │   └── src/
-│   │       ├── app/              # router, providers, layout
-│   │       ├── features/
-│   │       │   ├── auth/         # login, registro, sesión
-│   │       │   ├── spaces/       # lista, crear, invitaciones
-│   │       │   ├── world/        # integración Phaser (escenas, sprites, input)
-│   │       │   ├── media/        # LiveKit, pre-join, tiras de vídeo, pantalla
-│   │       │   ├── presence/     # estados, lista de miembros, localizar
-│   │       │   └── chat/         # chat del espacio y cercano, reacciones
-│   │       ├── shared/           # ui kit, hooks, api client, i18n, utils
-│   │       └── main.tsx
-│   └── server/                   # Backend
-│       ├── prisma/               # schema.prisma y migraciones
+│   ├── web/src/
+│   │   ├── app/                 # router, providers, layout
+│   │   ├── features/
+│   │   │   ├── auth/            # botón "Entrar con Google", sesión
+│   │   │   ├── spaces/          # lista, crear, invitación, miembros, salas
+│   │   │   ├── world/           # integración Phaser (escenas, sprites, input)
+│   │   │   ├── media/           # LiveKit, pre-join, tira de vídeos
+│   │   │   ├── rooms/           # tarjeta de sala y "Unirse a la reunión"
+│   │   │   ├── presence/        # estados, lista de miembros, localizar, ring
+│   │   │   └── chat/            # chat del espacio, reacciones
+│   │   └── shared/              # ui kit, hooks, api client, i18n
+│   └── server/
+│       ├── prisma/
 │       └── src/
-│           ├── modules/
-│           │   ├── auth/
-│           │   ├── users/
-│           │   ├── spaces/
-│           │   ├── invitations/
-│           │   ├── world/        # estado vivo, movimiento, proximidad, áreas
-│           │   ├── media/        # tokens LiveKit, permisos, webhooks
-│           │   ├── presence/
-│           │   └── chat/
-│           ├── platform/         # http, socket, db, logger, config, errores
+│           ├── modules/         # auth, users, spaces, rooms, world, media, presence, chat
+│           ├── adapters/        # google-oidc.ts, google-meet.ts, livekit.ts
+│           ├── platform/        # http, socket, db, logger, config, errores
 │           └── main.ts
 ├── packages/
-│   ├── shared/                   # contratos zod (REST + eventos), constantes, tipos
-│   ├── world-core/               # lógica pura: grid, colisiones, proximidad, áreas
-│   ├── maps/                     # mapas Tiled (.tmj), tilesets, manifest de plantillas
-│   └── config/                   # tsconfig base, eslint, prettier
-├── infra/
-│   ├── docker-compose.yml        # postgres, livekit (+ redis opcional)
-│   ├── livekit.yaml
-│   └── Caddyfile                 # TLS y proxy en despliegue
-├── e2e/                          # Playwright
-├── .github/workflows/            # CI
-├── package.json / pnpm-workspace.yaml / turbo.json
+│   ├── shared/src/
+│   │   ├── contracts/           # esquemas zod REST + eventos, códigos de error
+│   │   ├── world/               # lógica pura: mapa, colisiones, áreas, proximidad
+│   │   └── constants.ts
+│   └── maps/                    # mapas Tiled (.tmj), tilesets, avatares, manifest
+├── e2e/                         # Playwright
+├── infra/docker-compose.yml     # solo PostgreSQL (LiveKit y Google son externos)
+├── eslint.config.js · tsconfig.base.json · pnpm-workspace.yaml
 └── docs/
 ```
 
-**Regla de dependencias entre paquetes:**
-
-```mermaid
-flowchart TD
-    web --> shared
-    web --> world-core
-    web --> maps
-    server --> shared
-    server --> world-core
-    server --> maps
-    world-core --> shared
-```
-
-`world-core` y `shared` **no** dependen de React, Phaser, Node ni de ninguna librería de red.
+`packages/shared` **no** depende de React, Phaser, Node ni de librerías de red (regla de ESLint).
 
 ## 5. Arquitectura del backend
 
@@ -118,71 +93,65 @@ flowchart TD
 
 ```text
 modules/<modulo>/
-├── <modulo>.routes.ts      # adaptador HTTP (Fastify): parsea con zod, llama al servicio
+├── <modulo>.routes.ts      # adaptador HTTP: valida con zod y llama al servicio
 ├── <modulo>.socket.ts      # adaptador Socket.IO (si aplica)
-├── <modulo>.service.ts     # casos de uso / aplicación (orquesta, transacciones)
-├── <modulo>.repository.ts  # acceso a datos (Prisma) detrás de una interfaz
-├── <modulo>.domain.ts      # reglas puras del módulo (sin I/O)
+├── <modulo>.service.ts     # casos de uso
+├── <modulo>.repository.ts  # acceso a datos (Prisma)
 └── __tests__/
 ```
 
-- Los **adaptadores** (routes/socket) no contienen lógica de negocio.
-- Los **servicios** reciben dependencias por constructor (inyección manual con un `container.ts`).
-- El **dominio** no importa nada de infraestructura.
+- Los servicios reciben sus dependencias por constructor (`container.ts`), incluidas las interfaces de
+  `adapters/` (`IdentityProvider`, `MeetingProvider`, `MediaProvider`). Así los tests usan dobles y se puede
+  cambiar de proveedor sin tocar los servicios.
 
 ### 5.2 Módulos
 
 | Módulo | Responsabilidad principal |
 |---|---|
-| `auth` | Registro, login, logout, sesiones en BD, middleware `requireUser` (HTTP y socket). |
+| `auth` | Flujo OAuth con Google, sesiones en BD, `requireUser` (HTTP y socket), logout. |
 | `users` | Perfil (nombre visible, avatar). |
-| `spaces` | CRUD de espacios, membresías, roles, expulsión, asignación de escritorios. |
-| `invitations` | Crear, aceptar y revocar enlaces de invitación. |
-| `world` | Estado vivo de cada espacio en memoria (`SpaceRuntime`), validación de movimientos, *tick* de difusión, motor de proximidad y de áreas. |
-| `media` | Emitir tokens de LiveKit, aplicar permisos de suscripción, procesar webhooks. |
-| `presence` | Estados (Disponible/Ocupado/Ausente), conectados, "localizar". |
-| `chat` | Mensajes del espacio (persistidos) y cercanos (efímeros), reacciones. |
+| `spaces` | Crear espacio, membresías, roles, enlace de invitación, dominio permitido, expulsión. |
+| `rooms` | Salas de reunión: crear los Meet de un espacio, sustituir un enlace a mano. |
+| `world` | Estado vivo de cada espacio en memoria (`SpaceRuntime`), validación de movimientos, *tick*, motor de proximidad. |
+| `media` | Tokens de LiveKit; silenciar pistas al entrar en una sala. |
+| `presence` | Estados, actividad, *ring*. |
+| `chat` | Chat del espacio (persistido) y reacciones (efímeras). |
 
-### 5.3 Estado vivo de un espacio (`SpaceRuntime`)
+### 5.3 Estado vivo de un espacio
 
 ```ts
-// packages/world-core (tipos) + apps/server/src/modules/world (implementación)
 interface PlayerState {
   userId: string;
   displayName: string;
   avatarId: string;
-  x: number;               // casilla
+  x: number;                              // casilla
   y: number;
   dir: 'up' | 'down' | 'left' | 'right';
   status: 'available' | 'busy';           // elegido por la persona
-  activity: 'active' | 'tab-away' | 'idle'; // detectado por el cliente (RN-05)
-  areaId: string | null;   // área privada actual (calculada por el servidor)
-  onSpotlight: boolean;    // está en una casilla spotlight (RN-11)
-  inConversation: boolean; // tiene ≥ 1 peer A/V → globo 💬 visible para todos
-  lastSeq: number;         // último movimiento aceptado
+  away: boolean;                          // pestaña oculta o inactividad (RN-05)
+  roomId: string | null;                  // sala de reunión actual, calculada por el servidor
+  inConversation: boolean;                // tiene peers → globo 💬
 }
 
-interface SpaceStateStore {                 // interfaz sustituible por Redis (RNF-09)
-  get(spaceId: string): SpaceRuntime | undefined;
+interface SpaceStateStore {               // interfaz sustituible (p. ej. Redis) si hace falta escalar
   getOrLoad(spaceId: string): Promise<SpaceRuntime>;
   unloadIfEmpty(spaceId: string): void;
 }
 ```
 
-El `SpaceRuntime` se crea al entrar la primera persona (carga el mapa, construye la rejilla de
-colisiones y el índice de áreas) y se descarta 60 s después de que salga la última.
+El `SpaceRuntime` se crea al entrar la primera persona (carga el mapa) y se descarta 60 s después de que salga la última.
 
 ## 6. Arquitectura del frontend
 
 ```mermaid
 flowchart TB
     subgraph React
-      R[Rutas y páginas] --> P[Paneles: miembros, chat, barra de medios]
+      R[Páginas] --> P[Paneles: miembros, chat, barra, tarjeta de sala]
       P --> ZS[(Zustand stores)]
     end
     subgraph Phaser
-      WS[WorldScene] --> SP[Sprites y animaciones]
-      WS --> IN[Input + predicción local]
+      WS[WorldScene] --> SP[Sprites, nombres, globos, reacciones]
+      WS --> IN[Input]
     end
     RT[RealtimeClient<br/>Socket.IO tipado] --> ZS
     RT --> WS
@@ -191,50 +160,46 @@ flowchart TB
     RT -->|media:peers| MC
 ```
 
-- **React** gestiona todo lo que es DOM: páginas, paneles, vídeos (`<video>`), formularios.
-- **Phaser** gestiona solo el `<canvas>` del mundo: mapa, avatares, nombres, burbujas, cámara.
-- **Comunicación React ⇄ Phaser:** a través de *stores* de Zustand (estado) y de un `EventBus`
-  tipado (órdenes puntuales como "localizar a X"). Phaser nunca importa componentes React.
-- **`RealtimeClient`:** único punto que habla con Socket.IO; valida los eventos entrantes con los
-  esquemas zod de `@plaza/shared` y expone métodos tipados.
-- **`MediaController`:** único punto que habla con LiveKit; recibe la lista de *peers* permitidos
-  y sincroniza suscripciones y permisos.
-- **Datos REST:** TanStack Query con un cliente `fetch` tipado a partir de los contratos compartidos.
+- **React** gestiona el DOM (páginas, paneles, `<video>`); **Phaser** solo el `<canvas>` del mundo.
+- React ⇄ Phaser se comunican por *stores* de Zustand y un `EventBus` tipado (órdenes como "localizar a X").
+- **`RealtimeClient`**: único punto que habla con Socket.IO; valida los eventos entrantes con zod.
+- **`MediaController`**: único punto que habla con LiveKit. Se usan los componentes de
+  `@livekit/components-react` (pre-join, pistas de vídeo, indicador de quién habla) para no construir esa UI a mano.
 
 ## 7. Modelo de datos
 
 ```prisma
-// apps/server/prisma/schema.prisma (extracto)
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  passwordHash String
-  displayName  String
-  avatarId     String       @default("avatar-01")
-  createdAt    DateTime     @default(now())
-  sessions     Session[]
-  memberships  Membership[]
+  id          String       @id @default(cuid())
+  googleSub   String       @unique            // identificador estable de Google (claim "sub")
+  email       String
+  displayName String
+  avatarId    String       @default("avatar-01")
+  createdAt   DateTime     @default(now())
+  sessions    Session[]
+  memberships Membership[]
 }
 
 model Session {
-  id        String   @id            // hash SHA-256 del token de la cookie
+  id        String   @id                      // SHA-256 del token de la cookie
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
-  createdAt DateTime @default(now())
   @@index([userId])
 }
 
 model Space {
-  id            String       @id @default(cuid())
-  name          String
-  slug          String       @unique
-  mapTemplateId String                   // referencia a packages/maps (p. ej. "office-small@1")
-  ownerId       String
-  createdAt     DateTime     @default(now())
-  memberships   Membership[]
-  invitations   Invitation[]
-  messages      ChatMessage[]
+  id              String        @id @default(cuid())
+  name            String
+  slug            String        @unique
+  mapTemplateId   String                        // "office-small@1"
+  ownerId         String
+  inviteTokenHash String        @unique         // regenerar = revocar el anterior
+  allowedDomain   String?                       // "empresa.com" → entrada automática
+  createdAt       DateTime      @default(now())
+  memberships     Membership[]
+  rooms           MeetingRoom[]
+  messages        ChatMessage[]
 }
 
 enum Role { OWNER MEMBER }
@@ -243,30 +208,27 @@ model Membership {
   userId   String
   spaceId  String
   role     Role     @default(MEMBER)
-  deskId   String?                        // id de objeto "desk" del mapa (RF-16)
-  status   String   @default("available") // estado elegido: available | busy (RF-12)
+  status   String   @default("available")     // available | busy
   joinedAt DateTime @default(now())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   space    Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   @@id([userId, spaceId])
-  @@unique([spaceId, deskId])
 }
 
-model Invitation {
-  id          String    @id @default(cuid())
-  spaceId     String
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdById String
-  uses        Int       @default(0)
-  space       Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+model MeetingRoom {
+  id         String   @id @default(cuid())
+  spaceId    String
+  areaId     String                             // id del área en el mapa
+  meetUri    String                             // https://meet.google.com/abc-defg-hij
+  source     String                             // "api" | "manual"
+  space      Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  @@unique([spaceId, areaId])
 }
 
 model ChatMessage {
   id        String   @id @default(cuid())
   spaceId   String
-  authorId  String
+  authorId  String?                             // null si la cuenta se borró
   body      String   @db.VarChar(1000)
   createdAt DateTime @default(now())
   space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -274,146 +236,124 @@ model ChatMessage {
 }
 ```
 
-Las **posiciones no se guardan en BD** en el MVP (son efímeras). Solo se guarda el escritorio asignado.
+Las posiciones no se guardan en BD (son efímeras). **No se guarda ningún *token* de Google.**
 
 ## 8. Mapas
 
 - Se diseñan en **Tiled** y se exportan como JSON (`.tmj`) en `packages/maps/templates/<id>/`.
-- Convención de capas obligatoria (validada por un script en CI):
+- Capas obligatorias (validadas en CI):
 
 | Capa | Tipo | Uso |
 |---|---|---|
-| `floor` | tiles | Suelo (solo visual) |
+| `floor` | tiles | Suelo |
 | `decor-below` / `decor-above` | tiles | Decoración por debajo / encima de los avatares |
 | `collision` | tiles | Cualquier tile ≠ 0 bloquea el paso |
-| `areas` | objetos (rectángulos/polígonos) | Áreas. Propiedades: `areaId`, `name`, `kind: "private" \| "spotlight"` (el *spotlight* puede tener `scope: "space" \| "<areaId>"`) |
+| `rooms` | objetos (**solo rectángulos**) | Salas de reunión. Propiedades: `areaId`, `name` |
 | `spawns` | objetos (puntos) | Puntos de aparición |
-| `desks` | objetos (puntos) | Escritorios asignables. Propiedad: `deskId` |
-| `interactives` | objetos (rectángulos) | Objetos interactivos (RF-21). Propiedades: `interactiveId`, `kind: "embed" \| "note"`, `title`, `url` (lista blanca de dominios) o `text` |
 
-- `manifest.json` lista las plantillas con `id@version`, nombre, miniatura y tamaño.
-- `world-core` expone `parseMap(tmj) → WorldMap { width, height, collisionGrid, areas, spotlights, spawns, desks, interactives }`,
-  usado igual en cliente y servidor.
+- `shared/world` expone `parseMap(tmj) → WorldMap { width, height, collisionGrid, rooms, spawns }` y
+  `roomAt(map, x, y)`, usados igual en cliente y servidor.
 
 ## 9. Protocolo de tiempo real
 
 ### 9.1 Conexión
 
-- Socket.IO en `/realtime`, transporte WebSocket (sin *long-polling* salvo *fallback*).
-- Autenticación en el *handshake* con la cookie de sesión (misma que REST).
-- Al conectar, el cliente emite `space:join { spaceId }`; el servidor verifica la membresía, lo mete
-  en la sala `space:<id>` y responde con el estado completo.
-- Cada evento lleva `v` (versión del protocolo). Si no coincide, el servidor responde `error { code: "PROTOCOL_MISMATCH" }` y el cliente pide recargar.
+- Socket.IO en `/realtime`, transporte WebSocket, autenticado con la cookie de sesión.
+- El cliente emite `space:join { spaceId }`; el servidor verifica la membresía y responde con el estado completo.
+- Cada evento lleva `v` (versión del protocolo); si no coincide → `error { code: "PROTOCOL_MISMATCH" }`.
 
-### 9.2 Catálogo de eventos (definidos con zod en `packages/shared/src/realtime/`)
+### 9.2 Catálogo de eventos (`packages/shared/src/contracts/realtime/`)
 
 | Dirección | Evento | Payload (resumen) | Notas |
 |---|---|---|---|
 | C→S | `space:join` | `{ spaceId }` | *ack* con `space:snapshot` |
-| S→C | `space:snapshot` | `{ self, players[], mapTemplateId, protocol }` | Estado completo inicial |
-| C→S | `player:move` | `{ seq, x, y, dir }` | Una casilla por evento; máx. 10/s |
-| S→C | `player:correct` | `{ seq, x, y }` | Movimiento rechazado: el cliente se reubica |
-| S→C | `world:delta` | `{ t, moved[], joined[], left[], changed[] }` | Enviado cada *tick* (15 Hz) solo si hay cambios |
-| C→S | `player:status` | `{ status }` | `available` / `busy` (elección de la persona) |
-| C→S | `player:activity` | `{ activity }` | `active` / `tab-away` / `idle` (detectado por el cliente, RN-05) |
-| S→C | `media:peers` | `{ listenTo: userId[], audience: userId[], areaId \| null }` | A quién debo oír/ver y quién puede oírme/verme (motor de proximidad) |
-| C→S | `chat:send` | `{ scope: "space" \| "nearby", body }` | *ack* con el mensaje guardado |
-| S→C | `chat:message` | `{ id, scope, authorId, body, createdAt }` | |
+| S→C | `space:snapshot` | `{ self, players[], rooms[], mapTemplateId }` | Estado inicial (incluye los `meetUri`) |
+| C→S | `player:move` | `{ x, y, dir }` | Una casilla por evento; máx. 10/s |
+| S→C | `player:correct` | `{ x, y }` | Paso rechazado: el cliente recoloca el avatar |
+| S→C | `world:delta` | `{ moved[], joined[], left[], changed[] }` | Cada *tick* (15 Hz) solo si hay cambios |
+| C→S | `player:status` | `{ status }` | `available` / `busy` |
+| C→S | `player:away` | `{ away }` | Pestaña oculta o inactividad |
+| S→C | `media:peers` | `{ peers: userId[] }` | Con quién debe estar conectado en el pasillo |
+| C→S / S→C | `chat:send` / `chat:message` | `{ body }` / `{ id, authorId, body, createdAt }` | |
 | C→S / S→C | `reaction` | `{ emoji }` / `{ userId, emoji }` | Efímero |
-| C→S / S→C | `ring:send` / `ring:received` | `{ toUserId }` / `{ fromUserId }` | RF-18. *Rate limit* RN-12 |
-| S→C | `space:kicked` | `{ reason }` | Expulsión (E2-S6) o sesión reemplazada |
-| S→C | `error` | `{ code, message }` | Códigos definidos en `shared` |
+| C→S / S→C | `ring:send` / `ring:received` | `{ toUserId }` / `{ fromUserId }` | RN-11 |
+| S→C | `space:kicked` | `{ reason }` | Expulsión o sesión reemplazada |
+| S→C | `error` | `{ code, message }` | Códigos en `shared` |
 
-"Seguir" (RF-17) **no** necesita eventos propios: el cliente calcula la ruta hacia la persona seguida
-con `findPath` (A\* en `world-core`) y emite `player:move` normales, que el servidor valida como cualquier paso.
-Los objetos interactivos (RF-21) tampoco: se definen en el mapa y se abren en el cliente.
+### 9.3 Movimiento
 
-### 9.3 Movimiento (servidor autoritativo con predicción en cliente)
+El cliente mueve el avatar al instante y envía `player:move`. El servidor comprueba que la casilla sea
+adyacente y transitable y respete el *rate limit*; si no, responde `player:correct` y el cliente simplemente
+recoloca el avatar (sin reconciliación por secuencia: en una oficina casi nunca ocurre).
+Los demás reciben el cambio en el siguiente `world:delta` y lo animan durante un *tick*.
 
-```mermaid
-sequenceDiagram
-    participant C as Cliente A
-    participant S as Servidor
-    participant O as Otros clientes
-    C->>C: tecla → mueve el sprite ya (predicción) y guarda seq
-    C->>S: player:move {seq, x, y, dir}
-    S->>S: ¿casilla adyacente? ¿transitable? ¿rate ok?
-    alt válido
-        S->>S: actualiza PlayerState, recalcula área
-        S-->>O: world:delta (siguiente tick, 66 ms)
-    else inválido
-        S-->>C: player:correct {seq, x, y}
-        C->>C: reubica el sprite
-    end
-    O->>O: interpolan la posición de A durante 1 tick
-```
+## 10. Charla de pasillo y salas de reunión
 
-## 10. Motor de proximidad, áreas privadas y spotlight
-
-### 10.1 Algoritmo (función pura en `world-core`)
+### 10.1 Motor de proximidad (función pura en `shared/world`)
 
 ```ts
-/** listenTo.get(A) = personas a las que A debe oír/ver. Es dirigido: con spotlight no es simétrico. */
-export function computeMediaGraph(
+export function computePeers(
   players: ReadonlyArray<PlayerState>,
   prev: ReadonlyMap<string, ReadonlySet<string>>,
-  cfg: { radius: number; hysteresis: number; maxPeers: number; maxSpotlight: number },
-): { listenTo: Map<string, Set<string>>; audience: Map<string, Set<string>> };
+  cfg: { radius: number; hysteresis: number; maxPeers: number },
+): Map<string, Set<string>>;
 ```
 
-1. Indexar jugadores en una **rejilla espacial** de celdas de tamaño `radius + hysteresis` (coste ~O(n·k), no O(n²)).
-2. Para cada par candidato (A, B) — relación **simétrica**:
-   - Si A o B están en un área privada → conectados **solo si** `A.areaId === B.areaId` (RN-03).
-   - Si no, si alguno está `busy` → no conectados (RN-04).
-   - Si no, conectados si `dist ≤ radius`, o si ya lo estaban y `dist ≤ radius + hysteresis` (RN-01, RN-02).
-3. Recortar a `maxPeers` por jugador por distancia (RN-07).
-4. **Spotlight** — relación **dirigida** (RN-11): para cada S con `onSpotlight` (máx. `maxSpotlight`), añadir S a
-   `listenTo` de todos los jugadores de su alcance (todo el espacio o su área). No se añade el público a `listenTo(S)`.
-5. `audience(A)` = { B | A ∈ listenTo(B) } (se usa para los permisos de publicación).
-6. `inConversation(A)` = `listenTo(A)` sin contar *spotlights* ≠ ∅.
-7. El servidor **compara con el grafo anterior** y solo emite `media:peers` a quien cambie.
+1. Descartar a quien está en una sala (`roomId !== null`, RN-03) o *Ocupado* (RN-04).
+2. Para cada par (A, B) del resto (**todos contra todos**, con n ≤ 50 son ≤ 1 225 pares):
+   conectados si `dist ≤ radius`, o si ya lo estaban y `dist ≤ radius + hysteresis` (RN-01, RN-02).
+3. Recortar a `maxPeers` (8) por distancia (RN-07).
+4. El servidor compara con el resultado anterior y solo emite `media:peers` a quien cambie.
 
-El estado `tab-away` **no** desconecta: el cliente silencia micro y cámara (RN-05), pero la persona
-sigue en la conversación para poder volver al instante (como Mary en el vídeo).
+### 10.2 Medios del pasillo con LiveKit Cloud
 
-Se ejecuta en cada *tick* del espacio en el que hubo movimientos o cambios de estado.
+- **Una sala de LiveKit por espacio** (`space_<spaceId>`); identidad = `userId`. El servidor emite el token.
+- El cliente publica micro y cámara (simulcast) y **se suscribe solo a las pistas de sus `peers`**
+  (`autoSubscribe: false`). El vídeo se desvanece según la distancia.
+- **Riesgo aceptado (RN-12):** un cliente modificado de un miembro del espacio podría suscribirse a pistas
+  de pasillo que no le tocan. Es coherente con "el pasillo no es privado" y se comunica en la interfaz.
+  Post-MVP: `setTrackSubscriptionPermissions` por publicador.
 
-### 10.2 Medios con LiveKit
-
-- **Una sala de LiveKit por espacio** (`space_<spaceId>`); identidad del participante = `userId`.
-- El servidor emite el **token** (`POST /api/spaces/:id/media-token`) con `canPublish`, `canSubscribe`
-  y **sin** autosuscripción en el cliente.
-- Cuando llega `media:peers`, el `MediaController` del cliente:
-  1. **Se suscribe** a las pistas de `listenTo` y se desuscribe del resto.
-  2. **Restringe quién puede suscribirse a sus propias pistas** a `audience` con
-     `localParticipant.setTrackSubscriptionPermissions(false, audience.map(...))`.
-     El SFU hace cumplir este permiso: aunque un cliente malicioso intente suscribirse, el SFU
-     lo rechaza porque el publicador no se lo ha permitido.
-- **Defensa en profundidad (servidor):** el módulo `media` escucha los webhooks de LiveKit y, ante una
-  suscripción no autorizada según el motor de proximidad, la revoca con la API de servidor
-  (`RoomServiceClient.updateSubscriptions`) y registra un evento de seguridad.
-- **Calidad:** simulcast activado; las miniaturas se suscriben a la capa baja, el vídeo ampliado o la
-  pantalla compartida a la capa alta.
-- **Desvanecimiento:** la opacidad de cada vídeo (y, opcionalmente, el volumen con Web Audio) baja a medida
-  que la distancia se acerca al límite, como en el vídeo de referencia.
-- **Fuera de la pestaña:** al detectar `visibilitychange → hidden`, el `MediaController` silencia micro y
-  cámara, recuerda el estado previo y emite `player:activity { activity: "tab-away" }`; al volver, lo restaura.
+### 10.3 Salas de reunión con Google Meet
 
 ```mermaid
 sequenceDiagram
-    participant A as Cliente A
-    participant S as Servidor Plaza
-    participant L as LiveKit
-    participant B as Cliente B
-    A->>S: player:move (se acerca a B)
-    S->>S: computeMediaGraph → A↔B conectados
-    S-->>A: media:peers {listenTo:[B], audience:[B]}
-    S-->>B: media:peers {listenTo:[A], audience:[A]}
-    A->>L: permitir a B + suscribirse a B
-    B->>L: permitir a A + suscribirse a A
-    L-->>A: pistas de B
-    L-->>B: pistas de A
+    participant A as Ana (owner)
+    participant S as Servidor
+    participant G as API de Meet
+    A->>S: crear espacio (plantilla con 3 salas)
+    S-->>A: redirige a Google: consentimiento meetings.space.created
+    A->>S: callback con código (token de un solo uso)
+    loop por cada sala del mapa
+      S->>G: POST /v2/spaces {config.accessType: TRUSTED}
+      G-->>S: meetingUri
+    end
+    S->>S: guarda MeetingRoom(areaId, meetUri) y descarta el token
 ```
+
+```mermaid
+sequenceDiagram
+    participant L as Luis
+    participant S as Servidor
+    participant K as LiveKit Cloud
+    L->>S: player:move (pisa la Sala 1)
+    S->>S: roomId = "sala-1" → sale de computePeers
+    S->>K: mutePublishedTrack(Luis, audio y vídeo)
+    S-->>L: media:peers [] + world:delta (roomId)
+    L->>L: tarjeta "Estás en Sala 1 · Unirse a la reunión"
+    L->>L: clic → window.open(meetUri) en pestaña nueva
+```
+
+- **Creación:** al crear el espacio se pide al *owner* el *scope* `meetings.space.created` (autorización incremental,
+  solo esa vez). Se crea un *space* de Meet por sala con `accessType: TRUSTED` (miembros de la organización e
+  invitados). El *token* se usa y se descarta: **Plaza no guarda credenciales de Google**.
+- **Alternativa manual:** si el *owner* no concede el permiso o la app no está verificada, puede pegar un
+  enlace de Meet por sala (`source: "manual"`).
+- **Entrar en una sala:** el servidor calcula `roomId`, saca a la persona de la proximidad y **silencia sus pistas
+  en LiveKit** con la API de servidor (defensa aunque el cliente falle). El cliente muestra la tarjeta de la sala.
+- **Salir de la sala:** el cliente reactiva sus medios (si estaban activos antes) y vuelve a la proximidad.
+- **Presencia en salas:** se basa en la posición del avatar en el mapa (quién está dentro de la sala), no en
+  quién está conectado al Meet. Mostrar los participantes reales de Meet queda para post-MVP.
 
 ## 11. Transversales
 
@@ -421,85 +361,91 @@ sequenceDiagram
 
 | Tema | Decisión |
 |---|---|
-| Sesión | Cookie `plaza_sid` con token aleatorio de 32 bytes; en BD se guarda su hash SHA-256. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
-| Contraseñas | Argon2id (`@node-rs/argon2`). Mínimo 10 caracteres. |
-| CSRF | `SameSite=Lax` + cabecera personalizada obligatoria (`X-Plaza-Client`) en peticiones que modifican. |
-| Validación | zod en **todas** las entradas REST y de socket. Entradas inválidas → 400 / `error`. |
-| Rate limit | `@fastify/rate-limit` en auth; *token bucket* por socket para `player:move`, `chat:send`, `reaction`. |
-| Autorización | Guardas por rol en servicios (`assertOwner`, `assertMember`). Nunca en el cliente. |
-| Cabeceras | `@fastify/helmet` con CSP estricta (orígenes propios + LiveKit). `frame-src` limitado a la lista blanca de dominios de los objetos interactivos; los `iframe` llevan `sandbox`. |
-| Secretos | Solo por variables de entorno validadas con zod al arrancar (`platform/config.ts`). |
+| Login | OAuth 2.0 *authorization code* + PKCE + `state` con `@fastify/oauth2`; `id_token` verificado con `google-auth-library` (audiencia, emisor, caducidad). *Scopes*: `openid email profile`. |
+| Sesión | Cookie `plaza_sid` con token aleatorio de 32 bytes; en BD se guarda su hash. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
+| Dominio | Si el espacio tiene `allowedDomain`, se comprueba el claim `hd`/`email_verified` del `id_token`. |
+| CSRF | `SameSite=Lax` + cabecera `X-Plaza-Client` obligatoria en peticiones que modifican. |
+| Validación | zod en **todas** las entradas REST y de socket. |
+| Rate limit | *Token bucket* por socket para `player:move`, `chat:send`, `reaction`, `ring:send`. |
+| Autorización | Guardas `assertOwner`, `assertMember` en los servicios. |
+| Cabeceras | `@fastify/helmet` con CSP (orígenes propios + LiveKit Cloud). |
+| Secretos | Variables de entorno validadas con zod al arrancar. |
+| Tests | Ruta de login de prueba **solo** si `AUTH_TEST_LOGIN=true` (nunca en producción; el arranque falla si está activa con `NODE_ENV=production`). |
 
 ### 11.2 Errores
 
-- Backend: clase `AppError { code, httpStatus, message }`; un *error handler* central la traduce a JSON
-  `{ error: { code, message } }`. Los códigos viven en `@plaza/shared` para que el cliente los traduzca.
-- Frontend: *error boundaries* por página; *toasts* para errores recuperables; reconexión automática.
+`AppError { code, httpStatus }` con un *handler* central → `{ error: { code, message } }`. Los códigos viven
+en `shared` para que el cliente los traduzca.
 
 ### 11.3 Observabilidad
 
-- Logs JSON con `pino` (con `requestId`/`socketId`/`userId`/`spaceId`).
-- Métricas Prometheus (`prom-client`): conectados por espacio, duración de *tick*, eventos rechazados,
-  latencia de `media:peers` → pista recibida (reportada por el cliente).
-- Errores de cliente y servidor a Sentry (o equivalente de código abierto, p. ej. GlitchTip).
+Logs JSON con `pino` (`requestId`, `userId`, `spaceId`), errores de cliente y servidor en **Sentry**, y
+`GET /api/health` con conectados por espacio y duración media del *tick*. Métricas más ricas, post-MVP.
 
-### 11.4 Configuración y entornos
+### 11.4 Entornos
 
 | Entorno | Descripción |
 |---|---|
-| `local` | `pnpm dev` + `docker compose up` (Postgres, LiveKit en modo dev). |
-| `ci` | Servicios en contenedores; Playwright con medios falsos de Chromium. |
-| `staging` / `beta` | Una VM con Docker Compose, Caddy (TLS automático), LiveKit con TURN/TLS en 443, copias diarias de Postgres. |
+| `local` | `pnpm dev` + `docker compose up` (solo Postgres); proyecto de LiveKit Cloud y cliente OAuth de desarrollo. |
+| `ci` | Postgres en contenedor; Playwright con medios falsos y login de prueba. |
+| `beta` | Una VM o PaaS con Docker (Caddy para TLS), Postgres gestionado o con copia diaria. |
 
 ## 12. Registro de decisiones (ADR)
 
-### ADR-001 · Monorepo con pnpm workspaces + Turborepo
-- **Decisión:** un repositorio con `apps/*` y `packages/*`, pnpm y Turborepo (caché de *build*/*test*).
-- **Motivo:** compartir contratos y lógica de dominio sin publicar paquetes; un solo PR para cambios de punta a punta.
-- **Alternativas:** repos separados (duplica contratos), Nx (más potente, más complejo de lo necesario).
+### ADR-001 · Monorepo con pnpm workspaces
+- **Decisión:** `apps/web`, `apps/server`, `packages/shared`, `packages/maps`; scripts con `pnpm -r`.
+- **Motivo:** compartir contratos y lógica sin publicar paquetes, con el mínimo de herramientas.
+- **Alternativas:** Turborepo o Nx (caché de tareas; se añade si el CI se vuelve lento).
 
 ### ADR-002 · Tiempo real con Socket.IO
 - **Decisión:** Socket.IO 4 sobre Fastify.
-- **Motivo:** salas, *acks*, reconexión y adaptador Redis listos; muy conocido.
-- **Alternativas:** `ws` puro (hay que construir salas/reconexión), Colyseus (acopla el modelo de estado a su *framework*).
+- **Motivo:** salas, *acks* y reconexión listos. **Alternativas:** `ws` puro, Colyseus.
 
-### ADR-003 · Medios: SFU LiveKit con suscripción controlada por el servidor
-- **Decisión:** LiveKit *self-hosted*, una sala por espacio, suscripciones y permisos dirigidos por el motor de proximidad del servidor.
-- **Motivo:** escala mejor que P2P, TURN embebido, simulcast, SDKs en TS para cliente y servidor, código abierto.
-- **Alternativas:** malla P2P (sencilla y didáctica, pero la CPU y el ancho de banda crecen con N² — útil solo como prototipo de E5); mediasoup (más control, mucho más código); servicios de pago por minuto (coste y dependencia).
+### ADR-003 · Charla de pasillo con LiveKit Cloud
+- **Decisión:** LiveKit Cloud, una sala por espacio, suscripción selectiva desde el cliente según `media:peers`.
+- **Motivo:** cero servidores de medios y TURN que operar; mismo SDK que LiveKit *self-hosted* para migrar si el coste crece.
+- **Alternativas:** LiveKit propio (más operación), malla P2P (no escala a grupos), Google Meet (no se puede incrustar, ver ADR-010).
+- **Riesgo aceptado:** privacidad del pasillo basada en el cliente (RN-12).
 
-### ADR-004 · Render: Phaser 3 para el mundo + React para la UI
-- **Decisión:** Phaser 3 solo para el canvas; React para todo lo demás.
-- **Motivo:** Phaser soporta mapas de Tiled, cámaras, animaciones de sprites y *input* sin código propio; React es más productivo para formularios y paneles.
-- **Alternativas:** PixiJS (solo render, hay que construir tilemaps/cámara), canvas 2D propio (máximo control, mucho más trabajo).
+### ADR-004 · Phaser 3 para el mundo + React para la UI
+- **Decisión:** Phaser solo para el canvas; React y `@livekit/components-react` para lo demás.
+- **Motivo:** Phaser trae mapas de Tiled, cámara y animaciones; los componentes de LiveKit ahorran la UI de medios.
 
-### ADR-005 · Movimiento por casillas y servidor autoritativo
-- **Decisión:** el mundo es una rejilla; el cliente pide mover una casilla y el servidor valida.
-- **Motivo:** validación trivial (adyacencia + colisión), ancho de banda mínimo y proximidad determinista; es el mismo modelo que el producto de referencia.
-- **Alternativas:** movimiento continuo con física (más complejo de validar y sincronizar).
+### ADR-005 · Movimiento por casillas validado en el servidor
+- **Decisión:** el cliente mueve y avisa; el servidor valida adyacencia y colisión y, si rechaza, el cliente recoloca.
+- **Motivo:** validación trivial y proximidad determinista, sin la complejidad de la reconciliación de videojuegos.
 
-### ADR-006 · Mapas en Tiled como recursos versionados
-- **Decisión:** plantillas en `packages/maps`, referenciadas como `id@version` desde `Space.mapTemplateId`.
-- **Motivo:** sin editor propio en el MVP; versionar evita romper espacios existentes al cambiar una plantilla.
-- **Alternativas:** mapas en BD (necesario cuando exista el editor, post-MVP).
+### ADR-006 · Mapas de Tiled con salas rectangulares
+- **Decisión:** plantillas versionadas (`id@version`) en `packages/maps`; salas solo rectangulares.
+- **Motivo:** sin editor propio en el MVP; los rectángulos simplifican la geometría y la validación.
 
-### ADR-007 · Sesiones en servidor con cookie
-- **Decisión:** sesiones guardadas en Postgres, cookie `HttpOnly`.
-- **Motivo:** revocables al instante (logout, expulsión), sirven igual para REST y WebSocket, sin tokens en JavaScript.
-- **Alternativas:** JWT (no revocable sin lista negra), proveedor externo de identidad (post-MVP con SSO).
+### ADR-007 · Login solo con Google
+- **Decisión:** OpenID Connect con Google; el usuario se identifica por `sub`; sesiones propias en Postgres.
+- **Motivo:** sin contraseñas ni recuperación de cuentas; los pilotos ya usan Google Workspace; permite restringir por dominio.
+- **Alternativas:** email y contraseña (más código y más riesgo), proveedores múltiples (post-MVP, el modelo por `sub` lo permite).
 
 ### ADR-008 · Prisma como ORM
-- **Decisión:** Prisma + migraciones versionadas.
-- **Motivo:** tipos generados, migraciones sencillas, muy documentado.
-- **Alternativas:** Drizzle (más ligero y cercano a SQL; opción válida si el equipo la prefiere).
+- **Decisión:** Prisma + migraciones versionadas. **Alternativa:** Drizzle.
 
-### ADR-009 · Monolito modular
-- **Decisión:** un proceso `server` con módulos independientes y dependencias explícitas.
-- **Motivo:** menor coste operativo; los límites de módulo permiten extraer `world` a su propio servicio cuando haga falta escalar.
+### ADR-009 · Monolito modular con adaptadores
+- **Decisión:** un proceso `server`; los servicios externos detrás de interfaces en `adapters/`.
+- **Motivo:** menor coste operativo y proveedores intercambiables.
 
-## 13. Camino de escalado (post-MVP)
+### ADR-010 · Salas de reunión con Google Meet
+- **Decisión:** cada sala del mapa se enlaza a un *space* permanente de Google Meet creado con la API REST de Meet;
+  al entrar en la sala se ofrece "Unirse a la reunión", que abre Meet en una pestaña nueva.
+- **Motivo:** Meet ya resuelve reuniones grandes, pantalla compartida, grabación, transcripción y la privacidad de
+  la sala; nos ahorra las salas de medios, la vigilancia de suscripciones y la pantalla compartida propias.
+- **Restricciones conocidas:** Meet **no se puede incrustar** en otra web (bloqueo de iframes); la API de medios
+  en tiempo real de Meet sigue en vista previa para desarrolladores y solo permite recibir medios.
+- **Alternativas descartadas:**
+  - *Todo con Meet* (cada persona siempre en su propio Meet): se pierde la conexión automática sobre el mapa,
+    obliga a estar todo el día en una llamada y cambiar de pestaña para cada charla.
+  - *Salas con LiveKit dentro del mapa*: mejor experiencia pero más desarrollo; es el plan B si O6 sale bajo.
 
-1. Varias instancias de `server` con **adaptador Redis** de Socket.IO y *sticky sessions*.
-2. **Afinidad por espacio**: todas las conexiones de un espacio van a la misma instancia (enrutado por `spaceId`), manteniendo el `SpaceRuntime` en memoria.
-3. LiveKit en clúster (multi-nodo con Redis).
-4. Extraer el módulo `world` a un servicio propio si el *tick* se convierte en cuello de botella.
+## 13. Evolución post-MVP
+
+1. Si la métrica O6 es baja → salas dentro del mapa con LiveKit (una sala de LiveKit por área).
+2. Privacidad del pasillo con permisos de suscripción por publicador.
+3. Varias instancias de `server` con adaptador Redis de Socket.IO y afinidad por espacio.
+4. LiveKit *self-hosted* si el coste de LiveKit Cloud lo justifica.
