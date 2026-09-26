@@ -72,6 +72,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Integration tests of media (E5-S3, E6-S3) talk to a real LiveKit dev server (standards §9).
+      - name: Start LiveKit (dev mode)
+        run: docker run -d --name livekit -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server:v1.9 --dev --bind 0.0.0.0
+
       - name: Unit and integration tests
         run: pnpm test
 
@@ -86,7 +90,6 @@ jobs:
 
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
-        continue-on-error: true
 
   e2e:
     name: E2E (Playwright)
