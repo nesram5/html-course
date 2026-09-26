@@ -1,0 +1,59 @@
+{
+  "appName": "Plaza",
+  "home": {
+    "title": "Plaza",
+    "tagline": "La oficina virtual de tu equipo: acércate a alguien y hablad, como en la oficina.",
+    "comingSoon": "Muy pronto podrás entrar con tu cuenta de Google y crear el espacio de tu equipo.",
+    "serverStatus": {
+      "label": "Estado del servidor",
+      "checking": "Comprobando…",
+      "online": "Conectado (versión {{version}})",
+      "offline": "No disponible"
+    }
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o se ha movido.",
+    "backHome": "Volver al inicio"
+  },
+  "errorBoundary": {
+    "title": "Algo ha fallado",
+    "description": "Ha ocurrido un error inesperado. Ya nos ha llegado el aviso.",
+    "retry": "Reintentar"
+  },
+  "toasts": {
+    "dismiss": "Cerrar aviso",
+    "region": "Avisos"
+  },
+  "errors": {
+    "NETWORK_ERROR": "No hay conexión con el servidor. Comprueba tu red.",
+    "UNAUTHORIZED": "Tu sesión ha caducado. Vuelve a entrar.",
+    "FORBIDDEN": "No tienes permiso para hacer esto.",
+    "NOT_FOUND": "No lo encontramos.",
+    "VALIDATION_ERROR": "Revisa los datos introducidos.",
+    "CONFLICT": "Alguien ha cambiado esto a la vez. Inténtalo de nuevo.",
+    "RATE_LIMITED": "Vas demasiado rápido. Espera un momento.",
+    "INTERNAL": "Ha ocurrido un error inesperado.",
+    "OAUTH_FAILED": "No se completó el inicio de sesión.",
+    "UNKNOWN_AVATAR": "Ese avatar no existe.",
+    "UNKNOWN_MAP_TEMPLATE": "Esa plantilla de oficina no existe.",
+    "INVALID_INVITE": "Esta invitación ya no es válida.",
+    "DOMAIN_NOT_ALLOWED": "Tu cuenta no pertenece al dominio permitido de este espacio.",
+    "LAST_OWNER": "El espacio necesita al menos una persona administradora.",
+    "NOT_A_MEMBER": "No eres miembro de este espacio.",
+    "UNKNOWN_ROOM": "Esa sala no existe.",
+    "INVALID_MEET_URI": "El enlace debe empezar por https://meet.google.com/.",
+    "MEETING_PROVIDER_ERROR": "Google Meet no respondió. Puedes reintentar o pegar el enlace a mano.",
+    "SPACE_FULL": "El espacio está lleno (máximo 50 personas).",
+    "PROTOCOL_MISMATCH": "Hay una versión nueva de Plaza. Recarga la página.",
+    "SESSION_REPLACED": "Has abierto Plaza en otra pestaña.",
+    "NOT_IN_SPACE": "Todavía no has entrado en el espacio.",
+    "MEDIA_PROVIDER_ERROR": "No se pudo conectar el audio y el vídeo.",
+    "RING_COOLDOWN": "Espera un poco antes de volver a llamar.",
+    "UNKNOWN_USER": "Esa persona no existe.",
+    "UNKNOWN_THEME": "Ese estilo no existe para esta oficina.",
+    "UNKNOWN_DESK": "Ese escritorio no existe.",
+    "DESK_TAKEN": "Ese escritorio ya tiene dueño.",
+    "UNKNOWN_DECOR_ITEM": "Ese objeto no está en el catálogo."
+  }
+}
