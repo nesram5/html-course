@@ -532,6 +532,36 @@ describe('spaces module (E2-S2..S6)', () => {
       expect(response.json<ErrorResponse>().error.code).toBe('BANNED_FROM_SPACE');
     });
 
+    it('hands the administration to a member, and only the last owner cannot give it up', async () => {
+      const space = await createSpace();
+      await joinAs(luis, space);
+      const luisUrl = apiPath(API_PATHS.member, { spaceId: space.id, userId: luis.user.id });
+      const anaUrl = apiPath(API_PATHS.member, { spaceId: space.id, userId: ana.user.id });
+
+      const lastOwner = await request(ana, 'PATCH', anaUrl, { role: 'MEMBER' });
+      const promote = await request(ana, 'PATCH', luisUrl, { role: 'OWNER' });
+      const again = await request(ana, 'PATCH', luisUrl, { role: 'OWNER' });
+      // Luis now administers the space: he can take it back from Ana.
+      const demoteAna = await request(luis, 'PATCH', anaUrl, { role: 'MEMBER' });
+      const demoteLuis = await request(luis, 'PATCH', luisUrl, { role: 'MEMBER' });
+      const invalid = await request(luis, 'PATCH', anaUrl, { role: 'ADMIN' });
+
+      expect(lastOwner.statusCode).toBe(409);
+      expect(lastOwner.json<ErrorResponse>().error.code).toBe('LAST_OWNER');
+      expect(promote.statusCode).toBe(204);
+      expect(again.statusCode).toBe(204);
+      expect(demoteAna.statusCode).toBe(204);
+      expect(demoteLuis.json<ErrorResponse>().error.code).toBe('LAST_OWNER');
+      expect(invalid.statusCode).toBe(400);
+      const members = MembersResponseSchema.parse(
+        (await request(luis, 'GET', apiPath(API_PATHS.members, { spaceId: space.id }))).json(),
+      ).members;
+      expect(Object.fromEntries(members.map((m) => [m.userId, m.role]))).toEqual({
+        [ana.user.id]: 'MEMBER',
+        [luis.user.id]: 'OWNER',
+      });
+    });
+
     it('lists bans to owners and lets them lift one: the person can join again', async () => {
       const space = await createSpace();
       await joinAs(luis, space);

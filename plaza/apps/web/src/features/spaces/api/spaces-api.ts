@@ -13,6 +13,7 @@ import {
   SpaceResponseSchema,
   SpacesResponseSchema,
   type CreateSpaceBody,
+  type Role,
   type UpdateSpaceBody,
 } from '@plaza/shared';
 
@@ -68,6 +69,14 @@ export async function fetchMembers(spaceId: string, o: Signal = {}) {
 
 export function removeMember(spaceId: string, userId: string) {
   return http(apiPath(API_PATHS.member, { spaceId, userId }), null, { method: 'DELETE' });
+}
+
+/** Makes a member an owner, or an owner a member again (owner only). */
+export function setMemberRole(spaceId: string, userId: string, role: Role) {
+  return http(apiPath(API_PATHS.member, { spaceId, userId }), null, {
+    method: 'PATCH',
+    body: { role },
+  });
 }
 
 /** People removed from the space (owner only, E2-S6 follow-up). */

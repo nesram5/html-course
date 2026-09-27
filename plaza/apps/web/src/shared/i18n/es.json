@@ -60,7 +60,7 @@
     },
     "rights": {
       "title": "Tus derechos",
-      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil»: se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
+      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil» (si eres la única persona que administra un espacio con más miembros, antes pasa la administración a otra persona desde «Miembros»): se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
       "profile": "Ir a Mi perfil",
       "feedback": "Escribir al equipo de Plaza"
     }

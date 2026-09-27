@@ -1,4 +1,4 @@
-import type { CreateSpaceBody, UpdateSpaceBody } from '@plaza/shared';
+import type { CreateSpaceBody, Role, UpdateSpaceBody } from '@plaza/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -14,6 +14,7 @@ import {
   joinSpace,
   regenerateInviteLink,
   removeMember,
+  setMemberRole,
   spacesKeys,
   unbanMember,
   updateRoomLink,
@@ -114,6 +115,16 @@ export function useRemoveMember(spaceId: string) {
         queryClient.invalidateQueries({ queryKey: spacesKeys.members(spaceId) }),
         queryClient.invalidateQueries({ queryKey: spacesKeys.bans(spaceId) }),
       ]),
+  });
+}
+
+/** Hands the administration to a member (or takes it back): `LAST_OWNER` keeps one owner. */
+export function useSetMemberRole(spaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: Role }) =>
+      setMemberRole(spaceId, userId, role),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: spacesKeys.members(spaceId) }),
   });
 }
 

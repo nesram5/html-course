@@ -79,6 +79,10 @@ export class SpacesRepository {
     await this.db.membership.deleteMany({ where: { spaceId, userId } });
   }
 
+  async setRole(spaceId: string, userId: string, role: Role): Promise<void> {
+    await this.db.membership.updateMany({ where: { spaceId, userId }, data: { role } });
+  }
+
   countOwners(spaceId: string): Promise<number> {
     return this.db.membership.count({ where: { spaceId, role: 'OWNER' } });
   }

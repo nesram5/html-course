@@ -69,7 +69,11 @@
     "kickConfirm": "¿Expulsar a {{name}}? Perderá el acceso al instante.",
     "kicked": "{{name}} ya no es miembro del espacio.",
     "you": "(tú)",
-    "desk": "Escritorio"
+    "desk": "Escritorio",
+    "loading": "Cargando los miembros…",
+    "makeOwner": "Hacer administrador/a",
+    "makeOwnerConfirm": "¿Dar a {{name}} la administración del espacio? Podrá gestionar miembros, invitaciones, salas y estilo, y quitarte la administración.",
+    "madeOwner": "{{name}} ya administra el espacio."
   },
   "bans": {
     "title": "Personas expulsadas",

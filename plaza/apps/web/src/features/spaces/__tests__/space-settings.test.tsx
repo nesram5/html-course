@@ -140,6 +140,39 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
     expect(api.callsTo('DELETE /api/spaces/space-1/members/user-luis')).toHaveLength(1);
   });
 
+  it('hands the administration to a member after confirming (E8-S6)', async () => {
+    const api = settingsApi({ 'PATCH /api/spaces/space-1/members/user-luis': { status: 204 } });
+    const user = userEvent.setup();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    const luis = (await screen.findByText('luis@acme.com')).closest('tr');
+    if (luis === null) throw new Error('row not found');
+    await user.click(within(luis).getByRole('button', { name: 'Hacer administrador/a' }));
+    await user.click(within(luis).getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByText('Luis ya administra el espacio.')).toBeInTheDocument();
+    expect(api.callsTo('PATCH /api/spaces/space-1/members/user-luis')[0]?.body).toEqual({
+      role: 'OWNER',
+    });
+  });
+
+  it('says when the members could not be loaded, and retries', async () => {
+    let fail = true;
+    settingsApi({
+      'GET /api/spaces/space-1/members': () =>
+        fail ? apiError(500, 'INTERNAL') : { body: { members: [member({})] } },
+    });
+    const user = userEvent.setup();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 5000 });
+    expect(screen.queryByRole('table')).toBeNull();
+    fail = false;
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('ana@acme.com')).toBeInTheDocument();
+  });
+
   it('lists removed people and readmits them with "Readmitir"', async () => {
     let bans = [
       {

@@ -8,6 +8,7 @@ import {
   JoinResponseSchema,
   MapTemplatesResponseSchema,
   MemberParamsSchema,
+  UpdateMemberBodySchema,
   MembersResponseSchema,
   SpaceBanParamsSchema,
   SpaceBansResponseSchema,
@@ -102,6 +103,13 @@ export function registerSpacesRoutes(app: FastifyInstance, deps: SpacesRoutesDep
   app.delete(API_PATHS.member, auth, async (request, reply) => {
     const { spaceId, userId } = MemberParamsSchema.parse(request.params);
     await spaces.removeMember(spaceId, currentUser(request).userId, userId);
+    return reply.code(204).send();
+  });
+
+  app.patch(API_PATHS.member, auth, async (request, reply) => {
+    const { spaceId, userId } = MemberParamsSchema.parse(request.params);
+    const { role } = UpdateMemberBodySchema.parse(request.body);
+    await spaces.setMemberRole(spaceId, currentUser(request).userId, userId, role);
     return reply.code(204).send();
   });
 

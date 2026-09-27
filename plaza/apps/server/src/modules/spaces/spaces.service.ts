@@ -270,6 +270,25 @@ export class SpacesService {
       await this.deps.notifier.deskUpdated(spaceId, freeDesk(target.deskId));
   }
 
+  /**
+   * Changes the role of a member (owner only): `OWNER` hands the administration over, so the
+   * creator is never locked in (E8-S6, `SOLE_OWNER` on account deletion); `MEMBER` takes it back.
+   * The last owner cannot stop being one (409 `LAST_OWNER`). Serialized per space with the other
+   * membership changes, so two owners demoting each other cannot leave the space without one.
+   */
+  setMemberRole(spaceId: string, actorId: string, targetUserId: string, role: Role): Promise<void> {
+    return this.deps.deskChanges.run(spaceId, async () => {
+      await this.assertOwner(spaceId, actorId);
+      const target = await this.#repository.findMembership(spaceId, targetUserId);
+      if (target === null) throw new AppError('NOT_FOUND', 'Member not found');
+      if (target.role === role) return;
+      if (role === 'MEMBER' && (await this.#repository.countOwners(spaceId)) <= 1) {
+        throw new AppError('LAST_OWNER');
+      }
+      await this.#repository.setRole(spaceId, targetUserId, role);
+    });
+  }
+
   /** People removed from the space (owner only), newest first. */
   async bans(spaceId: string, actorId: string): Promise<SpaceBanDto[]> {
     await this.assertOwner(spaceId, actorId);
