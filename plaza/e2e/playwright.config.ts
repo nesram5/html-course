@@ -1,11 +1,14 @@
+import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
 import { defineConfig, devices } from '@playwright/test';
 
-const WEB_PORT = 5173;
+const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5173);
 const API_PORT = Number(process.env.E2E_API_PORT ?? 3100);
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ?? 'postgresql://postgres@localhost:5432/plaza_e2e';
+/** Maps catalog with one template and two avatars (the real catalog may still be empty). */
+const MAPS_DIR = fileURLToPath(new URL('./fixtures/maps', import.meta.url));
 
 /**
  * E2E tests (standards §7): real server + Vite dev server, fake media devices and the
@@ -47,11 +50,12 @@ export default defineConfig({
         LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET ?? 'secret',
         AUTH_TEST_LOGIN: 'true',
         RATE_LIMIT_PER_MINUTE: '10000',
+        MAPS_DIR,
       },
     },
     {
       name: 'web',
-      command: 'pnpm --filter @plaza/web exec vite --port 5173 --strictPort',
+      command: `pnpm --filter @plaza/web exec vite --port ${String(WEB_PORT)} --strictPort`,
       cwd: '..',
       url: `http://localhost:${String(WEB_PORT)}`,
       reuseExistingServer: !process.env.CI,
