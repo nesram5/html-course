@@ -9,71 +9,57 @@ import { TokenVerifier } from 'livekit-server-sdk';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { LiveKitMediaProvider } from '../../../adapters/livekit.js';
-import { AppError } from '../../../platform/errors.js';
 import { buildTestApp, type TestApp } from '../../../test/app.js';
 import { testConfig } from '../../../test/config.js';
 import { resetDatabase } from '../../../test/db.js';
-import { createMediaModule, type MediaAuth } from '../index.js';
-
-const USER_HEADER = 'x-test-user-id';
-
-/** Auth stub: the header plays the role of the session cookie. */
-const stubAuth: MediaAuth = {
-  requireUser: (request) => {
-    if (typeof request.headers[USER_HEADER] !== 'string') {
-      return Promise.reject(new AppError('UNAUTHORIZED'));
-    }
-    return Promise.resolve();
-  },
-  currentUserId: (request) => String(request.headers[USER_HEADER]),
-};
-
-const mediaModule = createMediaModule(() => stubAuth);
+import { signIn } from '../../../test/session.js';
 
 describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
   let t: TestApp;
   let spaceId: string;
   let memberId: string;
-  let outsiderId: string;
+  /** Session cookies of the owner (member) and of someone outside the space. */
+  let memberCookie: string;
+  let outsiderCookie: string;
 
   beforeAll(async () => {
-    t = await buildTestApp({ modules: [mediaModule] });
+    t = await buildTestApp();
   });
 
   beforeEach(async () => {
     const db = t.container.db;
     await resetDatabase(db);
     t.media.tokens.length = 0;
-    const ana = await db.user.create({
-      data: { googleSub: 'sub-ana', email: 'ana@acme.com', displayName: 'Ana' },
-    });
-    const luis = await db.user.create({
-      data: { googleSub: 'sub-luis', email: 'luis@acme.com', displayName: 'Luis' },
-    });
+    const ana = await signIn(t.app, 'ana@acme.com', { displayName: 'Ana' });
+    const luis = await signIn(t.app, 'luis@acme.com', { displayName: 'Luis' });
     const space = await db.space.create({
       data: {
         name: 'Oficina Acme',
         slug: 'oficina-acme',
         mapTemplateId: 'office-small@1',
-        ownerId: ana.id,
+        ownerId: ana.user.id,
         inviteTokenHash: 'hash-acme',
-        memberships: { create: { userId: ana.id, role: 'OWNER' } },
+        memberships: { create: { userId: ana.user.id, role: 'OWNER' } },
       },
     });
     spaceId = space.id;
-    memberId = ana.id;
-    outsiderId = luis.id;
+    memberId = ana.user.id;
+    memberCookie = ana.cookie;
+    outsiderCookie = luis.cookie;
   });
 
   afterAll(async () => {
     await t.app.close();
   });
 
-  function requestToken(options: { spaceId: string; userId?: string; clientHeader?: boolean }) {
+  function requestToken(
+    app: TestApp['app'],
+    options: { spaceId: string; cookie?: string; clientHeader?: boolean },
+  ) {
     const headers: Record<string, string> = {};
     if (options.clientHeader !== false) headers[CLIENT_HEADER] = 'test';
-    if (options.userId !== undefined) headers[USER_HEADER] = options.userId;
-    return t.app.inject({
+    if (options.cookie !== undefined) headers.cookie = options.cookie;
+    return app.inject({
       method: 'POST',
       url: apiPath(API_PATHS.mediaToken, { spaceId: options.spaceId }),
       headers,
@@ -81,7 +67,7 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
   }
 
   it('gives a member a token for space_<spaceId> with identity = userId, valid 1 h', async () => {
-    const response = await requestToken({ spaceId, userId: memberId });
+    const response = await requestToken(t.app, { spaceId, cookie: memberCookie });
 
     expect(response.statusCode).toBe(200);
     const body = MediaTokenResponseSchema.parse(response.json());
@@ -93,7 +79,7 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
   });
 
   it('answers 404 to someone who is not a member of the space', async () => {
-    const response = await requestToken({ spaceId, userId: outsiderId });
+    const response = await requestToken(t.app, { spaceId, cookie: outsiderCookie });
 
     expect(response.statusCode).toBe(404);
     expect(ErrorResponseSchema.parse(response.json()).error.code).toBe('NOT_A_MEMBER');
@@ -101,16 +87,20 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
   });
 
   it('answers 404 for a space that does not exist', async () => {
-    const response = await requestToken({ spaceId: 'no-such-space', userId: memberId });
+    const response = await requestToken(t.app, { spaceId: 'no-such-space', cookie: memberCookie });
     expect(response.statusCode).toBe(404);
   });
 
   it('requires a session (401) and the X-Plaza-Client header (403)', async () => {
-    const anonymous = await requestToken({ spaceId });
+    const anonymous = await requestToken(t.app, { spaceId });
     expect(anonymous.statusCode).toBe(401);
     expect(ErrorResponseSchema.parse(anonymous.json()).error.code).toBe('UNAUTHORIZED');
 
-    const noHeader = await requestToken({ spaceId, userId: memberId, clientHeader: false });
+    const noHeader = await requestToken(t.app, {
+      spaceId,
+      cookie: memberCookie,
+      clientHeader: false,
+    });
     expect(noHeader.statusCode).toBe(403);
     expect(t.media.tokens).toEqual([]);
   });
@@ -121,7 +111,6 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
     beforeAll(async () => {
       const { livekit } = testConfig();
       real = await buildTestApp({
-        modules: [mediaModule],
         overrides: { media: new LiveKitMediaProvider(livekit) },
       });
     });
@@ -131,11 +120,7 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
     });
 
     it('returns a LiveKit JWT for the space room without admin grants', async () => {
-      const response = await real.app.inject({
-        method: 'POST',
-        url: apiPath(API_PATHS.mediaToken, { spaceId }),
-        headers: { [CLIENT_HEADER]: 'test', [USER_HEADER]: memberId },
-      });
+      const response = await requestToken(real.app, { spaceId, cookie: memberCookie });
 
       expect(response.statusCode).toBe(200);
       const { url, token } = MediaTokenResponseSchema.parse(response.json());
