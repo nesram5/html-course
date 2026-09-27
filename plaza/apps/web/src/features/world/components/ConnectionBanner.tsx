@@ -24,7 +24,7 @@ export function ConnectionBanner({ connection, session }: ConnectionBannerProps)
       data-testid="connection-banner"
       data-connection={connection}
       data-session={session.kind}
-      className="pointer-events-none absolute inset-x-0 top-3 flex justify-center"
+      className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center"
     >
       {text !== null && (
         <p className="rounded-full bg-slate-900/85 px-4 py-1.5 text-sm font-medium text-white shadow">

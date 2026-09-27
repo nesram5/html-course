@@ -10,5 +10,9 @@
     "noMeet": "Esta sala aún no tiene enlace de Meet.",
     "addMeet": "Añadir el enlace de Meet",
     "askOwner": "Pide a quien administra el espacio que lo añada."
+  },
+  "announce": {
+    "entered": "Has entrado en {{name}}. Tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet.",
+    "left": "Has salido de {{name}}. Vuelves al pasillo con el micrófono y la cámara como los tenías."
   }
 }

@@ -6,18 +6,20 @@ import { hallwayNoticeSeen, markHallwayNoticeSeen, type PrefsStorage } from '../
 export interface HallwayNoticeProps {
   /** Where "already seen" is remembered (`localStorage` by default). */
   readonly storage?: PrefsStorage | null;
+  /** Inside a meeting room the room card takes the top of the map: the notice waits. */
+  readonly inRoom?: boolean;
 }
 
 /**
  * First-use notice (RN-12, E5-S6): the hallway is not private. Shown until the person
  * acknowledges it once in this browser.
  */
-export function HallwayNotice({ storage }: HallwayNoticeProps) {
+export function HallwayNotice({ storage, inRoom = false }: HallwayNoticeProps) {
   const { t } = useTranslation('media');
   const [visible, setVisible] = useState(
     () => !(storage === undefined ? hallwayNoticeSeen() : hallwayNoticeSeen(storage)),
   );
-  if (!visible) return null;
+  if (!visible || inRoom) return null;
   return (
     <div
       role="note"

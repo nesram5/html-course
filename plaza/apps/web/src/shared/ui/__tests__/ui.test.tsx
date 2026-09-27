@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -67,5 +67,68 @@ describe('Toaster', () => {
       vi.advanceTimersByTime(5000);
     });
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('keeps a toast while it is hovered or focused, and errors longer (WCAG 2.2.1)', () => {
+    vi.useFakeTimers();
+    render(
+      <I18nextProvider i18n={createI18n()}>
+        <Toaster />
+      </I18nextProvider>,
+    );
+    act(() => {
+      toast.info('Luis te está llamando');
+      toast.error('Algo salió mal');
+    });
+    const info = screen.getByRole('status');
+
+    fireEvent.mouseEnter(info);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    fireEvent.mouseLeave(info);
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('runs the action of a toast and closes it', () => {
+    const run = vi.fn();
+    render(
+      <I18nextProvider i18n={createI18n()}>
+        <Toaster />
+      </I18nextProvider>,
+    );
+    act(() => {
+      toast.info('Luis te está llamando', { action: { label: 'Activar avisos', run } });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar avisos' }));
+
+    expect(run).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('gives errors 10 s', () => {
+    vi.useFakeTimers();
+    render(
+      <I18nextProvider i18n={createI18n()}>
+        <Toaster />
+      </I18nextProvider>,
+    );
+    act(() => {
+      toast.error('Algo salió mal');
+    });
+    act(() => {
+      vi.advanceTimersByTime(9999);
+    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

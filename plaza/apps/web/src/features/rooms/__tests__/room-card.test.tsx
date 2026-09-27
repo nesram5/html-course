@@ -98,10 +98,26 @@ describe('room card over the office (E6-S2)', () => {
         changed: [{ userId: 'user-3', roomId: 'sala' }],
       });
     });
-    expect(screen.getByRole('status')).toHaveTextContent('3 personas dentro');
+    expect(card).toHaveTextContent('3 personas dentro');
 
     standIn(worldStore, null);
     expect(screen.queryByTestId('room-card')).toBeNull();
+  });
+
+  it('announces entering and leaving in a live region that is there before (screen readers)', () => {
+    renderWithProviders(<Overlay space={spaceInfoFixture()} />);
+    const announcer = screen.getByTestId('rooms-announcer');
+    expect(announcer).toHaveAttribute('role', 'status');
+    expect(announcer).toHaveTextContent('');
+
+    standIn(worldStore, 'sala');
+    expect(screen.getByTestId('rooms-announcer')).toBe(announcer);
+    expect(announcer).toHaveTextContent(
+      'Has entrado en Sala. Tu micrófono y tu cámara de Plaza están apagados',
+    );
+
+    standIn(worldStore, null);
+    expect(announcer).toHaveTextContent('Has salido de Sala.');
   });
 
   it('opens the Meet in a new tab without opener and records room_meet_opened', async () => {

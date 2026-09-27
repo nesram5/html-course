@@ -15,7 +15,7 @@ import { installWorldDebug } from '../debug';
 import { useSpaceExtensions, type SpaceInfo } from '../extensions';
 import { useDecorCatalog } from '../hooks/useDecorCatalog';
 import { useSpaceSession } from '../hooks/useSpaceSession';
-import { sidePanelStore } from '../store/side-panel-store';
+import { sidePanelStore, useSidePanel } from '../store/side-panel-store';
 import { useWorldStore } from '../store/world-store';
 import { ConnectionBanner } from './ConnectionBanner';
 import { SessionNotice, SpaceNotice, isFinalError } from './SpaceNotice';
@@ -79,6 +79,7 @@ export function SpacePage() {
   const entered = gatesPassed >= gates.length;
   const { session, connection, retry } = useSpaceSession(entered ? detail?.id : undefined);
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
+  const sidePanelOpen = useSidePanel((state) => state.open !== null);
   const avatarUrls = useMemo(
     () => Object.fromEntries((avatars.data ?? []).map((avatar) => [avatar.id, avatar.spriteUrl])),
     [avatars.data],
@@ -203,7 +204,10 @@ export function SpacePage() {
             {extensions.map(({ id, Overlay }) =>
               Overlay === undefined ? null : <Overlay key={id} space={info} />,
             )}
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-3">
+            {/* With a side panel open (w-80 at right-3), the bar stays left of it on wide screens. */}
+            <div
+              className={`pointer-events-none absolute bottom-3 left-3 flex flex-wrap items-end justify-between gap-3 ${sidePanelOpen ? 'right-3 md:right-[21.5rem]' : 'right-3'}`}
+            >
               <div className="pointer-events-auto">
                 <SpaceBottomBar space={info} avatar={avatar} extensions={extensions} />
               </div>
