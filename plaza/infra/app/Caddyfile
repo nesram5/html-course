@@ -1,0 +1,59 @@
+# Caddy of the Plaza app VM (E8-S5, architecture §11.4): HTTPS with Let's Encrypt, the web app
+# (static files with SPA fallback) and the server behind /api, /realtime and /assets/maps.
+#
+# Environment (set in infra/app/.env, see .env.production.example):
+#   SITE_ADDRESS     plaza.example.com in production (automatic HTTPS); ":80" for a local run
+#   SERVER_UPSTREAM  host:port of the server container (default server:3000)
+#   CSP_CONNECT_SRC  extra origins the browser may connect to: LiveKit (wss:// and https://)
+#                    and the Sentry ingest host, separated by spaces
+#
+# The server trusts exactly one proxy hop (TRUST_PROXY=1): Caddy replaces any X-Forwarded-For
+# sent by the client with the real peer address, so the rate limits see the real client IP.
+
+{
+	admin off
+	# Access logs go to stdout (docker compose logs web); the server logs every API request.
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# API, realtime WebSocket and map assets: the server (it sets its own security headers).
+	@server path /api/* /realtime /realtime/* /assets/maps/*
+	handle @server {
+		reverse_proxy {$SERVER_UPSTREAM:server:3000} {
+			# Deploys restart the server: retry briefly instead of failing the request at once.
+			lb_try_duration 10s
+			lb_try_interval 500ms
+		}
+	}
+
+	# The web app: hashed assets are immutable, everything else falls back to index.html.
+	handle {
+		root * /srv
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		header {
+			Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' {$CSP_CONNECT_SRC}"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			# Invite links carry their token in the path: never leak it as a referrer.
+			Referrer-Policy "no-referrer"
+			Cross-Origin-Opener-Policy "same-origin"
+			Permissions-Policy "camera=(self), microphone=(self), display-capture=(), geolocation=(), payment=(), usb=()"
+		}
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
