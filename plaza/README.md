@@ -103,6 +103,9 @@ Code, identifiers, comments and commits in English; UI texts in Spanish through 
 
 Every MVP stage is implemented (planning and traceability:
 [`docs/virtual-office-mvp/04-plan-desarrollo.md`](../docs/virtual-office-mvp/04-plan-desarrollo.md)).
+Implementation status for the product owner (per stage and requirement, measured results, what
+still needs real Google/VM/network checks and how to deploy the beta, in Spanish):
+[`docs/virtual-office-mvp/estado-implementacion.md`](../docs/virtual-office-mvp/estado-implementacion.md).
 
 | Stage                                            | Status |
 | ------------------------------------------------ | ------ |
