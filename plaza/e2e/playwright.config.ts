@@ -2,7 +2,7 @@ import process from 'node:process';
 
 import { defineConfig, devices } from '@playwright/test';
 
-const WEB_PORT = 5173;
+const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5173);
 const API_PORT = Number(process.env.E2E_API_PORT ?? 3100);
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ?? 'postgresql://postgres@localhost:5432/plaza_e2e';
@@ -51,7 +51,7 @@ export default defineConfig({
     },
     {
       name: 'web',
-      command: 'pnpm --filter @plaza/web exec vite --port 5173 --strictPort',
+      command: `pnpm --filter @plaza/web exec vite --port ${String(WEB_PORT)} --strictPort`,
       cwd: '..',
       url: `http://localhost:${String(WEB_PORT)}`,
       reuseExistingServer: !process.env.CI,

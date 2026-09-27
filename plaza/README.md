@@ -51,7 +51,8 @@ If ports 5432/7880 are taken, use `PLAZA_PG_PORT=55432 pnpm infra:up` and adjust
 | `pnpm format` / `pnpm format:check`                      | Prettier                                                                                    |
 | `pnpm db:migrate` / `db:deploy` / `db:reset` / `db:seed` | Prisma (dev migrations / apply / reset dev DB / seed)                                       |
 | `pnpm infra:up` / `infra:up:livekit` / `infra:down`      | Docker Compose services in `infra/`                                                         |
-| `pnpm validate:maps`                                     | Validates `packages/maps` (manifest, files; map geometry from E2-S1)                        |
+| `pnpm validate:maps`                                     | Validates `packages/maps`: manifest, map geometry (`parseMap`), theme sizes, licenses       |
+| `pnpm --filter @plaza/maps generate`                     | Regenerates every map asset (templates, themes, avatars, decor) byte for byte               |
 
 ### Databases
 
@@ -59,7 +60,7 @@ If ports 5432/7880 are taken, use `PLAZA_PG_PORT=55432 pnpm infra:up` and adjust
 - `plaza_test`: integration tests (`TEST_DATABASE_URL`, default `postgresql://postgres@localhost:5432/plaza_test`).
   Created and migrated with `prisma migrate deploy` before each run; tests empty the tables with
   `resetDatabase()`. If you edit a migration locally, drop `plaza_test` by hand.
-- `plaza_e2e`: Playwright (`E2E_DATABASE_URL`).
+- `plaza_e2e`: Playwright (`E2E_DATABASE_URL`; ports `E2E_API_PORT`, default 3100, and `E2E_WEB_PORT`, default 5173).
 
 ## Conventions for contributors
 
