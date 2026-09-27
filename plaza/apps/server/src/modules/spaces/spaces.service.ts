@@ -20,6 +20,7 @@ import { Prisma, type Membership, type Space } from '@prisma/client';
 import type { Database } from '../../platform/db.js';
 import type { ErrorReporter } from '../../platform/error-reporter.js';
 import { AppError } from '../../platform/errors.js';
+import { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { Logger } from '../../platform/logger.js';
 import type { MapRoomArea, MapsCatalog } from '../../platform/maps-catalog.js';
 import { hashToken, randomToken } from '../auth/tokens.js';
@@ -62,6 +63,8 @@ function emailDomain(email: string): string {
  */
 export class SpacesService {
   readonly #repository: SpacesRepository;
+  /** Settings changes of one space, one at a time: the last `space:theme` sent is the stored one. */
+  readonly #settings = new KeyedSerial();
 
   constructor(private readonly deps: SpacesServiceDeps) {
     this.#repository = new SpacesRepository(deps.db);
@@ -130,7 +133,11 @@ export class SpacesService {
   }
 
   /** Owner-only settings: name, `allowedDomain` (E2-S4) and theme (validated, E9-S1). */
-  async update(spaceId: string, userId: string, body: UpdateSpaceBody): Promise<SpaceDetailDto> {
+  update(spaceId: string, userId: string, body: UpdateSpaceBody): Promise<SpaceDetailDto> {
+    return this.#settings.run(spaceId, () => this.#update(spaceId, userId, body));
+  }
+
+  async #update(spaceId: string, userId: string, body: UpdateSpaceBody): Promise<SpaceDetailDto> {
     await this.assertOwner(spaceId, userId);
     const space = await this.#spaceOrThrow(spaceId);
     if (body.themeId !== undefined && !this.deps.maps.hasTheme(space.mapTemplateId, body.themeId)) {

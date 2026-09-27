@@ -233,6 +233,18 @@ describe('desks and office styles (E9)', () => {
       expect(rename.statusCode).toBe(200);
       expect(inbox(luisIn.client).themes).toEqual([]);
     });
+
+    it('ends with everyone on the stored style when changes cross', async () => {
+      const luisIn = await enter(luis);
+      const spaceUrl = apiPath(API_PATHS.space, { spaceId: space.id });
+      const themes = ['night', 'watercolor', 'pixel', 'night', 'watercolor', 'night'];
+
+      await Promise.all(themes.map((themeId) => request(ana, 'PATCH', spaceUrl, { themeId })));
+      await barrier(luisIn.client);
+
+      const stored = SpaceResponseSchema.parse((await request(ana, 'GET', spaceUrl)).json()).space;
+      expect(inbox(luisIn.client).themes.at(-1)).toEqual({ themeId: stored.themeId });
+    });
   });
 
   describe('desks (E9-S2)', () => {
@@ -305,6 +317,31 @@ describe('desks and office styles (E9)', () => {
 
       expect([first.statusCode, second.statusCode].sort()).toEqual([200, 409]);
       expect(await heldDesks()).toHaveLength(1);
+    });
+
+    it('tells everyone the same desks the database holds when one person claims several at once', async () => {
+      const anaIn = await enter(ana);
+      await request(luis, 'PUT', deskUrl('desk-01'), {});
+      const targets = ['desk-03', 'desk-04', 'desk-05', 'desk-06', 'desk-07'];
+
+      const responses = await Promise.all(
+        targets.map((deskId) => request(luis, 'PUT', deskUrl(deskId), {})),
+      );
+      // The owner assigns Luis yet another desk meanwhile.
+      await Promise.all([
+        request(ana, 'PUT', deskUrl('desk-08'), { userId: luis.user.id }),
+        request(luis, 'PUT', deskUrl('desk-02'), {}),
+      ]);
+      await barrier(anaIn.client);
+
+      expect(responses.every((response) => response.statusCode === 200)).toBe(true);
+      // Replaying desk:updated in order gives exactly what is stored: one desk for Luis.
+      const seen = new Map<string, string | null>();
+      for (const desk of inbox(anaIn.client).desks) seen.set(desk.deskId, desk.userId);
+      const shown = [...seen].filter(([, userId]) => userId !== null).map(([deskId]) => deskId);
+      const held = (await heldDesks()).map((desk) => desk.deskId);
+      expect(held).toHaveLength(1);
+      expect(shown).toEqual(held);
     });
 
     it('lets owners assign and free the desks of others, live (RN-14)', async () => {
