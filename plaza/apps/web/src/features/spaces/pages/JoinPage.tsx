@@ -5,6 +5,7 @@ import { Link, Navigate, useParams } from 'react-router';
 
 import { LoginButtons, PageLoading, RequireAvatar, useSession } from '@/features/auth';
 import { errorMessageKey, isApiError } from '@/shared/api';
+import { markInviteOpened } from '@/shared/lib/join-timing';
 
 import { useJoinPreview, useJoinSpace } from '../hooks/useSpaces';
 
@@ -67,6 +68,10 @@ export function JoinPage() {
   const { token = '' } = useParams();
   const session = useSession();
   const preview = useJoinPreview(token);
+  // O5 (E8-S7): the time to enter counts from here, through the sign-in, to the map.
+  useEffect(() => {
+    markInviteOpened();
+  }, []);
 
   let content;
   if (preview.isPending || session.status === 'loading') content = <PageLoading />;

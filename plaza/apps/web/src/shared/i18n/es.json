@@ -25,6 +25,46 @@
     "dismiss": "Cerrar aviso",
     "region": "Avisos"
   },
+  "footer": {
+    "label": "Pie de página",
+    "privacy": "Privacidad",
+    "feedback": "Enviar comentarios"
+  },
+  "privacy": {
+    "back": "Volver al inicio",
+    "title": "Tus datos en Plaza",
+    "intro": "Plaza es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
+    "stored": {
+      "title": "Qué guardamos",
+      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil y el identificador de tu cuenta. También el nombre visible y el avatar que elijas.",
+      "spaces": "Los espacios a los que perteneces: tu rol, el estado que elijas (Disponible u Ocupado), tu escritorio y su decoración.",
+      "chat": "Los mensajes del chat de cada espacio (los últimos 100).",
+      "feedback": "Los comentarios que nos envías desde la aplicación, con tu nombre y tu correo para poder responderte.",
+      "events": "Eventos de producto sin datos personales (por ejemplo, «alguien entró en la oficina» o «una conversación de pasillo duró 2 minutos») y tiempos de conexión, con un identificador seudónimo que no permite saber quién eres. Los usamos para medir si Plaza funciona bien.",
+      "session": "Tu sesión: una cookie que te mantiene dentro 30 días. En el servidor solo guardamos su huella, no la cookie."
+    },
+    "notStored": {
+      "title": "Qué no guardamos nunca",
+      "media": "Audio ni vídeo: las conversaciones de pasillo van en directo entre personas a través de nuestro servidor de medios y no se graban.",
+      "positions": "Tu posición en el mapa: solo existe mientras estás conectado.",
+      "googleTokens": "Tokens de Google: usamos el permiso de Google solo al iniciar sesión (y al crear las salas de Meet) y lo descartamos en ese momento.",
+      "browser": "Tu navegador recuerda en tu equipo la cámara, el micrófono y el altavoz que elegiste; esos datos no salen de él."
+    },
+    "meet": {
+      "title": "Las salas de reunión usan Google Meet",
+      "text": "Cada sala del mapa tiene su propio Google Meet, que se abre en otra pestaña. Lo que ocurra en Meet (pantalla compartida, grabaciones, transcripciones o su chat) lo gestiona Google según sus condiciones y la configuración de Google Workspace de tu empresa."
+    },
+    "hallway": {
+      "title": "El pasillo no es privado",
+      "text": "Como en una oficina abierta, cualquiera que se acerque a tu avatar te ve y te oye. Para hablar en privado, entra en una sala de reunión."
+    },
+    "rights": {
+      "title": "Tus derechos",
+      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil»: se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
+      "profile": "Ir a Mi perfil",
+      "feedback": "Escribir al equipo de Plaza"
+    }
+  },
   "errors": {
     "NETWORK_ERROR": "No hay conexión con el servidor. Comprueba tu red.",
     "UNAUTHORIZED": "Tu sesión ha caducado. Vuelve a entrar.",

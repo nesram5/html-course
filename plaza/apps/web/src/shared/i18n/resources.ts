@@ -3,6 +3,7 @@ import { chatMessages } from '@/features/chat';
 import { mediaMessages } from '@/features/media';
 import { personalizationMessages } from '@/features/personalization';
 import { presenceMessages } from '@/features/presence';
+import { productMessages } from '@/features/product';
 import { roomsMessages } from '@/features/rooms';
 import { spacesMessages } from '@/features/spaces';
 import { worldMessages } from '@/features/world';
@@ -30,5 +31,6 @@ export const resources = {
     presence: presenceMessages.es,
     chat: chatMessages.es,
     personalization: personalizationMessages.es,
+    product: productMessages.es,
   },
 } as const;

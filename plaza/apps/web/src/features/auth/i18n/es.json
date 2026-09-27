@@ -6,7 +6,8 @@
     "google": "Entrar con Google",
     "cancelled": "No se completó el inicio de sesión.",
     "failed": "No se completó el inicio de sesión.",
-    "retryHint": "Puedes volver a intentarlo cuando quieras."
+    "retryHint": "Puedes volver a intentarlo cuando quieras.",
+    "privacy": "Qué datos guardamos"
   },
   "testLogin": {
     "title": "Entrada de prueba (solo desarrollo)",
@@ -17,7 +18,9 @@
     "label": "Menú de la cuenta",
     "spaces": "Mis espacios",
     "profile": "Mi perfil",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "feedback": "Enviar comentarios",
+    "metrics": "Métricas"
   },
   "profile": {
     "title": "Mi perfil",
@@ -38,5 +41,26 @@
     "description": "Escoge un avatar y revisa tu nombre antes de entrar. Podrás cambiarlos cuando quieras en tu perfil.",
     "continue": "Continuar",
     "chooseFirst": "Elige un avatar para continuar."
+  },
+  "deleteAccount": {
+    "title": "Borrar mi cuenta",
+    "what": "Se borrarán tu perfil, tus sesiones, tus membresías (y los escritorios que tengas), tus expulsiones y tus comentarios. Tus mensajes del chat se mantendrán, pero aparecerán como «Usuario eliminado». No se puede deshacer.",
+    "privacy": "Plaza nunca guarda tu audio, tu vídeo ni tus posiciones en el mapa.",
+    "privacyLink": "Más sobre tus datos",
+    "blocked_one": "Todavía no puedes borrar tu cuenta: eres la única persona administradora de un espacio con más miembros.",
+    "blocked_other": "Todavía no puedes borrar tu cuenta: eres la única persona administradora de {{count}} espacios con más miembros.",
+    "blockedSpace": "Ajustes de «{{name}}»",
+    "blockedHint": "Sin ti, nadie podría gestionarlos. Expulsa antes al resto de miembros desde los ajustes (el espacio se borrará con tu cuenta) o escríbenos desde «Enviar comentarios» para pasar la administración a otra persona.",
+    "open": "Borrar mi cuenta…",
+    "previewFailed": "No se pudo comprobar si puedes borrar tu cuenta. Recarga la página.",
+    "confirmTitle": "¿Borrar tu cuenta para siempre?",
+    "confirmText": "Saldrás de todos tus espacios y se borrarán tus datos. Tus mensajes del chat aparecerán como «Usuario eliminado».",
+    "spacesDeleted_one": "También se borrará este espacio, en el que no hay nadie más:",
+    "spacesDeleted_other": "También se borrarán estos {{count}} espacios, en los que no hay nadie más:",
+    "soleOwner": "Ahora eres la única persona administradora de un espacio con más miembros. Revisa tus espacios e inténtalo de nuevo.",
+    "cancel": "Cancelar",
+    "confirm": "Sí, borrar mi cuenta",
+    "deleting": "Borrando…",
+    "done": "Tu cuenta se ha borrado. Gracias por probar Plaza."
   }
 }

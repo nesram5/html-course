@@ -1,7 +1,16 @@
 import type { Me } from '@plaza/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { authKeys, fetchAvatars, fetchMe, logout, testLogin, updateMe } from '../api/auth-api';
+import {
+  authKeys,
+  deleteAccount,
+  fetchAvatars,
+  fetchDeletionPreview,
+  fetchMe,
+  logout,
+  testLogin,
+  updateMe,
+} from '../api/auth-api';
 
 export type Session =
   | { status: 'loading'; user: null }
@@ -25,6 +34,29 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
+    onSuccess: () => {
+      queryClient.clear();
+      queryClient.setQueryData(authKeys.me, null);
+    },
+  });
+}
+
+/** What deleting my account would do (E8-S6); always fresh. */
+export function useDeletionPreview() {
+  return useQuery({
+    queryKey: authKeys.deletion,
+    queryFn: ({ signal }) => fetchDeletionPreview(signal),
+    staleTime: 0,
+  });
+}
+
+/** Deletes my account and forgets every cached server response, like a logout. */
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAccount,
+    // Errors are shown in the confirmation dialog.
+    meta: { silent: true },
     onSuccess: () => {
       queryClient.clear();
       queryClient.setQueryData(authKeys.me, null);

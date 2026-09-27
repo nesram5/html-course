@@ -1,6 +1,6 @@
-import { LoginErrorReasonSchema } from '@plaza/shared';
+import { LoginErrorReasonSchema, WEB_PATHS } from '@plaza/shared';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useSearchParams } from 'react-router';
+import { Link, Navigate, useSearchParams } from 'react-router';
 
 import { safeNext } from '../api/auth-api';
 import { LoginButtons } from '../components/LoginButtons';
@@ -29,6 +29,11 @@ export function LoginPage() {
         </div>
       )}
       <LoginButtons next={next} />
+      <p className="text-sm text-slate-600">
+        <Link to={WEB_PATHS.privacy} className="text-brand-700 underline">
+          {t('login.privacy')}
+        </Link>
+      </p>
     </main>
   );
 }
