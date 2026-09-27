@@ -18,8 +18,17 @@ function browserEnv(): RingAlertEnv {
 }
 
 /**
- * Asks for the notification permission the first time the person uses "Llamar" (E7-S5: never
- * on entering). Does nothing when it was already granted or denied, or when unsupported.
+ * `true` when the browser supports notifications and the person has not answered the
+ * permission question yet: whoever is rung only gets a notification once they said yes.
+ */
+export function canAskNotificationPermission(env: RingAlertEnv = browserEnv()): boolean {
+  return env.Notification?.permission === 'default';
+}
+
+/**
+ * Asks for the notification permission, always from a click (E7-S5: never on entering): the
+ * first "Llamar", "Activar avisos de llamadas" in the status menu, or the button of the first
+ * ring received. Does nothing when it was already granted or denied, or when unsupported.
  */
 export function requestNotificationPermissionOnce(env: RingAlertEnv = browserEnv()): void {
   const api = env.Notification;

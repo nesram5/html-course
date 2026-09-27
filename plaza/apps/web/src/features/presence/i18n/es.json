@@ -13,9 +13,14 @@
     "busyHint": "Nadie se conecta contigo por cercanía",
     "awayNote": "Ahora mismo apareces como Ausente"
   },
+  "notifications": {
+    "enable": "Activar avisos de llamadas",
+    "enableHint": "Te avisamos aunque Plaza esté en otra pestaña"
+  },
   "people": {
     "button": "Personas",
-    "buttonLabel": "Personas: {{count}} conectadas",
+    "buttonLabel_one": "Personas: {{count}} conectada",
+    "buttonLabel_other": "Personas: {{count}} conectadas",
     "title": "Personas",
     "close": "Cerrar la lista de personas",
     "search": "Buscar por nombre",

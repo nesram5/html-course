@@ -33,13 +33,15 @@ declare global {
 
 async function person(browser: Browser, email: string, name: string): Promise<Person> {
   const context = await browser.newContext();
-  // Headless Chromium has no notification UI: record them instead, with the permission granted.
+  // Headless Chromium has no notification UI: record them instead. The permission starts
+  // undecided, as for a real person, and becomes granted when the page asks for it.
   await context.addInitScript(() => {
     const shown: { title: string; body: string; silent: boolean }[] = [];
     window.__notifications = shown;
     class RecordingNotification {
-      static permission = 'granted';
+      static permission: NotificationPermission = 'default';
       static requestPermission() {
+        RecordingNotification.permission = 'granted';
         return Promise.resolve('granted');
       }
       onclick: (() => void) | null = null;
@@ -199,6 +201,10 @@ test.describe('presence, chat and reactions (E7)', () => {
     browser,
   }) => {
     const { ana, luis } = await anaAndLuis(browser);
+    // Luis never rang anyone: he turns call notifications on from his status menu (E7-S5).
+    await bottomBar(luis.page).getByRole('button', { name: 'Estado: Disponible' }).click();
+    await luis.page.getByRole('menuitem', { name: /Activar avisos de llamadas/ }).click();
+    await expect.poll(() => luis.page.evaluate(() => Notification.permission)).toBe('granted');
 
     await bottomBar(ana.page)
       .getByRole('button', { name: /Personas/ })
@@ -215,7 +221,7 @@ test.describe('presence, chat and reactions (E7)', () => {
       ]);
     await expect(
       ana.page.getByRole('button', { name: /Podrás volver a llamar a Luis en (30|29) s/ }),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
 
     await Promise.all([ana.context.close(), luis.context.close()]);
   });
