@@ -91,8 +91,10 @@ export class SpaceSession {
       client.store.subscribe((connection) => {
         if (connection.status === 'connected') return;
         this.invalidate();
-        if (connection.status === 'disconnected' && connection.error !== null && !this.isFinal()) {
-          this.store.getState().set({ kind: 'failed', code: connection.error });
+        // Closed for good without a kick (refused handshake, or the server ended the
+        // connection): say so and offer to retry instead of leaving a frozen office.
+        if (connection.status === 'disconnected' && !this.isFinal()) {
+          this.store.getState().set({ kind: 'failed', code: connection.error ?? 'NETWORK_ERROR' });
         }
       }),
       world.subscribe((state, previous) => {

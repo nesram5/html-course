@@ -248,6 +248,22 @@ describe('SpaceSession: kicked', () => {
   });
 });
 
+describe('SpaceSession: closed by the server without a kick', () => {
+  it('offers to retry instead of leaving a frozen office, and joins again on retry', async () => {
+    await joined();
+
+    socket.closeFromServer();
+
+    expect(session.state).toEqual({ kind: 'failed', code: 'NETWORK_ERROR' });
+    events.emit('local:step', { x: 1, y: 2, dir: 'down' });
+    expect(moves()).toEqual([]);
+    session.retry();
+    socket.accept();
+    expect(joins()).toBe(2);
+    expect(session.state).toEqual({ kind: 'joining' });
+  });
+});
+
 describe('SpaceSession: lifecycle', () => {
   it('stop() disconnects and removes every listener', async () => {
     const baseline = events.listenerCount();
