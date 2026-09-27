@@ -53,6 +53,11 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
     this.model.clear();
   }
 
+  /** Whether the 💬 is drawn over a player (debug probe). */
+  inConversation(userId: string): boolean {
+    return this.sprites.get(userId)?.sprite.inConversation ?? false;
+  }
+
   /** Depth of the name label of a player (debug probe), `undefined` when not drawn. */
   labelDepth(userId: string): number | undefined {
     return this.sprites.get(userId)?.sprite.nameLabel.depth;
@@ -81,7 +86,8 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
     entry.sprite
       .setTilePosition(player.x, player.y)
       .setMotion(player.dir, player.moving)
-      .setOpacity(player.alpha);
+      .setOpacity(player.alpha)
+      .setInConversation(state.inConversation);
     if (state.displayName !== entry.displayName) {
       entry.displayName = state.displayName;
       entry.sprite.setDisplayName(state.displayName);

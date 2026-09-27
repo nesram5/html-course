@@ -28,6 +28,12 @@ export interface WorldEvents {
   'player:correct': PlayerCorrect;
   /** Development only: simulate this many remote avatars walking (0 stops), E4-S5 perf. */
   'debug:stress': { readonly count: number };
+  /**
+   * The local person went away (hidden tab, inactivity) or came back (RN-05). Emitted by the
+   * presence feature (E7); the media feature mutes the microphone and camera while away and
+   * restores what was on when they come back (E5-S5).
+   */
+  'presence:self-away': { readonly away: boolean };
 }
 
 export type WorldEventName = keyof WorldEvents;

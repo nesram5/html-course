@@ -11,6 +11,8 @@ export interface AvatarProbe {
   alpha: number;
   moving: boolean;
   labelAboveArt: boolean;
+  /** The 💬 of a hallway conversation is drawn over the avatar (E5-S2). */
+  inConversation: boolean;
 }
 
 declare global {

@@ -59,7 +59,8 @@ export interface SpaceSessionOptions {
  * - joins once the socket is connected AND the map is drawn, and re-joins after every
  *   reconnection or redraw; each snapshot goes to the scene (`world:snapshot`);
  * - forwards local steps as `player:move`, and `world:delta` / `player:correct` to the scene,
- *   only while joined;
+ *   only while joined; snapshots and deltas also keep `worldStore.players` up to date (the
+ *   positions React features read, e.g. the fading of hallway videos);
  * - handles `space:kicked` (no automatic reconnection) and join errors.
  *
  * Framework-free: `useSpaceSession` starts and stops it with the page.
@@ -110,7 +111,9 @@ export class SpaceSession {
         if (this.joined) client.move(step);
       }),
       client.on('world:delta', (delta) => {
-        if (this.joined) events.emit('world:delta', delta);
+        if (!this.joined) return;
+        world.getState().applyDelta(delta);
+        events.emit('world:delta', delta);
       }),
       client.on('player:correct', (tile) => {
         if (this.joined) events.emit('player:correct', tile);
@@ -189,6 +192,7 @@ export class SpaceSession {
   private apply(snapshot: SpaceSnapshot): void {
     this.joined = true;
     this.store.getState().set({ kind: 'joined' });
+    this.options.world.getState().applySnapshot(snapshot);
     this.options.events.emit('world:snapshot', snapshot);
   }
 

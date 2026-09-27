@@ -22,6 +22,9 @@
     "zoomOut": "Alejar",
     "zoom": "{{zoom}}×"
   },
+  "bottomBar": {
+    "label": "Tus controles"
+  },
   "connection": {
     "connecting": "Conectando…",
     "reconnecting": "Reconectando…"

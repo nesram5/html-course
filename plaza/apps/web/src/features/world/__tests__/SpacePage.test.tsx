@@ -1,11 +1,13 @@
 import type { SpaceSnapshot } from '@plaza/shared';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentType } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderApp } from '@/test/render';
 
 import { worldEvents } from '../bridge/event-bus';
+import type { SpaceExtension, SpaceGateProps } from '../extensions';
 import type { WorldGameOptions } from '../game/create-game';
 import { worldStore } from '../store/world-store';
 import type { FakeSocket } from './fake-socket';
@@ -376,5 +378,74 @@ describe('SpacePage realtime (E4)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('No eres miembro de este espacio.');
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toBeInTheDocument();
+  });
+});
+
+function gate(label: string): ComponentType<SpaceGateProps> {
+  return function TestGate({ space, onDone }) {
+    return (
+      <section role="dialog" aria-label={label}>
+        <p>{space.spaceName}</p>
+        <button type="button" onClick={onDone}>
+          Continuar
+        </button>
+      </section>
+    );
+  };
+}
+
+const EXTENSIONS: SpaceExtension[] = [
+  {
+    id: 'first',
+    Gate: gate('Primera puerta'),
+    Overlay: ({ space }) => <p>Capa de {space.displayName}</p>,
+    BarItems: () => <button type="button">Control extra</button>,
+  },
+  { id: 'second', Gate: gate('Segunda puerta') },
+];
+
+function joinsSent(): number {
+  return sockets.flatMap((s) => s.acks).filter((ack) => ack.event === 'space:join').length;
+}
+
+describe('SpacePage extensions (gates, overlays, bottom bar)', () => {
+  it('shows the gates in order before entering; the map loads behind them', async () => {
+    const user = userEvent.setup();
+    mockServer();
+    const joinsBefore = joinsSent();
+    const connectsBefore = sockets.reduce((sum, s) => sum + s.connectCalls, 0);
+    renderApp({ route: '/s/acme', spaceExtensions: EXTENSIONS });
+
+    expect(await screen.findByRole('dialog', { name: 'Primera puerta' })).toHaveTextContent('Acme');
+    await waitFor(() => {
+      expect(games).toHaveLength(1);
+    });
+    act(() => {
+      worldStore.getState().setLoad({ kind: 'ready' });
+    });
+    // Nobody enters the space in real time while a gate is open.
+    expect(sockets.reduce((sum, s) => sum + s.connectCalls, 0)).toBe(connectsBefore);
+    expect(screen.queryByText('Capa de Ana')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByRole('dialog', { name: 'Segunda puerta' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Capa de Ana')).toBeInTheDocument();
+    const bar = screen.getByRole('toolbar', { name: 'Tus controles' });
+    expect(bar).toHaveTextContent('Ana');
+    expect(bar).toContainElement(screen.getByRole('button', { name: 'Control extra' }));
+    act(() => {
+      socket().accept();
+    });
+    expect(joinsSent()).toBe(joinsBefore + 1);
+  });
+
+  it('without extensions, enters at once with the bottom bar', async () => {
+    await openOffice();
+
+    expect(screen.getByRole('toolbar', { name: 'Tus controles' })).toHaveTextContent('Ana');
+    expect(socket().lastAck('space:join').payload).toMatchObject({ spaceId: 'space-1' });
   });
 });

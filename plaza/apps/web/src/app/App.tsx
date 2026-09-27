@@ -2,7 +2,10 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { i18n } from 'i18next';
 import { RouterProvider, type createBrowserRouter } from 'react-router';
 
+import { SpaceExtensionsProvider, type SpaceExtension } from '@/features/world';
+
 import { AppProviders } from './providers';
+import { spaceExtensions as defaultSpaceExtensions } from './space-extensions';
 
 export type AppRouter = ReturnType<typeof createBrowserRouter>;
 
@@ -10,12 +13,21 @@ interface AppProps {
   router: AppRouter;
   i18n: i18n;
   queryClient: QueryClient;
+  /** Features that extend the office page; `app/space-extensions.ts` by default. */
+  spaceExtensions?: readonly SpaceExtension[];
 }
 
-export function App({ router, i18n, queryClient }: AppProps) {
+export function App({
+  router,
+  i18n,
+  queryClient,
+  spaceExtensions = defaultSpaceExtensions,
+}: AppProps) {
   return (
     <AppProviders i18n={i18n} queryClient={queryClient}>
-      <RouterProvider router={router} />
+      <SpaceExtensionsProvider extensions={spaceExtensions}>
+        <RouterProvider router={router} />
+      </SpaceExtensionsProvider>
     </AppProviders>
   );
 }

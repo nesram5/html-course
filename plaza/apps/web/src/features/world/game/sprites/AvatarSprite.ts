@@ -2,6 +2,7 @@ import { TILE_SIZE, type Direction } from '@plaza/shared';
 import * as Phaser from 'phaser';
 
 import { AVATAR_FRAMES_PER_ROW, AVATAR_ROW } from '../textures';
+import { ConversationBubble } from './ConversationBubble';
 import { avatarDepth, labelDepth } from './depth';
 
 export { ABOVE_DEPTH, AVATAR_BASE_DEPTH } from './depth';
@@ -55,6 +56,8 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
   private motionDir: Direction | null = null;
   private motionMoving = false;
   private opacity = 1;
+  /** Created the first time the person talks in the hallway. */
+  private bubble: ConversationBubble | null = null;
 
   constructor(scene: Phaser.Scene, textureKey: string, displayName: string) {
     super(scene, 0, 0);
@@ -76,13 +79,37 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     if (px !== this.x || py !== this.y) {
       this.setPosition(px, py);
       this.label.setPosition(px, py + LABEL_OFFSET_Y);
+      this.placeBubble();
     }
     const depth = avatarDepth(y);
     if (depth !== this.depth) {
       this.setDepth(depth);
       this.label.setDepth(labelDepth(y));
+      this.bubble?.setDepth(labelDepth(y));
     }
     return this;
+  }
+
+  /** Shows the 💬 over the name while the person is in a hallway conversation (E5-S2). */
+  setInConversation(talking: boolean): this {
+    if (talking === (this.bubble?.visible ?? false)) return this;
+    if (this.bubble === null) {
+      this.bubble = new ConversationBubble(this.scene)
+        .setDepth(this.label.depth)
+        .setAlpha(this.opacity);
+      this.placeBubble();
+    }
+    this.bubble.setVisible(talking);
+    return this;
+  }
+
+  /** Whether the 💬 is shown (debug probe). */
+  get inConversation(): boolean {
+    return this.bubble?.visible ?? false;
+  }
+
+  private placeBubble(): void {
+    this.bubble?.setPosition(this.label.x, this.label.y - this.label.height);
   }
 
   /** Plays the walk animation towards `dir`, or shows the standing frame when not moving. */
@@ -101,6 +128,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     this.opacity = alpha;
     this.setAlpha(alpha);
     this.label.setAlpha(alpha);
+    this.bubble?.setAlpha(alpha);
     return this;
   }
 
@@ -135,6 +163,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
 
   override destroy(fromScene?: boolean): void {
     this.label.destroy();
+    this.bubble?.destroy();
     super.destroy(fromScene);
   }
 }

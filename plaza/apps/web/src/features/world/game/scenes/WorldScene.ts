@@ -3,6 +3,7 @@ import {
   TILE_SIZE,
   roomAt,
   type Direction,
+  type PlayerChanged,
   type PlayerCorrect,
   type SpaceSnapshot,
   type Tile,
@@ -56,6 +57,8 @@ export class WorldScene extends Phaser.Scene {
   private remote: RemotePlayersSystem | null = null;
   private avatarTextures: AvatarTextures | null = null;
   private stress: StressRun | null = null;
+  /** userId of the local person (from the snapshot), to find their own `changed` entries. */
+  private selfId: string | null = null;
   private readonly cleanups: (() => void)[] = [];
 
   constructor(private readonly deps: WorldSceneDeps) {
@@ -113,6 +116,7 @@ export class WorldScene extends Phaser.Scene {
       }),
       events.on('world:delta', (delta) => {
         this.remote?.applyDelta(delta, this.game.loop.time);
+        this.applySelfChanges(delta.changed);
       }),
       events.on('player:correct', (tile) => {
         this.correct(tile);
@@ -160,10 +164,21 @@ export class WorldScene extends Phaser.Scene {
   /** Join or reconnection: the local avatar goes where the server says; others are redrawn. */
   private applySnapshot(snapshot: SpaceSnapshot): void {
     const { self } = snapshot;
+    this.selfId = self.userId;
     if (this.controller === null) this.spawnLocal(self, self.dir);
     else this.controller.teleport(self, self.dir);
+    this.avatar?.setInConversation(self.inConversation);
     this.publishLocal(self, self.dir);
     this.remote?.reset(snapshot.players, this.game.loop.time, self.userId);
+  }
+
+  /** Server-side changes of the local person: the 💬 of a hallway conversation (E5-S2). */
+  private applySelfChanges(changed: readonly PlayerChanged[]): void {
+    for (const change of changed) {
+      if (change.userId === this.selfId && change.inConversation !== undefined) {
+        this.avatar?.setInConversation(change.inConversation);
+      }
+    }
   }
 
   /** Rejected step (E4-S3): back to the server tile, no reconciliation (architecture §9.3). */
@@ -248,6 +263,7 @@ export class WorldScene extends Phaser.Scene {
         alpha: this.avatar.alpha,
         moving,
         labelAboveArt: this.avatar.nameLabel.depth > ABOVE_DEPTH,
+        inConversation: this.avatar.inConversation,
       });
     }
     for (const system of [this.remote, this.stress?.system]) {
@@ -261,6 +277,7 @@ export class WorldScene extends Phaser.Scene {
           alpha: player.alpha,
           moving: player.moving,
           labelAboveArt: (system?.labelDepth(player.userId) ?? 0) > ABOVE_DEPTH,
+          inConversation: system?.inConversation(player.userId) ?? false,
         });
       }
     }

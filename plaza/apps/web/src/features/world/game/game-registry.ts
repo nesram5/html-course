@@ -32,6 +32,8 @@ export interface AvatarProbe {
   readonly moving: boolean;
   /** Whether the name label is drawn over the `above` art layer. */
   readonly labelAboveArt: boolean;
+  /** Whether the 💬 of a hallway conversation is drawn over the avatar (E5-S2). */
+  readonly inConversation: boolean;
 }
 
 /** Read-only view of the running world scene, for E2E tests and the stress mode. */

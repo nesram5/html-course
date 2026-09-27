@@ -29,7 +29,15 @@ export const worldRoutes: RouteObject[] = [
 /** i18n namespace `world` (texts in `./i18n/es.json`). */
 export const worldMessages = { es } as const;
 
-export { worldEvents, type EventBus, type LocalStep, type WorldEvents } from './bridge/event-bus';
+export { EventBus, worldEvents, type LocalStep, type WorldEvents } from './bridge/event-bus';
+export {
+  SpaceExtensionsProvider,
+  useSpaceExtensions,
+  type SpaceExtension,
+  type SpaceGateProps,
+  type SpaceInfo,
+  type SpaceSlotProps,
+} from './extensions';
 export {
   useWorldStore,
   worldStore,
