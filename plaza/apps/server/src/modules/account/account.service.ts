@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';
 import { AppError } from '../../platform/errors.js';
+import type { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { Logger } from '../../platform/logger.js';
 import type { PlazaIo } from '../../platform/socket.js';
 import { freeDesk, type SpaceNotifier } from '../spaces/index.js';
@@ -23,6 +24,8 @@ export interface AccountServiceDeps {
   db: Database;
   io: PlazaIo;
   notifier: SpaceNotifier;
+  /** Per-space desk queue of the spaces module (claims, member removal): see `deleteAccount`. */
+  deskChanges: KeyedSerial;
   logger: Logger;
 }
 
@@ -44,7 +47,25 @@ export class AccountService {
     return this.#preview(await this.#facts(this.deps.db, userId));
   }
 
+  /**
+   * Runs in the desk queue of every space of the person (E8-S2): a desk claim or assignment
+   * queued around the deletion cannot leave the others seeing a desk held by a deleted account.
+   * The queues are always taken in the same (sorted) order.
+   */
   async deleteAccount(userId: string): Promise<void> {
+    const spaceIds = (
+      await this.deps.db.membership.findMany({ where: { userId }, select: { spaceId: true } })
+    )
+      .map((membership) => membership.spaceId)
+      .sort();
+    const task = spaceIds.reduceRight<() => Promise<void>>(
+      (inner, spaceId) => () => this.deps.deskChanges.run(spaceId, inner),
+      () => this.#deleteAccount(userId),
+    );
+    await task();
+  }
+
+  async #deleteAccount(userId: string): Promise<void> {
     const memberships = await this.deps.db.$transaction(async (tx) => {
       const facts = await this.#facts(tx, userId);
       const blocking = facts.filter(isBlocking);

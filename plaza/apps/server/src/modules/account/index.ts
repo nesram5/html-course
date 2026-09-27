@@ -17,10 +17,12 @@ export { AccountService } from './account.service.js';
 export const accountModule: PlazaModule = {
   name: 'account',
   register({ app, io, container, services }) {
+    const spaces = services.get('spaces');
     const account = new AccountService({
       db: container.db,
       io,
-      notifier: services.get('spaces').notifier,
+      notifier: spaces.notifier,
+      deskChanges: spaces.deskChanges,
       logger: container.logger,
     });
     const { requireUser } = services.get('auth');

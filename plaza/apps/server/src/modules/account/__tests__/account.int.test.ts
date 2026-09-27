@@ -150,6 +150,34 @@ describe('"Borrar mi cuenta" (E8-S6)', () => {
     );
   });
 
+  it('waits for desk changes queued in the space, so the desk they gave me is freed too (E8-S2)', async () => {
+    const { client: anaSocket } = await harness.enter(ana, acme.id);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    // A desk assignment in flight in the desk queue of the space.
+    const assignment = harness.deskChanges.run(acme.id, async () => {
+      await held;
+      await db().membership.update({
+        where: { userId_spaceId: { userId: luis.user.id, spaceId: acme.id } },
+        data: { deskId: 'desk-02' },
+      });
+    });
+
+    const deletion = deleteAccount(luis);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await db().user.count({ where: { id: luis.user.id } })).toBe(1);
+    release();
+    await assignment;
+
+    expect((await deletion).statusCode).toBe(204);
+    await harness.tick(acme.id, anaSocket);
+    expect(harness.inbox(anaSocket)['desk:updated']).toEqual([
+      { deskId: 'desk-02', userId: null, displayName: null, decor: null },
+    ]);
+  });
+
   it('deletes the spaces where I was the only member', async () => {
     await deleteAccount(luis);
 
