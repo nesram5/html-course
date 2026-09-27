@@ -42,13 +42,12 @@ export interface NormalizedError {
   unexpected: boolean;
 }
 
-function isFastifyError(error: unknown): error is FastifyError {
-  return (
-    error instanceof Error &&
-    'statusCode' in error &&
-    typeof error.statusCode === 'number' &&
-    'code' in error
-  );
+/**
+ * Errors of Fastify and its plugins that carry an HTTP status. Some plugins (e.g. the
+ * `@fastify/static` "Forbidden" for `..` in a path) set `statusCode` without a `code`.
+ */
+function isHttpError(error: unknown): error is Pick<FastifyError, 'message' | 'statusCode'> {
+  return error instanceof Error && 'statusCode' in error && typeof error.statusCode === 'number';
 }
 
 function codeForStatus(status: number): ErrorCode {
@@ -75,7 +74,7 @@ export function normalizeError(error: unknown): NormalizedError {
       unexpected: false,
     };
   }
-  if (isFastifyError(error) && error.statusCode !== undefined && error.statusCode < 500) {
+  if (isHttpError(error) && error.statusCode !== undefined && error.statusCode < 500) {
     return {
       status: error.statusCode,
       payload: { code: codeForStatus(error.statusCode), message: error.message },

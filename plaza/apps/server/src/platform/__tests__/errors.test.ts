@@ -1,3 +1,6 @@
+import { request } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -47,6 +50,27 @@ describe('HTTP error handling', () => {
     const response = await app.inject({ method: 'GET', url: '/api/test/zod-error' });
     expect(response.statusCode).toBe(400);
     expect(response.json<{ error: { code: string } }>().error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('answers 403 (not 500) to map asset paths that try to leave the allowed folders', async () => {
+    // `inject` normalizes `..`, so send the raw path over a real socket like a scanner would.
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = app.server.address() as AddressInfo;
+    for (const path of [
+      '/assets/maps/templates/../manifest.json',
+      '/assets/maps/avatars/../../package.json',
+    ]) {
+      const status = await new Promise<number | undefined>((resolve, reject) => {
+        request({ host: '127.0.0.1', port, path }, (response) => {
+          response.resume();
+          resolve(response.statusCode);
+        })
+          .on('error', reject)
+          .end();
+      });
+      expect(status, path).toBe(403);
+    }
+    expect(testApp.reporter.captured).toHaveLength(0);
   });
 
   it('answers 500 INTERNAL without details and reports unhandled errors', async () => {
