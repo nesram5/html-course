@@ -35,3 +35,9 @@ export const spacesMessages = { es } as const;
 
 export { spacesKeys } from './api/spaces-api';
 export { useEnterSpace, useMembers } from './hooks/useSpaces';
+export {
+  SpaceSettingsExtensionsProvider,
+  useSpaceSettingsExtensions,
+  type MemberDeskCellProps,
+  type SpaceSettingsExtensions,
+} from './extensions';

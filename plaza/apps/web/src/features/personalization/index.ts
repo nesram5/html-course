@@ -11,7 +11,8 @@ import es from './i18n/es.json';
  *
  * The office style is a space setting (the "Estilo" section lives in `spaces`); the world scene
  * draws styles, desk names and objects from the `officeStore` of `world`. This feature holds the
- * desk UI: the `X` menu, "Decorar", "Mi escritorio" and the desk column of "Miembros".
+ * desk UI: the `X` menu, "Decorar", "Mi escritorio" and the desk column of "Miembros"
+ * (`MemberDeskCell`, which `app/` hands to the space settings).
  */
 
 /** Routes of the feature, mounted by `app/routes.tsx` inside the root layout. */
@@ -31,7 +32,11 @@ export const personalizationSpaceExtension: SpaceExtension = {
 };
 
 export { DeskHud, type DeskHudProps } from './components/DeskHud';
-export { MemberDeskControls, type MemberDeskControlsProps } from './components/MemberDeskControls';
+export {
+  MemberDeskCell,
+  MemberDeskControls,
+  type MemberDeskControlsProps,
+} from './components/MemberDeskControls';
 export { MyDeskButton, type MyDeskButtonProps } from './components/MyDeskButton';
 export { useMapDeskIds } from './hooks/useDesks';
 export { deskLink } from './hooks/useShowDeskFromUrl';
