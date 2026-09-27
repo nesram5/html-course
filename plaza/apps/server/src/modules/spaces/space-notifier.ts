@@ -2,12 +2,25 @@ import type { KickReason, MeetingRoomDto } from '@plaza/shared';
 
 import type { PlazaIo } from '../../platform/socket.js';
 
+/** Called when a person is kicked out of a space, before their sockets are disconnected. */
+export type KickListener = (spaceId: string, userId: string, reason: KickReason) => void;
+
 /**
  * Pushes space changes to connected sockets. A socket belongs to a space once `space:join`
  * (E4-S1) sets `socket.data.spaceId`, so this works whatever Socket.IO rooms E4 uses.
  */
 export class SpaceNotifier {
+  readonly #kickListeners: KickListener[] = [];
+
   constructor(private readonly io: PlazaIo) {}
+
+  /**
+   * Registers a listener for kicks (the world module removes the avatar at once instead of
+   * waiting for a reconnection, and disconnects the person from the media room).
+   */
+  onKick(listener: KickListener): void {
+    this.#kickListeners.push(listener);
+  }
 
   async #sockets(spaceId: string, userId?: string) {
     const sockets = await this.io.fetchSockets();
@@ -19,6 +32,7 @@ export class SpaceNotifier {
 
   /** `space:kicked` + disconnect every socket of the person in the space (E2-S6, E4). */
   async kick(spaceId: string, userId: string, reason: KickReason): Promise<void> {
+    for (const listener of this.#kickListeners) listener(spaceId, userId, reason);
     for (const socket of await this.#sockets(spaceId, userId)) {
       socket.emit('space:kicked', { reason });
       socket.disconnect(true);

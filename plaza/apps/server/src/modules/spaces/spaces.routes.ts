@@ -9,6 +9,8 @@ import {
   MapTemplatesResponseSchema,
   MemberParamsSchema,
   MembersResponseSchema,
+  SpaceBanParamsSchema,
+  SpaceBansResponseSchema,
   SpaceParamsSchema,
   SpaceResponseSchema,
   SpaceSlugParamsSchema,
@@ -20,6 +22,7 @@ import {
   type JoinResponse,
   type MapTemplatesResponse,
   type MembersResponse,
+  type SpaceBansResponse,
   type SpaceResponse,
   type SpacesResponse,
 } from '@plaza/shared';
@@ -99,6 +102,18 @@ export function registerSpacesRoutes(app: FastifyInstance, deps: SpacesRoutesDep
   app.delete(API_PATHS.member, auth, async (request, reply) => {
     const { spaceId, userId } = MemberParamsSchema.parse(request.params);
     await spaces.removeMember(spaceId, currentUser(request).userId, userId);
+    return reply.code(204).send();
+  });
+
+  app.get(API_PATHS.bans, auth, async (request): Promise<SpaceBansResponse> => {
+    const { spaceId } = SpaceParamsSchema.parse(request.params);
+    const bans = await spaces.bans(spaceId, currentUser(request).userId);
+    return SpaceBansResponseSchema.parse({ bans });
+  });
+
+  app.delete(API_PATHS.ban, auth, async (request, reply) => {
+    const { spaceId, userId } = SpaceBanParamsSchema.parse(request.params);
+    await spaces.unban(spaceId, currentUser(request).userId, userId);
     return reply.code(204).send();
   });
 

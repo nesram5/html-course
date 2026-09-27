@@ -9,6 +9,7 @@ import {
   MapTemplatesResponseSchema,
   MembersResponseSchema,
   RoomResponseSchema,
+  SpaceBansResponseSchema,
   SpaceResponseSchema,
   SpacesResponseSchema,
   type CreateSpaceBody,
@@ -23,6 +24,7 @@ export const spacesKeys = {
   list: ['spaces', 'list'] as const,
   detail: (spaceId: string) => ['spaces', 'detail', spaceId] as const,
   members: (spaceId: string) => ['spaces', 'members', spaceId] as const,
+  bans: (spaceId: string) => ['spaces', 'bans', spaceId] as const,
   templates: ['spaces', 'map-templates'] as const,
   invite: (token: string) => ['spaces', 'invite', token] as const,
   enter: (slug: string) => ['spaces', 'enter', slug] as const,
@@ -66,6 +68,17 @@ export async function fetchMembers(spaceId: string, o: Signal = {}) {
 
 export function removeMember(spaceId: string, userId: string) {
   return http(apiPath(API_PATHS.member, { spaceId, userId }), null, { method: 'DELETE' });
+}
+
+/** People removed from the space (owner only, E2-S6 follow-up). */
+export async function fetchBans(spaceId: string, o: Signal = {}) {
+  const path = apiPath(API_PATHS.bans, { spaceId });
+  return (await http(path, SpaceBansResponseSchema, opts(o))).bans;
+}
+
+/** Lifts a ban: the person may join again with the invite link or the allowed domain. */
+export function unbanMember(spaceId: string, userId: string) {
+  return http(apiPath(API_PATHS.ban, { spaceId, userId }), null, { method: 'DELETE' });
 }
 
 export async function fetchMapTemplates(o: Signal = {}) {

@@ -8,6 +8,7 @@ import {
   MapParseError,
   MapTemplatesResponseSchema,
   MembersResponseSchema,
+  SpaceBansResponseSchema,
   SpaceResponseSchema,
   SpacesResponseSchema,
   type ErrorResponse,
@@ -475,6 +476,92 @@ describe('spaces module (E2-S2..S6)', () => {
 
       expect(byMember.statusCode).toBe(403);
       expect(unknown.statusCode).toBe(404);
+    });
+  });
+
+  describe('bans (E2-S6 follow-up)', () => {
+    async function kick(space: SpaceDetailDto, user: TestUser) {
+      const response = await request(
+        ana,
+        'DELETE',
+        apiPath(API_PATHS.member, { spaceId: space.id, userId: user.user.id }),
+      );
+      expect(response.statusCode).toBe(204);
+    }
+
+    it('a kicked member cannot come back with the invite link: 403 BANNED_FROM_SPACE', async () => {
+      const space = await createSpace();
+      await joinAs(luis, space);
+      await kick(space, luis);
+
+      const response = await joinAs(luis, space);
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json<ErrorResponse>().error.code).toBe('BANNED_FROM_SPACE');
+    });
+
+    it('a kicked member of the allowed domain is not auto-joined again', async () => {
+      const space = await createSpace();
+      await request(ana, 'PATCH', apiPath(API_PATHS.space, { spaceId: space.id }), {
+        allowedDomain: 'acme.com',
+      });
+      const carla = await signIn(testApp.app, 'carla@acme.com');
+      const enterUrl = apiPath(API_PATHS.spaceEnterBySlug, { slug: space.slug });
+      expect((await request(carla, 'POST', enterUrl)).statusCode).toBe(200);
+      await kick(space, carla);
+
+      const response = await request(carla, 'POST', enterUrl);
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json<ErrorResponse>().error.code).toBe('BANNED_FROM_SPACE');
+    });
+
+    it('lists bans to owners and lets them lift one: the person can join again', async () => {
+      const space = await createSpace();
+      await joinAs(luis, space);
+      await kick(space, luis);
+      const bansUrl = apiPath(API_PATHS.bans, { spaceId: space.id });
+      const banUrl = apiPath(API_PATHS.ban, { spaceId: space.id, userId: luis.user.id });
+
+      const listed = SpaceBansResponseSchema.parse((await request(ana, 'GET', bansUrl)).json());
+      const unban = await request(ana, 'DELETE', banUrl);
+      const again = await request(ana, 'DELETE', banUrl);
+      const rejoin = await joinAs(luis, space);
+      const after = SpaceBansResponseSchema.parse((await request(ana, 'GET', bansUrl)).json());
+
+      expect(listed.bans).toEqual([
+        {
+          userId: luis.user.id,
+          displayName: 'Luis',
+          avatarId: 'avatar-01',
+          email: 'luis@gmail.com',
+          createdAt: expect.any(String) as string,
+        },
+      ]);
+      expect(unban.statusCode).toBe(204);
+      expect(again.statusCode).toBe(404);
+      expect(JoinResponseSchema.parse(rejoin.json()).alreadyMember).toBe(false);
+      expect(after.bans).toEqual([]);
+    });
+
+    it('only owners can list or lift bans', async () => {
+      const space = await createSpace();
+      await joinAs(luis, space);
+      const carla = await signIn(testApp.app, 'carla@acme.com');
+      await joinAs(carla, space);
+      await kick(space, carla);
+
+      const list = await request(luis, 'GET', apiPath(API_PATHS.bans, { spaceId: space.id }));
+      const lift = await request(
+        luis,
+        'DELETE',
+        apiPath(API_PATHS.ban, { spaceId: space.id, userId: carla.user.id }),
+      );
+      const outsider = await request(carla, 'GET', apiPath(API_PATHS.bans, { spaceId: space.id }));
+
+      expect(list.statusCode).toBe(403);
+      expect(lift.statusCode).toBe(403);
+      expect(outsider.statusCode).toBe(404);
     });
   });
 });

@@ -1,5 +1,6 @@
 export * from './auth.js';
 export * from './avatars.js';
+export * from './bans.js';
 export * from './common.js';
 export * from './desks.js';
 export * from './events.js';

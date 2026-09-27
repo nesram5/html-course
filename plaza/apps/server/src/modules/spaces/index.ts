@@ -3,7 +3,7 @@ import { SpaceNotifier } from './space-notifier.js';
 import { registerSpacesRoutes } from './spaces.routes.js';
 import { SpacesService } from './spaces.service.js';
 
-export type { SpaceNotifier } from './space-notifier.js';
+export type { KickListener, SpaceNotifier } from './space-notifier.js';
 export type { SpacesService } from './spaces.service.js';
 export { mergeRooms } from './space-rooms.js';
 

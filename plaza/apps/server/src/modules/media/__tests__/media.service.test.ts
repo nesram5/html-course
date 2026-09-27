@@ -44,4 +44,13 @@ describe('MediaService', () => {
 
     expect(media.mutes).toEqual([{ roomName: 'space_space-1', identity: 'user-luis' }]);
   });
+
+  it('removes a kicked member from the space room', async () => {
+    const media = new FakeMediaProvider();
+    const service = new MediaService({ members, media });
+
+    await service.removeParticipant('space-1', 'user-luis');
+
+    expect(media.removals).toEqual([{ roomName: 'space_space-1', identity: 'user-luis' }]);
+  });
 });

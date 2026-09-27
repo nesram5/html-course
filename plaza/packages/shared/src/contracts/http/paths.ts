@@ -21,6 +21,8 @@ export const API_PATHS = {
   inviteLink: '/api/spaces/:spaceId/invite-link',
   members: '/api/spaces/:spaceId/members',
   member: '/api/spaces/:spaceId/members/:userId',
+  bans: '/api/spaces/:spaceId/bans',
+  ban: '/api/spaces/:spaceId/bans/:userId',
   join: '/api/join/:token',
   rooms: '/api/spaces/:spaceId/rooms',
   roomsAuthorize: '/api/spaces/:spaceId/rooms/authorize',

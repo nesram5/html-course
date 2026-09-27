@@ -152,4 +152,24 @@ describe('LiveKitMediaProvider against a real LiveKit server', () => {
       provider.mutePublishedTracks({ roomName: mediaRoomName('missing'), identity: 'user-ana' }),
     ).resolves.toBeUndefined();
   });
+
+  it('removes a participant from the room and ignores people who are not connected (E2-S6)', async () => {
+    const roomName = mediaRoomName(`it-${randomUUID()}`);
+    await join(roomName, 'user-ana');
+    const luis = await join(roomName, 'user-luis');
+    const luisDisconnected = new Promise<void>((resolve) => {
+      luis.on(RoomEvent.Disconnected, () => {
+        resolve();
+      });
+    });
+
+    await provider.removeParticipant({ roomName, identity: 'user-luis' });
+
+    await luisDisconnected;
+    const participants = await admin.listParticipants(roomName);
+    expect(participants.map((p) => p.identity)).toEqual(['user-ana']);
+    await expect(
+      provider.removeParticipant({ roomName, identity: 'user-nobody' }),
+    ).resolves.toBeUndefined();
+  });
 });

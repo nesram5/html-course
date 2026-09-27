@@ -94,6 +94,40 @@ test.describe('access to a space (E1-S3, E2-S4, E2-S6)', () => {
     await owner.context.close();
   });
 
+  test('a removed member cannot rejoin with the invite link until the owner readmits them', async ({
+    browser,
+    page,
+  }) => {
+    const run = randomUUID().slice(0, 8);
+    const owner = await ownerWithSpace(browser, run);
+    const evaId = await signIn(page.request, `eva-${run}@gmail.com`);
+    const invitePath = new URL(owner.space.inviteUrl).pathname;
+    const token = invitePath.split('/').pop() ?? '';
+    expect((await page.request.post(`/api/join/${token}`, { headers: CLIENT })).status()).toBe(200);
+    const kicked = await owner.context.request.delete(
+      `/api/spaces/${owner.space.id}/members/${evaId}`,
+      { headers: CLIENT },
+    );
+    expect(kicked.status()).toBe(204);
+
+    await page.goto(invitePath);
+    await expect(
+      page.getByRole('heading', { name: 'Ya no puedes unirte a este espacio' }),
+    ).toBeVisible();
+
+    await owner.page.goto(`/spaces/${owner.space.id}/settings`);
+    const bans = owner.page.getByRole('region', { name: 'Personas expulsadas' });
+    await expect(bans).toContainText(`eva-${run}@gmail.com`);
+    await bans.getByRole('button', { name: `Readmitir a eva-${run}` }).click();
+    await expect(
+      owner.page.getByText(`eva-${run} puede volver a unirse al espacio.`),
+    ).toBeVisible();
+
+    await page.goto(invitePath);
+    await expect(page).toHaveURL(new RegExp(`/s/${owner.space.slug}$`));
+    await owner.context.close();
+  });
+
   test('a cancelled Google sign-in says so and keeps the original route', async ({ page }) => {
     // The fake identity provider of the test server: start the flow without following Google.
     const start = await page.request.get('/api/auth/google?next=/spaces/new', { maxRedirects: 0 });

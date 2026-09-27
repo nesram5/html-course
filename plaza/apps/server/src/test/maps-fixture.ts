@@ -1,11 +1,7 @@
 import { parseManifest } from '@plaza/maps';
+import type { WorldMap } from '@plaza/shared';
 
-import {
-  ManifestMapsCatalog,
-  mapsPackageDir,
-  type MapRoomArea,
-  type ParsedMapInfo,
-} from '../platform/maps-catalog.js';
+import { ManifestMapsCatalog, mapsPackageDir, type MapRoomArea } from '../platform/maps-catalog.js';
 
 let packageCatalog: ManifestMapsCatalog | undefined;
 
@@ -107,6 +103,6 @@ export function fixtureMapsCatalog(): ManifestMapsCatalog {
       },
     },
     // Fixture maps are stored already parsed.
-    (tmj) => tmj as ParsedMapInfo,
+    (tmj) => tmj as WorldMap,
   );
 }

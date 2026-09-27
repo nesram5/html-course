@@ -22,6 +22,8 @@ export const ERROR_CODES = [
   'DOMAIN_NOT_ALLOWED',
   'LAST_OWNER',
   'NOT_A_MEMBER',
+  /** Removed by an owner: invite links and the allowed domain no longer let the person in. */
+  'BANNED_FROM_SPACE',
   // Meeting rooms (E2-S7, E6)
   'UNKNOWN_ROOM',
   'INVALID_MEET_URI',
@@ -63,6 +65,7 @@ export const ERROR_HTTP_STATUS = {
   LAST_OWNER: 409,
   // Non-members get 404 on REST so space existence is not leaked (E2-S2).
   NOT_A_MEMBER: 404,
+  BANNED_FROM_SPACE: 403,
   UNKNOWN_ROOM: 404,
   INVALID_MEET_URI: 400,
   MEETING_PROVIDER_ERROR: 502,

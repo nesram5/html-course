@@ -47,4 +47,12 @@ export class MediaService {
   muteParticipantTracks(spaceId: string, userId: string): Promise<void> {
     return this.#media.mutePublishedTracks({ roomName: mediaRoomName(spaceId), identity: userId });
   }
+
+  /**
+   * Disconnects a member removed from the space (E2-S6) from the space's media room, so they stop
+   * hearing the hallway at once. Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit fails.
+   */
+  removeParticipant(spaceId: string, userId: string): Promise<void> {
+    return this.#media.removeParticipant({ roomName: mediaRoomName(spaceId), identity: userId });
+  }
 }

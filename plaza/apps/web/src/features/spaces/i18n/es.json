@@ -70,6 +70,14 @@
     "kicked": "{{name}} ya no es miembro del espacio.",
     "you": "(tú)"
   },
+  "bans": {
+    "title": "Personas expulsadas",
+    "description": "No pueden volver a entrar con el enlace de invitación ni con el dominio permitido hasta que las readmitas.",
+    "since": "Expulsada el {{date}}",
+    "unban": "Readmitir",
+    "unbanLabel": "Readmitir a {{name}}",
+    "unbanned": "{{name}} puede volver a unirse al espacio."
+  },
   "rooms": {
     "title": "Salas de reunión",
     "none": "Este mapa no tiene salas de reunión.",
@@ -94,6 +102,8 @@
     "joining": "Uniéndote al espacio…",
     "invalid": "Esta invitación ya no es válida",
     "invalidHint": "Pide a la administración del espacio un enlace nuevo.",
+    "banned": "Ya no puedes unirte a este espacio",
+    "bannedHint": "La administración te expulsó. Si fue un error, pídele que te readmita.",
     "goToSpaces": "Ir a mis espacios"
   },
   "confirm": {
