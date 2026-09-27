@@ -10,6 +10,7 @@ import {
   setTabHidden,
   signIn,
   tile,
+  walkToColumn,
   type CreatedSpace,
 } from './support/world';
 
@@ -64,19 +65,6 @@ function playing(page: Page, userId: string): Promise<boolean> {
     .catch(() => false);
 }
 
-/** Walks along the row with the arrow keys, one tap at a time, until column `x`. */
-async function walkTo(page: Page, x: number): Promise<void> {
-  const canvas = page.getByTestId('world-canvas');
-  await canvas.focus();
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const before = await tile(page);
-    if (before.x === x) return;
-    await page.keyboard.press(before.x < x ? 'ArrowRight' : 'ArrowLeft');
-    await expect(canvas).not.toHaveAttribute('data-tile-x', String(before.x));
-  }
-  throw new Error(`could not walk to column ${String(x)}`);
-}
-
 test.describe('hallway conversations with real media (E5)', () => {
   test('two people nearby see each other; apart, the video goes; far away, nobody subscribes', async ({
     browser,
@@ -92,7 +80,7 @@ test.describe('hallway conversations with real media (E5)', () => {
 
     // Eva arrives first (spawn 11,25) and walks far away along row 25 before anyone else comes.
     await openOffice(eva.page, space.slug, { media: true });
-    await walkTo(eva.page, 26);
+    await walkToColumn(eva.page, 26);
     expect(await tile(eva.page)).toEqual({ x: 26, y: 25 });
 
     // Ana (12,25) and Luis (13,25) spawn one tile apart: a hallway conversation.
@@ -116,7 +104,7 @@ test.describe('hallway conversations with real media (E5)', () => {
     await ana.page.screenshot({ path: 'test-results/hallway-two-people.png' });
 
     // Luis walks away: at 5 tiles the conversation ends and the videos go.
-    await walkTo(luis.page, 17);
+    await walkToColumn(luis.page, 17);
     expect(await tile(luis.page)).toEqual({ x: 17, y: 25 });
     await expect(videoOf(ana.page, luis.userId)).toHaveCount(0, { timeout: 5000 });
     await expect(videoOf(luis.page, ana.userId)).toHaveCount(0, { timeout: 5000 });
@@ -126,7 +114,7 @@ test.describe('hallway conversations with real media (E5)', () => {
       .toBe(false);
 
     // He comes back to 3 tiles: the video is back within 5 s.
-    await walkTo(luis.page, 15);
+    await walkToColumn(luis.page, 15);
     expect(await tile(luis.page)).toEqual({ x: 15, y: 25 });
     const back = Date.now();
     await expect.poll(() => playing(ana.page, luis.userId), { timeout: 5000 }).toBe(true);

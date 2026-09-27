@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-import { tile } from './world';
+import { tapKey, tile } from './world';
 
 /** Office personalization as reported by `window.__plazaWorld.office()` (E9). */
 export interface OfficeProbe {
@@ -116,7 +116,7 @@ export async function walk(page: Page, path: Tile[]): Promise<void> {
           : step.y > at.y
             ? 'ArrowDown'
             : 'ArrowUp';
-    await page.keyboard.press(key);
+    await tapKey(page, key);
     await expect(canvas).toHaveAttribute('data-tile-x', String(step.x));
     await expect(canvas).toHaveAttribute('data-tile-y', String(step.y));
   }

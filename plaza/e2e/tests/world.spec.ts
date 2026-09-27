@@ -100,13 +100,15 @@ test.describe('2D map engine (E3)', () => {
     await toolbar.getByRole('button', { name: 'Centrar en mí' }).click();
 
     // Tab leaves the canvas for the UI over the map: the first-use hallway notice (E5-S6), the
-    // bottom bar (microphone, camera, status, people, reactions, chat) and then the map controls.
+    // bottom bar (microphone, camera, speaker, status, people, reactions, chat) and then the map
+    // controls.
     await canvas.focus();
     const bar = page.getByRole('group', { name: 'Tus controles' });
     const order = [
       page.getByRole('button', { name: 'Entendido' }),
       bar.getByRole('button', { name: 'Activar micrófono' }),
       bar.getByRole('button', { name: 'Encender cámara' }),
+      bar.getByRole('button', { name: /^Altavoz/ }),
       bar.getByRole('button', { name: /^Estado:/ }),
       bar.getByRole('button', { name: /^Personas/ }),
       bar.getByRole('button', { name: 'Reaccionar' }),

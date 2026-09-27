@@ -11,7 +11,7 @@ import {
   remoteAvatar,
   setTabHidden,
   signIn,
-  tile,
+  walkToColumn,
   type CreatedSpace,
 } from './support/world';
 
@@ -100,18 +100,6 @@ function hearing(page: Page, userId: string): Promise<boolean> {
   }, userId);
 }
 
-async function walkTo(page: Page, x: number): Promise<void> {
-  const canvas = page.getByTestId('world-canvas');
-  await canvas.focus();
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const before = await tile(page);
-    if (before.x === x) return;
-    await page.keyboard.press(before.x < x ? 'ArrowRight' : 'ArrowLeft');
-    await expect(canvas).not.toHaveAttribute('data-tile-x', String(before.x));
-  }
-  throw new Error(`could not walk to column ${String(x)}`);
-}
-
 function bar(page: Page) {
   return page.getByRole('group', { name: 'Tus controles' });
 }
@@ -135,7 +123,7 @@ test.describe('hostile and edge cases across hallway, presence and personalizati
     test.setTimeout(180_000);
     const { eva, ana, luis, space } = await threePeople(browser, 'Bordes');
     await openOffice(eva.page, space.slug, { media: true });
-    await walkTo(eva.page, 26);
+    await walkToColumn(eva.page, 26);
     await openOffice(ana.page, space.slug, { media: true });
     await openOffice(luis.page, space.slug, { media: true });
 

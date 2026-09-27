@@ -20,6 +20,7 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  tapKey,
   tile,
   type CreatedSpace,
 } from './support/world';
@@ -76,7 +77,7 @@ async function bumpIntoTheBottomWall(page: Page, map: TestMap): Promise<Tile[]> 
     const at = await tile(page);
     const next = { x: at.x + STEPS[key].x, y: at.y + STEPS[key].y };
     const expected = map.blocked(next.x, next.y) ? at : next;
-    await page.keyboard.press(key);
+    await tapKey(page, key);
     if (expected === at) await page.waitForTimeout(300);
     await expect(canvas).toHaveAttribute('data-tile-y', String(expected.y));
     expect(await tile(page)).toEqual(expected);

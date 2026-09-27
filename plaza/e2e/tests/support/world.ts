@@ -87,6 +87,87 @@ export async function joinByInvite(request: APIRequestContext, space: CreatedSpa
   expect((await request.post(`/api/join/${token}`, { headers: CLIENT })).status()).toBe(200);
 }
 
+export type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+
+/** Tile offset of each arrow key. */
+export const STEP_OF: Readonly<Record<ArrowKey, { x: number; y: number }>> = {
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+};
+
+/**
+ * One tap of an arrow key, as `keydown` and `keyup` in the same task of the page: exactly one
+ * tile however loaded the machine is (with `keyboard.press`, a busy page may see the key held
+ * past one step and walk two tiles).
+ */
+export async function tapKey(page: Page, key: ArrowKey): Promise<void> {
+  await page.evaluate((code) => {
+    const target = document.activeElement ?? document.body;
+    for (const type of ['keydown', 'keyup']) {
+      target.dispatchEvent(new KeyboardEvent(type, { key: code, code, bubbles: true }));
+    }
+  }, key);
+}
+
+/** Someone else's page: a step counts as confirmed by the server once they see it there. */
+export interface Observer {
+  page: Page;
+  /** The walker, as the observer's page knows them. */
+  userId: string;
+}
+
+/**
+ * One tile with the keyboard: taps `key`, waits for the local avatar to be on `expected`
+ * (the tile the key leads to, or the current one when blocked) and, with `seenBy`, for the other
+ * page to draw the avatar there too, i.e. for the server to have accepted the step.
+ */
+export async function step(
+  page: Page,
+  key: ArrowKey,
+  options: { expected?: { x: number; y: number }; seenBy?: Observer } = {},
+): Promise<{ x: number; y: number }> {
+  const canvas = page.getByTestId('world-canvas');
+  const at = await tile(page);
+  const expected = options.expected ?? { x: at.x + STEP_OF[key].x, y: at.y + STEP_OF[key].y };
+  await tapKey(page, key);
+  await expect(canvas).toHaveAttribute('data-tile-x', String(expected.x));
+  await expect(canvas).toHaveAttribute('data-tile-y', String(expected.y));
+  if (options.seenBy !== undefined) await expectSeenAt(options.seenBy, expected);
+  return expected;
+}
+
+/** Waits until the observer's page draws the walker, still, on `at` (server-confirmed). */
+export async function expectSeenAt(
+  observer: Observer,
+  at: { x: number; y: number },
+): Promise<void> {
+  await expect
+    .poll(async () => {
+      const seen = await remoteAvatar(observer.page, observer.userId);
+      return seen && { x: seen.tileX, y: seen.tileY };
+    })
+    .toEqual(at);
+}
+
+/**
+ * Walks along the current row to column `x`, one confirmed tile at a time; with `seenBy`, the
+ * final tile is also confirmed by the server (another page draws the avatar there).
+ */
+export async function walkToColumn(page: Page, x: number, seenBy?: Observer): Promise<void> {
+  await page.getByTestId('world-canvas').focus();
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const at = await tile(page);
+    if (at.x === x) {
+      if (seenBy !== undefined) await expectSeenAt(seenBy, at);
+      return;
+    }
+    await step(page, at.x < x ? 'ArrowRight' : 'ArrowLeft');
+  }
+  throw new Error(`could not walk to column ${String(x)}`);
+}
+
 /** Tile of the local avatar, from the canvas data attributes. */
 export async function tile(page: Page): Promise<{ x: number; y: number }> {
   const canvas = page.getByTestId('world-canvas');

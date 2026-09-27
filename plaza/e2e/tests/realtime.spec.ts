@@ -10,6 +10,7 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  tapKey,
   tile,
   type CreatedSpace,
 } from './support/world';
@@ -60,12 +61,12 @@ test.describe('multiplayer in real time (E4)', () => {
 
     // Luis walks two tiles up; Ana sees the remote avatar walk there (animated, then still).
     await luis.page.getByTestId('world-canvas').focus();
-    await luis.page.keyboard.press('ArrowUp');
+    await tapKey(luis.page, 'ArrowUp');
     await expect(luis.page.getByTestId('world-canvas')).toHaveAttribute(
       'data-tile-y',
       String(luisStart.y - 1),
     );
-    await luis.page.keyboard.press('ArrowUp');
+    await tapKey(luis.page, 'ArrowUp');
     await expect(luis.page.getByTestId('world-canvas')).toHaveAttribute(
       'data-tile-y',
       String(luisStart.y - 2),
@@ -102,7 +103,7 @@ test.describe('multiplayer in real time (E4)', () => {
       await canvas.focus();
       for (let step = 1; step <= index + 1; step++) {
         const before = await tile(walker.page);
-        await walker.page.keyboard.press('ArrowUp');
+        await tapKey(walker.page, 'ArrowUp');
         await expect(canvas).toHaveAttribute('data-tile-y', String(before.y - 1));
       }
       ends.set(walker.userId, await tile(walker.page));
@@ -130,7 +131,7 @@ test.describe('multiplayer in real time (E4)', () => {
     await openOffice(ana.page, space.slug);
     await openOffice(luis.page, space.slug);
     await luis.page.getByTestId('world-canvas').focus();
-    await luis.page.keyboard.press('ArrowUp');
+    await tapKey(luis.page, 'ArrowUp');
     const before = { x: (await tile(luis.page)).x, y: (await tile(luis.page)).y };
     await expect
       .poll(async () => (await remoteAvatar(ana.page, luis.userId))?.tileY)
