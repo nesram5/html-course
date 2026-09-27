@@ -1,7 +1,7 @@
 import type { WorldMap } from '@plaza/shared';
 import * as Phaser from 'phaser';
 
-import type { ThemeAssets } from '../api/assets';
+import { avatarUrl as conventionalAvatarUrl, type ThemeAssets } from '../api/assets';
 import type { EventBus } from '../bridge/event-bus';
 import type { WorldStore } from '../store/world-store';
 import { registerGame } from './game-registry';
@@ -13,7 +13,10 @@ export interface WorldGameOptions {
   readonly map: WorldMap;
   readonly theme: ThemeAssets;
   readonly displayName: string;
+  /** Sprite sheet of the local avatar. */
   readonly avatarUrl: string;
+  /** Sprite sheets of the avatar catalog by id (remote players); missing ids use the default path. */
+  readonly avatarUrls?: Readonly<Record<string, string>>;
   readonly events: EventBus;
   readonly store: WorldStore;
 }
@@ -48,6 +51,8 @@ export function createWorldGame(options: WorldGameOptions): WorldGame {
         map: options.map,
         theme: options.theme,
         displayName: options.displayName,
+        avatarUrlOf: (avatarId) =>
+          options.avatarUrls?.[avatarId] ?? conventionalAvatarUrl(avatarId),
         events,
         store,
       }),

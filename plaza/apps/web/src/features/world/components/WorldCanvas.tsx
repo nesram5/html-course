@@ -12,6 +12,8 @@ export interface WorldCanvasProps {
   readonly theme: ThemeAssets;
   readonly displayName: string;
   readonly avatarUrl: string;
+  /** Sprite sheets of the avatar catalog by id, for the other people (E4-S5). */
+  readonly avatarUrls?: Readonly<Record<string, string>>;
   /** Accessible name of the canvas region. */
   readonly label: string;
   readonly events?: EventBus;
@@ -28,6 +30,7 @@ export function WorldCanvas({
   theme,
   displayName,
   avatarUrl,
+  avatarUrls,
   label,
   events = worldEvents,
   store = worldStore,
@@ -47,7 +50,16 @@ export function WorldCanvas({
     import('../game/create-game')
       .then(({ createWorldGame }) => {
         if (cancelled) return;
-        game = createWorldGame({ parent, map, theme, displayName, avatarUrl, events, store });
+        game = createWorldGame({
+          parent,
+          map,
+          theme,
+          displayName,
+          avatarUrl,
+          ...(avatarUrls !== undefined && { avatarUrls }),
+          events,
+          store,
+        });
       })
       .catch(() => {
         if (!cancelled) store.getState().setLoad({ kind: 'error', file: 'phaser' });
@@ -57,7 +69,7 @@ export function WorldCanvas({
       game?.destroy();
       store.getState().reset();
     };
-  }, [map, theme, displayName, avatarUrl, events, store, attempt]);
+  }, [map, theme, displayName, avatarUrl, avatarUrls, events, store, attempt]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#1e2130]">

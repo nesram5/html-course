@@ -76,20 +76,23 @@ test.describe('access to a space (E1-S3, E2-S4, E2-S6)', () => {
     expect((await page.request.post(`/api/join/${token}`, { headers: CLIENT })).status()).toBe(200);
 
     await page.goto(`/s/${owner.space.slug}`);
-    await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-state', 'ready', {
-      timeout: 30_000,
-    });
+    const canvas = page.getByTestId('world-canvas');
+    await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+    // In the office (joined in real time): the avatar has a tile.
+    await expect(canvas).toHaveAttribute('data-tile-x', /^\d+$/, { timeout: 15_000 });
     const kicked = await owner.context.request.delete(
       `/api/spaces/${owner.space.id}/members/${luisId}`,
       { headers: CLIENT },
     );
     expect(kicked.status()).toBe(204);
 
-    await page.getByRole('link', { name: 'Salir' }).click();
+    // space:kicked (E4): out of the office at once, with an explanation.
     await expect(page).toHaveURL(/\/spaces$/);
-    await page.goBack();
+    await expect(page.getByText('Te han quitado de este espacio.')).toBeVisible();
+    await page.goto(`/s/${owner.space.slug}`);
 
     await expect(page.getByRole('alert')).toHaveText('No eres miembro de este espacio.');
+    await expect(page.getByRole('button', { name: 'Reintentar' })).toHaveCount(0);
     await expect(page.locator('canvas')).toHaveCount(0);
     await owner.context.close();
   });

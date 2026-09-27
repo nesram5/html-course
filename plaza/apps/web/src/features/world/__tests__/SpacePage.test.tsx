@@ -1,12 +1,30 @@
+import type { SpaceSnapshot } from '@plaza/shared';
 import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderApp } from '@/test/render';
 
+import { worldEvents } from '../bridge/event-bus';
 import type { WorldGameOptions } from '../game/create-game';
 import { worldStore } from '../store/world-store';
+import type { FakeSocket } from './fake-socket';
+import { testSnapshot } from './fixtures';
 
 const games: WorldGameOptions[] = [];
+
+// The app-wide RealtimeClient creates its socket through `io()`: a FakeSocket plays the server.
+const sockets = vi.hoisted(() => [] as FakeSocket[]);
+vi.mock('socket.io-client', async () => {
+  const { FakeSocket } = await import('./fake-socket');
+  return {
+    io: vi.fn(() => {
+      const socket = new FakeSocket();
+      sockets.push(socket);
+      return socket;
+    }),
+  };
+});
 
 vi.mock('../game/create-game', () => ({
   createWorldGame: vi.fn((options: WorldGameOptions) => {
@@ -184,6 +202,20 @@ describe('SpacePage (/s/:slug)', () => {
     expect(games).toHaveLength(0);
   });
 
+  it('explains a ban (removed by an owner) without offering a useless retry', async () => {
+    mockServer({
+      '/api/spaces/by-slug/acme/enter': () =>
+        json({ error: { code: 'BANNED_FROM_SPACE', message: 'removed' } }, 403),
+    });
+
+    renderApp({ route: '/s/acme' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/.+/);
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toBeInTheDocument();
+    expect(games).toHaveLength(0);
+  });
+
   it('sends people without a session to the login page and back to the space', async () => {
     mockServer({
       '/api/me': () => json({ error: { code: 'UNAUTHORIZED', message: 'no' } }, 401),
@@ -222,5 +254,127 @@ describe('SpacePage (/s/:slug)', () => {
       expect(games).toHaveLength(1);
     });
     expect(games[0]?.avatarUrl).toBe('/assets/maps/avatars/avatar-04.png');
+  });
+});
+
+/** The single socket of the app-wide RealtimeClient (created on the first visit). */
+function socket(): FakeSocket {
+  const current = sockets[0];
+  if (current === undefined) throw new Error('no socket yet');
+  return current;
+}
+
+/** Opens the space, "draws" the map and accepts the connection: the page sends space:join. */
+async function openOffice() {
+  mockServer();
+  const view = renderApp({ route: '/s/acme' });
+  await waitFor(() => {
+    expect(games).toHaveLength(1);
+  });
+  act(() => {
+    worldStore.getState().setLoad({ kind: 'ready' });
+    socket().accept();
+  });
+  return view;
+}
+
+async function answerJoin(answer: unknown): Promise<void> {
+  await act(async () => {
+    socket().lastAck('space:join').resolve(answer);
+    await Promise.resolve();
+  });
+}
+
+describe('SpacePage realtime (E4)', () => {
+  it('joins the space once the map is drawn and hands the snapshot to the world', async () => {
+    const snapshots: SpaceSnapshot[] = [];
+    const off = worldEvents.on('world:snapshot', (snapshot) => snapshots.push(snapshot));
+    await openOffice();
+
+    expect(screen.getByTestId('connection-banner')).toHaveTextContent('Conectando…');
+    expect(socket().lastAck('space:join').payload).toMatchObject({ spaceId: 'space-1' });
+    await answerJoin({ ok: true, data: testSnapshot() });
+
+    expect(snapshots).toEqual([testSnapshot()]);
+    expect(screen.getByTestId('connection-banner')).toHaveTextContent('');
+    expect(games[0]?.avatarUrls).toEqual({ 'avatar-04': '/assets/maps/avatars/lavanda.png' });
+    off();
+  });
+
+  it('shows "Reconectando…" while the connection is down and re-joins when it is back', async () => {
+    await openOffice();
+    await answerJoin({ ok: true, data: testSnapshot() });
+    const joins = socket().acks.filter((ack) => ack.event === 'space:join').length;
+
+    act(() => {
+      socket().drop();
+    });
+    expect(screen.getByTestId('connection-banner')).toHaveTextContent('Reconectando…');
+    act(() => {
+      socket().accept();
+    });
+
+    expect(socket().acks.filter((ack) => ack.event === 'space:join')).toHaveLength(joins + 1);
+    await answerJoin({ ok: true, data: testSnapshot() });
+    expect(screen.getByTestId('connection-banner')).toHaveTextContent('');
+  });
+
+  it('explains SESSION_REPLACED and takes the session back on request', async () => {
+    const user = userEvent.setup();
+    await openOffice();
+    await answerJoin({ ok: true, data: testSnapshot() });
+    const connects = socket().connectCalls;
+
+    act(() => {
+      socket().serverEmit('space:kicked', { reason: 'SESSION_REPLACED' });
+      socket().closeFromServer();
+    });
+
+    expect(
+      screen.getByRole('heading', { name: 'Abriste Plaza en otra pestaña' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('world-canvas')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Usar Plaza aquí' }));
+
+    expect(socket().connectCalls).toBe(connects + 1);
+    await waitFor(() => {
+      expect(games).toHaveLength(2);
+    });
+  });
+
+  it('goes back to "Mis espacios" with a message when removed from the space', async () => {
+    const { router } = await openOffice();
+    await answerJoin({ ok: true, data: testSnapshot() });
+
+    act(() => {
+      socket().serverEmit('space:kicked', { reason: 'REMOVED' });
+    });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/spaces');
+    });
+    expect(await screen.findByText('Te han quitado de este espacio.')).toBeInTheDocument();
+  });
+
+  it('shows why the join was refused, with retry only when it can help', async () => {
+    const user = userEvent.setup();
+    await openOffice();
+
+    await answerJoin({ ok: false, error: { code: 'SPACE_FULL', message: 'full' } });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'El espacio está lleno (máximo 50 personas).',
+    );
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => {
+      expect(games).toHaveLength(2);
+    });
+    act(() => {
+      worldStore.getState().setLoad({ kind: 'ready' });
+    });
+
+    await answerJoin({ ok: false, error: { code: 'NOT_A_MEMBER', message: 'banned' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('No eres miembro de este espacio.');
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toBeInTheDocument();
   });
 });

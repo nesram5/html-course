@@ -68,10 +68,14 @@ export class LocalPlayerController {
     this.tapped = null;
   }
 
-  /** Places the avatar on a tile at once (server correction, E4). */
+  /**
+   * Places the avatar on a tile at once, for positions decided by the server: the spawn and
+   * reconnections (`space:snapshot`), rejected steps (`player:correct`), "Mi escritorio".
+   * Emits no step: the server already knows. A held key keeps walking from there.
+   */
   teleport(tile: Tile, dir: Direction = this.dir): void {
-    this.tile = tile;
-    this.from = tile;
+    this.tile = { x: tile.x, y: tile.y };
+    this.from = this.tile;
     this.dir = dir;
     this.moving = false;
     this.elapsed = 0;
@@ -125,11 +129,4 @@ export class LocalPlayerController {
       },
     };
   }
-}
-
-/** A spawn tile of the map, chosen at random so people do not pile up (E3-S3). */
-export function pickSpawn(map: WorldMap, random: () => number = Math.random): Tile {
-  const spawn = map.spawns[Math.floor(random() * map.spawns.length)] ?? map.spawns[0];
-  if (spawn === undefined) throw new Error('the map has no spawn points');
-  return spawn;
 }

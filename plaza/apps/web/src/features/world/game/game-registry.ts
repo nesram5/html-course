@@ -17,3 +17,40 @@ export function registerGame(): () => void {
 export function liveGameCount(): number {
   return liveGames;
 }
+
+/** A drawn avatar as seen by the debug probe. */
+export interface AvatarProbe {
+  /** `null` for the local avatar. */
+  readonly userId: string | null;
+  /** Logical tile (the destination while walking). */
+  readonly tileX: number;
+  readonly tileY: number;
+  /** Drawn position in tiles. */
+  readonly x: number;
+  readonly y: number;
+  readonly alpha: number;
+  readonly moving: boolean;
+  /** Whether the name label is drawn over the `above` art layer. */
+  readonly labelAboveArt: boolean;
+}
+
+/** Read-only view of the running world scene, for E2E tests and the stress mode. */
+export interface WorldProbe {
+  /** Frames per second measured by Phaser's game loop. */
+  fps(): number;
+  avatars(): AvatarProbe[];
+}
+
+let probe: WorldProbe | null = null;
+
+/** Registers the probe of the running scene; returns the function that removes it. */
+export function setWorldProbe(next: WorldProbe): () => void {
+  probe = next;
+  return () => {
+    if (probe === next) probe = null;
+  };
+}
+
+export function worldProbe(): WorldProbe | null {
+  return probe;
+}

@@ -1,0 +1,27 @@
+/**
+ * Draw order of the world (architecture §8.1), Phaser-free so it can be unit tested:
+ * `below` image (0) → room overlays (10) → avatars (100 + row) → `above` image → name labels.
+ */
+
+/** Depth of avatars: above the `below` image and room overlays, sorted by row. */
+export const AVATAR_BASE_DEPTH = 100;
+/** Depth of the `above` image: always over the avatars (architecture §8.1). */
+export const ABOVE_DEPTH = 100_000;
+/**
+ * Depth of the name labels: over the `above` image, so trees and roofs never hide a name,
+ * sorted by row among themselves.
+ */
+export const LABEL_BASE_DEPTH = ABOVE_DEPTH + 1;
+
+/**
+ * Depth of an avatar on a (possibly fractional) row: lower rows are drawn in front. Whole rows
+ * only, so an avatar walking between two tiles re-sorts the scene once, not every frame.
+ */
+export function avatarDepth(tileY: number): number {
+  return AVATAR_BASE_DEPTH + Math.round(tileY);
+}
+
+/** Depth of the name label of an avatar on a row: always over the `above` art. */
+export function labelDepth(tileY: number): number {
+  return LABEL_BASE_DEPTH + Math.round(tileY);
+}

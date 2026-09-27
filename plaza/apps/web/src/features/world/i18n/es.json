@@ -6,7 +6,8 @@
     "backToSpaces": "Volver a mis espacios",
     "leave": "Salir",
     "hallway": "En el pasillo",
-    "inRoom": "En {{name}}"
+    "inRoom": "En {{name}}",
+    "reload": "Recargar"
   },
   "canvas": {
     "label": "Mapa de {{space}}. Camina con las flechas o WASD; + y - cambian el zoom.",
@@ -20,5 +21,16 @@
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
     "zoom": "{{zoom}}×"
+  },
+  "connection": {
+    "connecting": "Conectando…",
+    "reconnecting": "Reconectando…"
+  },
+  "session": {
+    "replacedTitle": "Abriste Plaza en otra pestaña",
+    "replacedBody": "Solo puedes estar en la oficina desde una pestaña a la vez. Puedes seguir en la otra o usar Plaza aquí.",
+    "takeOver": "Usar Plaza aquí",
+    "removed": "Te han quitado de este espacio.",
+    "accountDeleted": "Tu cuenta se ha eliminado."
   }
 }
