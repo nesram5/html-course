@@ -13,6 +13,7 @@ export const healthModule: PlazaModule = {
         realtime: {
           connectedBySpace: container.metrics.connectedBySpace(),
           avgTickMs: container.metrics.avgTickMs(),
+          avgMediaPeersPerTick: container.metrics.avgMediaPeersPerTick(),
         },
       });
     });

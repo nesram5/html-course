@@ -120,11 +120,11 @@ describe('rooms, media and desks', () => {
     expect(UpdateRoomBodySchema.safeParse({ meetUri: 'https://zoom.us/j/1' }).success).toBe(false);
   });
 
-  it('returns a websocket URL for media', () => {
-    expect(
-      MediaTokenResponseSchema.safeParse({ url: 'wss://lk.example.com', token: 't' }).success,
-    ).toBe(true);
-    expect(MediaTokenResponseSchema.safeParse({ url: 'https://x', token: 't' }).success).toBe(
+  it('returns a websocket URL for media and the lifetime of the token', () => {
+    const token = { url: 'wss://lk.example.com', token: 't', expiresInSeconds: 600 };
+    expect(MediaTokenResponseSchema.safeParse(token).success).toBe(true);
+    expect(MediaTokenResponseSchema.safeParse({ ...token, url: 'https://x' }).success).toBe(false);
+    expect(MediaTokenResponseSchema.safeParse({ ...token, expiresInSeconds: 0 }).success).toBe(
       false,
     );
   });
@@ -157,7 +157,7 @@ describe('misc', () => {
       HealthResponseSchema.safeParse({
         status: 'ok',
         version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null },
+        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
       }).success,
     ).toBe(true);
   });

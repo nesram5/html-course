@@ -31,4 +31,12 @@ describe('InMemoryRealtimeMetrics', () => {
     expect(metrics.connectedBySpace()).toEqual({ s1: 3 });
     expect(metrics.avgTickMs()).toBe(3);
   });
+
+  it('averages the media:peers sent per tick over the last 100 ticks (E5-S2)', () => {
+    const metrics = new InMemoryRealtimeMetrics();
+    expect(metrics.avgMediaPeersPerTick()).toBeNull();
+    metrics.recordMediaPeers(10);
+    for (let i = 0; i < 100; i++) metrics.recordMediaPeers(i % 2 === 0 ? 1 : 3);
+    expect(metrics.avgMediaPeersPerTick()).toBe(2);
+  });
 });

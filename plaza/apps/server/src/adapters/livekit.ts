@@ -105,8 +105,9 @@ export class LiveKitMediaProvider implements MediaProvider {
 
   /**
    * Removes the participant from the room (a member kicked out of the space, E2-S6). The token
-   * they hold is still valid for its remaining lifetime, but the media-token endpoint refuses
-   * non-members, so they cannot get a new one. No-op when the person is not connected.
+   * they hold is still valid for its remaining lifetime (at most `MEDIA_TOKEN_TTL_SECONDS`,
+   * 10 min), but the media-token endpoint refuses non-members, so they cannot get a new one.
+   * No-op when the person is not connected.
    */
   async removeParticipant(input: { roomName: string; identity: string }): Promise<void> {
     try {

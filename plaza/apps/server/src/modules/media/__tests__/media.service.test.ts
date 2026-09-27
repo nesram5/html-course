@@ -9,16 +9,17 @@ const members: MediaMembers = {
 };
 
 describe('MediaService', () => {
-  it('issues a 1 h token for the space room to a member', async () => {
+  it('issues a 10 min token for the space room to a member, saying when it expires', async () => {
     const media = new FakeMediaProvider('wss://lk.example.com');
     const service = new MediaService({ members, media });
 
     await expect(service.issueToken('space-1', 'user-ana')).resolves.toEqual({
       url: 'wss://lk.example.com',
       token: 'fake-token:space_space-1:user-ana',
+      expiresInSeconds: 600,
     });
     expect(media.tokens).toEqual([
-      { roomName: 'space_space-1', identity: 'user-ana', displayName: 'Ana', ttlSeconds: 3600 },
+      { roomName: 'space_space-1', identity: 'user-ana', displayName: 'Ana', ttlSeconds: 600 },
     ]);
   });
 

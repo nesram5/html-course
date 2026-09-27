@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MAX_PEERS, PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '../../constants.js';
 import {
+  changedPeers,
   computePeers,
   DEFAULT_PROXIMITY_CONFIG,
   type PeerMap,
@@ -337,5 +338,48 @@ describe('computePeers (E5-S1)', () => {
     }
     const averageMs = (Date.now() - start) / iterations;
     expect(averageMs).toBeLessThan(1);
+  });
+});
+
+describe('changedPeers (E5-S2)', () => {
+  const map = (entries: Record<string, string[]>): PeerMap =>
+    new Map(Object.entries(entries).map(([id, peers]) => [id, new Set(peers)]));
+
+  it('lists only the people whose set changed, with sorted peers', () => {
+    const prev = map({ a: ['b'], b: ['a'], c: [], d: ['e'], e: ['d'] });
+    const next = map({ a: ['c', 'b'], b: ['a'], c: ['a'], d: ['e'], e: ['d'] });
+    expect(changedPeers(prev, next)).toEqual([
+      { userId: 'a', peers: ['b', 'c'] },
+      { userId: 'c', peers: ['a'] },
+    ]);
+  });
+
+  it('treats a missing previous entry as no peers', () => {
+    const next = map({ a: [], b: ['c'], c: ['b'] });
+    expect(changedPeers(NONE, next)).toEqual([
+      { userId: 'b', peers: ['c'] },
+      { userId: 'c', peers: ['b'] },
+    ]);
+  });
+
+  it('tells whoever lost every peer (empty list) and ignores people who left', () => {
+    const prev = map({ a: ['b'], b: ['a'] });
+    const next = map({ a: [] });
+    expect(changedPeers(prev, next)).toEqual([{ userId: 'a', peers: [] }]);
+  });
+
+  it('always lists the forced people (joined or reconnected), even without changes', () => {
+    const prev = map({ a: ['b'], b: ['a'], c: [] });
+    const next = map({ a: ['b'], b: ['a'], c: [] });
+    expect(changedPeers(prev, next, new Set(['b', 'c']))).toEqual([
+      { userId: 'b', peers: ['a'] },
+      { userId: 'c', peers: [] },
+    ]);
+  });
+
+  it('detects a swap with the same size', () => {
+    expect(changedPeers(map({ a: ['b'] }), map({ a: ['c'] }))).toEqual([
+      { userId: 'a', peers: ['c'] },
+    ]);
   });
 });

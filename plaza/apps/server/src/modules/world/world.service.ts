@@ -7,6 +7,7 @@ import {
   type DeskState,
   type KickReason,
   type MeetingRoomDto,
+  type PeersChange,
   type PlayerMove,
   type SpaceSnapshot,
   type WorldDelta,
@@ -24,6 +25,7 @@ import type { TokenBucket } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { MediaService } from '../media/index.js';
 import type { SpacesService } from '../spaces/index.js';
+import { HallwayPeers } from './hallway-peers.js';
 import { SpaceRuntime } from './space-runtime.js';
 import { InMemorySpaceStateStore, type SpaceStateStore } from './space-state-store.js';
 import type { WorldRepository } from './world.repository.js';
@@ -99,6 +101,8 @@ export class WorldService {
   readonly #graceTimers = new Map<string, CancelTimer>();
   /** `space:join` calls still loading: a kick meanwhile makes them fail. */
   readonly #pendingJoins = new Set<PendingJoin>();
+  /** Hallway conversations of each loaded space (E5-S2). */
+  readonly #hallways = new WeakMap<SpaceRuntime, HallwayPeers>();
 
   constructor(private readonly deps: WorldServiceDeps) {
     this.store = new InMemorySpaceStateStore({
@@ -190,6 +194,7 @@ export class WorldService {
         socket.id,
       );
     }
+    if (previousSocketId !== socket.id) this.#hallway(runtime).resend(userId);
     socket.data.spaceId = spaceId;
     void socket.join(spaceRoom(spaceId));
     this.#updateConnected(runtime);
@@ -321,20 +326,23 @@ export class WorldService {
 
   /**
    * One tick of a space: when something changed, every connected person gets ONE `world:delta`
-   * (without their own steps); nothing is sent on idle ticks. The duration of working ticks feeds
-   * `GET /api/health` (E8-S1).
+   * (without their own steps); nothing is sent on idle ticks. Hallway peers are recomputed first
+   * (their `inConversation` changes travel in the same delta) and `media:peers` goes only to the
+   * people whose peers changed (E5-S2). The duration of working ticks feeds `GET /api/health`
+   * (E8-S1).
    */
   tick(runtime: SpaceRuntime): void {
-    if (!runtime.hasPendingChanges) return;
+    if (!runtime.hasPendingChanges && !this.#hallway(runtime).pending) return;
     const started = performance.now();
     try {
-      const delta = runtime.flush();
-      if (delta === null) return;
+      const peers = this.#hallway(runtime).update(runtime);
+      const delta = runtime.flush() ?? { moved: [], joined: [], left: [], changed: [] };
       const sockets = this.deps.io.sockets.sockets;
       for (const { userId, socketId } of runtime.connections()) {
         const payload = deltaFor(delta, userId);
         if (payload !== null) sockets.get(socketId)?.emit('world:delta', payload);
       }
+      this.#sendMediaPeers(runtime, peers);
     } catch (error) {
       this.deps.logger.error({ err: error, spaceId: runtime.spaceId }, 'World tick failed');
       this.deps.reporter.captureException(error, { spaceId: runtime.spaceId });
@@ -348,6 +356,37 @@ export class WorldService {
     for (const cancel of this.#graceTimers.values()) cancel();
     this.#graceTimers.clear();
     this.store.close();
+  }
+
+  // ── Hallway media (E5-S2) ───────────────────────────────────────────────
+
+  /** Current hallway peers of a person (tests and diagnostics). */
+  hallwayPeers(spaceId: string, userId: string): string[] {
+    const runtime = this.store.get(spaceId);
+    return runtime === undefined ? [] : this.#hallway(runtime).peersOf(userId);
+  }
+
+  #hallway(runtime: SpaceRuntime): HallwayPeers {
+    let hallway = this.#hallways.get(runtime);
+    if (hallway === undefined) {
+      hallway = new HallwayPeers();
+      this.#hallways.set(runtime, hallway);
+    }
+    return hallway;
+  }
+
+  /** `media:peers` to each connected person whose peers changed; counted for `/api/health`. */
+  #sendMediaPeers(runtime: SpaceRuntime, changes: readonly PeersChange[]): void {
+    const sockets = this.deps.io.sockets.sockets;
+    let sent = 0;
+    for (const { userId, peers } of changes) {
+      const socketId = runtime.socketOf(userId);
+      const socket = socketId === null ? undefined : sockets.get(socketId);
+      if (socket === undefined) continue;
+      socket.emit('media:peers', { peers });
+      sent++;
+    }
+    this.deps.metrics.recordMediaPeers(sent);
   }
 
   // ── Internals ───────────────────────────────────────────────────────────

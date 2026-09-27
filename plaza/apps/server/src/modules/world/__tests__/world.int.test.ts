@@ -191,6 +191,15 @@ describe('world module: realtime multiplayer (E4)', () => {
     return loaded;
   }
 
+  /** The state of a player once in a hallway conversation (E5-S2). */
+  function talking<T extends object>(player: T): T & { inConversation: true } {
+    return { ...player, inConversation: true };
+  }
+
+  function alone(user: TestUser): { userId: string; inConversation: false } {
+    return { userId: user.user.id, inConversation: false };
+  }
+
   /** One server tick, then lets the given clients receive what it sent. */
   async function tick(...receivers: Client[]): Promise<void> {
     timers.advance(TICK_MS);
@@ -444,14 +453,40 @@ describe('world module: realtime multiplayer (E4)', () => {
 
       await tick(first.client, second.client, third.client);
 
+      // The three spawns are within 3 tiles: they start a hallway conversation in that same tick
+      // (E5-S2), so arrivals carry `inConversation` and the others get it in `changed`.
       expect(inbox(first.client).deltas).toEqual([
-        { moved: [], joined: [second.snapshot.self, third.snapshot.self], left: [], changed: [] },
+        {
+          moved: [],
+          joined: [talking(second.snapshot.self), talking(third.snapshot.self)],
+          left: [],
+          changed: [{ userId: ana.user.id, inConversation: true }],
+        },
       ]);
       // Arrivals of the same tick: each one hears only about the people missing in its snapshot.
       expect(inbox(second.client).deltas).toEqual([
-        { moved: [], joined: [third.snapshot.self], left: [], changed: [] },
+        {
+          moved: [],
+          joined: [talking(third.snapshot.self)],
+          left: [],
+          changed: [
+            { userId: ana.user.id, inConversation: true },
+            { userId: luis.user.id, inConversation: true },
+          ],
+        },
       ]);
-      expect(inbox(third.client).deltas).toEqual([]);
+      expect(inbox(third.client).deltas).toEqual([
+        {
+          moved: [],
+          joined: [],
+          left: [],
+          changed: [
+            { userId: ana.user.id, inConversation: true },
+            { userId: luis.user.id, inConversation: true },
+            { userId: eva.user.id, inConversation: true },
+          ],
+        },
+      ]);
       expect(third.snapshot.players.map((p) => p.userId)).toEqual([ana.user.id, luis.user.id]);
     });
 
@@ -464,13 +499,18 @@ describe('world module: realtime multiplayer (E4)', () => {
 
       await tick(first.client, second.client, third.client);
 
+      // All three are within 3 tiles: a hallway conversation starts in this tick (E5-S2).
+      const conversation = [ana, luis, eva].map((user) => ({
+        userId: user.user.id,
+        inConversation: true,
+      }));
       // Ana's step reaches Luis as a step (he has no joined entry for her)…
       expect(inbox(second.client).deltas).toEqual([
         {
           moved: [{ userId: ana.user.id, x: 11, y: 24, dir: 'up' }],
-          joined: [third.snapshot.self],
+          joined: [talking(third.snapshot.self)],
           left: [],
-          changed: [],
+          changed: conversation.slice(0, 2),
         },
       ]);
       // …and Eva gets it too (harmless: same tile as in her snapshot).
@@ -479,11 +519,16 @@ describe('world module: realtime multiplayer (E4)', () => {
           moved: [{ userId: ana.user.id, x: 11, y: 24, dir: 'up' }],
           joined: [],
           left: [],
-          changed: [],
+          changed: conversation,
         },
       ]);
       expect(inbox(first.client).deltas).toEqual([
-        { moved: [], joined: [second.snapshot.self, third.snapshot.self], left: [], changed: [] },
+        {
+          moved: [],
+          joined: [talking(second.snapshot.self), talking(third.snapshot.self)],
+          left: [],
+          changed: conversation.slice(0, 1),
+        },
       ]);
     });
 
@@ -544,7 +589,8 @@ describe('world module: realtime multiplayer (E4)', () => {
         },
       ]);
       expect(inbox(staying.client).deltas.slice(1)).toEqual([
-        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
+        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
       ]);
       expect(runtime().has(luis.user.id)).toBe(false);
     });
@@ -562,7 +608,8 @@ describe('world module: realtime multiplayer (E4)', () => {
       await tick(staying.client);
 
       expect(inbox(staying.client).deltas).toEqual([
-        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
+        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
       ]);
       expect(testApp.container.metrics.connectedBySpace()).toEqual({ [space.id]: 1 });
     });
@@ -580,7 +627,8 @@ describe('world module: realtime multiplayer (E4)', () => {
       await tick(staying.client);
 
       expect(inbox(staying.client).deltas).toEqual([
-        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
+        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
       ]);
     });
 
@@ -757,7 +805,8 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(inbox(kicked.client).kicked).toEqual([{ reason: 'REMOVED' }]);
       // No reconnection grace for a kick.
       expect(inbox(owner.client).deltas).toEqual([
-        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
+        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
       ]);
       await vi.waitFor(() => {
         expect(testApp.media.removals).toEqual([
