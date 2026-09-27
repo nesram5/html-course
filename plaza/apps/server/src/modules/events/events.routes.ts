@@ -7,7 +7,7 @@ import {
 } from '@plaza/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 
-import { currentUser, sessionRateLimitKey } from '../auth/index.js';
+import { currentUser, sessionRateLimit } from '../auth/index.js';
 import type { EventsService } from './events.service.js';
 
 export function registerEventsRoutes(
@@ -22,18 +22,15 @@ export function registerEventsRoutes(
     return reply.code(204).send();
   });
 
-  // E8-S7: client measurements for O3, O4 and O5 (rate-limited per session).
+  // E8-S7: client measurements for O3, O4 and O5 (rate-limited per session, on top of the
+  // per-IP limit of every route).
   app.post(
     API_PATHS.telemetry,
     {
-      preHandler: deps.requireUser,
-      config: {
-        rateLimit: {
-          max: TELEMETRY_RATE_PER_MINUTE,
-          timeWindow: '1 minute',
-          keyGenerator: sessionRateLimitKey,
-        },
-      },
+      preHandler: [
+        deps.requireUser,
+        sessionRateLimit(app, { max: TELEMETRY_RATE_PER_MINUTE, timeWindow: '1 minute' }),
+      ],
     },
     async (request, reply) => {
       const body = TelemetryBodySchema.parse(request.body);

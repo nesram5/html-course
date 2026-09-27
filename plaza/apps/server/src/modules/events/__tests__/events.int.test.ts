@@ -342,3 +342,33 @@ describe('client product events: room_meet_opened (E6-S2, O6)', () => {
     expect(await t.container.db.productEvent.count()).toBe(10);
   });
 });
+
+describe('per-session limits cannot be dodged with made-up cookies (E8-S2)', () => {
+  let t: TestApp;
+
+  beforeEach(async () => {
+    t = await buildTestApp({ env: { RATE_LIMIT_PER_MINUTE: '5' } });
+  });
+
+  afterEach(async () => {
+    await t.app.close();
+  });
+
+  it.each([API_PATHS.telemetry, API_PATHS.feedback])(
+    'keeps the per-IP limit on %s whatever session cookie is sent',
+    async (url) => {
+      const statuses: number[] = [];
+      for (let i = 0; i < 7; i++) {
+        const response = await t.app.inject({
+          method: 'POST',
+          url,
+          // A different made-up session token each time: it used to get a budget of its own.
+          headers: { 'x-plaza-client': 'test', cookie: `plaza_sid=forged-${String(i)}` },
+          payload: { samples: [], message: 'x' },
+        });
+        statuses.push(response.statusCode);
+      }
+      expect(statuses).toEqual([401, 401, 401, 401, 401, 429, 429]);
+    },
+  );
+});

@@ -6,7 +6,7 @@ import {
 } from '@plaza/shared';
 
 import type { Database } from '../../platform/db.js';
-import { currentUser, sessionRateLimitKey } from '../auth/index.js';
+import { currentUser, sessionRateLimit } from '../auth/index.js';
 import type { PlazaModule } from '../types.js';
 
 /** In-app feedback of the pilot teams (E8-S7), stored with its author so the team can reply. */
@@ -30,7 +30,7 @@ export class FeedbackService {
   }
 }
 
-/** Feedback module (E8-S7): `POST /api/feedback`, rate-limited per session. */
+/** Feedback module (E8-S7): `POST /api/feedback`, rate-limited per session (and per IP). */
 export const feedbackModule: PlazaModule = {
   name: 'feedback',
   register({ app, container, services }) {
@@ -38,14 +38,10 @@ export const feedbackModule: PlazaModule = {
     app.post(
       API_PATHS.feedback,
       {
-        preHandler: services.get('auth').requireUser,
-        config: {
-          rateLimit: {
-            max: FEEDBACK_RATE_PER_HOUR,
-            timeWindow: '1 hour',
-            keyGenerator: sessionRateLimitKey,
-          },
-        },
+        preHandler: [
+          services.get('auth').requireUser,
+          sessionRateLimit(app, { max: FEEDBACK_RATE_PER_HOUR, timeWindow: '1 hour' }),
+        ],
       },
       async (request, reply) => {
         const body = FeedbackBodySchema.parse(request.body);

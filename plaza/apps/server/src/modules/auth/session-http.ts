@@ -1,9 +1,13 @@
 import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '@plaza/shared';
-import type { FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
+import type {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+  preHandlerAsyncHookHandler,
+} from 'fastify';
 
 import { AppError } from '../../platform/errors.js';
 import type { AuthContext, AuthService } from './auth.service.js';
-import { hashToken } from './tokens.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -54,10 +58,29 @@ export function currentUser(request: FastifyRequest): AuthContext {
 }
 
 /**
- * Key of per-person route rate limits (`config.rateLimit.keyGenerator`): the session, hashed, so
- * people behind one office NAT do not share a budget; the IP without a session.
+ * Per-session limit of a route (`max` requests per `timeWindow`), as a `preHandler` placed AFTER
+ * `requireUser`: the key is the id of the session that was just verified, so people behind one
+ * office NAT do not share a budget. Being a separate check, the route keeps the global per-IP
+ * limit too (a route-level `config.rateLimit` would replace it). A key taken from the raw cookie
+ * would let anyone skip every limit by sending a different made-up cookie with each request, each
+ * one costing a session lookup (E8-S2). Over the limit: 429 `RATE_LIMITED`.
  */
-export function sessionRateLimitKey(request: FastifyRequest): string {
-  const token = sessionTokenOf(request);
-  return token === undefined ? `ip:${request.ip}` : `sid:${hashToken(token)}`;
+export function sessionRateLimit(
+  app: FastifyInstance,
+  options: { max: number; timeWindow: string },
+): preHandlerAsyncHookHandler {
+  const check = app.createRateLimit({
+    max: options.max,
+    timeWindow: options.timeWindow,
+    keyGenerator: (request) => `sid:${currentUser(request).sessionId}`,
+  });
+  return async (request, reply) => {
+    const result = await check(request);
+    if (result.isAllowed || !result.isExceeded) return;
+    void reply.header('retry-after', String(result.ttlInSeconds));
+    throw new AppError(
+      'RATE_LIMITED',
+      `Rate limit exceeded, retry in ${String(result.ttlInSeconds)} s`,
+    );
+  };
 }
