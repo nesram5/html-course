@@ -14,6 +14,10 @@ const DATABASE_URL =
 export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
+  // One browser group at a time: real media (LiveKit + fake devices) and the per-frame budgets
+  // are timing-sensitive, and on a shared 4-core machine parallel workers make one key press walk
+  // two tiles. `E2E_WORKERS` overrides it.
+  workers: Number(process.env.E2E_WORKERS ?? 1),
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',

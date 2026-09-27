@@ -4,6 +4,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import {
   createSpace,
+  enterOffice,
   joinByInvite,
   openOffice,
   remoteAvatar,
@@ -167,6 +168,7 @@ test.describe('presence, chat and reactions (E7)', () => {
 
     // History: after a reload the message is still there.
     await luis.page.reload();
+    await enterOffice(luis.page);
     await expect(luis.page.getByTestId('world-canvas')).toHaveAttribute('data-tile-x', /^\d+$/, {
       timeout: 30_000,
     });

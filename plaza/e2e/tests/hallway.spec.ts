@@ -192,8 +192,12 @@ test.describe('hallway conversations with real media (E5)', () => {
 
     // Ana's tab is hidden: presence marks her away and the media feature mutes her.
     await setTabHidden(ana.page, true);
-    await expect.poll(async () => (await media(ana.page))?.micOn).toBe(false);
-    expect((await media(ana.page))?.cameraOn).toBe(false);
+    await expect
+      .poll(async () => {
+        const state = await media(ana.page);
+        return [state?.micOn, state?.cameraOn];
+      })
+      .toEqual([false, false]);
     await expect(anaTile.getByRole('img', { name: 'Micrófono silenciado' })).toBeVisible({
       timeout: 5000,
     });
@@ -203,12 +207,43 @@ test.describe('hallway conversations with real media (E5)', () => {
 
     // Back: exactly what was on comes back (microphone and camera), and the card goes.
     await setTabHidden(ana.page, false);
-    await expect.poll(async () => (await media(ana.page))?.micOn).toBe(true);
-    expect((await media(ana.page))?.cameraOn).toBe(true);
+    await expect
+      .poll(async () => {
+        const state = await media(ana.page);
+        return [state?.micOn, state?.cameraOn];
+      })
+      .toEqual([true, true]);
     await expect(card).toBeHidden({ timeout: 5000 });
     await expect(anaTile.getByRole('img', { name: 'Micrófono silenciado' })).toBeHidden({
       timeout: 5000,
     });
+    await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
+
+    for (const someone of [ana, luis]) await someone.context.close();
+  });
+
+  test('choosing "Ocupado" leaves the hallway conversation; "Disponible" joins it again (E5 × E7)', async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const run = randomUUID().slice(0, 8);
+    const ana = await person(browser, `ana-${run}@acme.com`, 'Ana');
+    const luis = await person(browser, `luis-${run}@acme.com`, 'Luis');
+    const space = await createSpace(ana.context.request, `Ocupada ${run}`);
+    await joinByInvite(luis.context.request, space);
+    await openOffice(ana.page, space.slug, { media: true });
+    await openOffice(luis.page, space.slug, { media: true });
+    await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
+    const bar = ana.page.getByRole('group', { name: 'Tus controles' });
+
+    await bar.getByRole('button', { name: 'Estado: Disponible' }).click();
+    await ana.page.getByRole('menuitemradio', { name: /Ocupado/ }).click();
+    await expect.poll(async () => (await media(luis.page))?.peers, { timeout: 5000 }).toEqual([]);
+    await expect(videoOf(luis.page, ana.userId)).toHaveCount(0, { timeout: 5000 });
+    expect((await media(ana.page))?.subscribed).toEqual([]);
+
+    await bar.getByRole('button', { name: 'Estado: Ocupado' }).click();
+    await ana.page.getByRole('menuitemradio', { name: /Disponible/ }).click();
     await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
 
     for (const someone of [ana, luis]) await someone.context.close();

@@ -60,7 +60,7 @@ If ports 5432/7880 are taken, use `PLAZA_PG_PORT=55432 pnpm infra:up` and adjust
 - `plaza_test`: integration tests (`TEST_DATABASE_URL`, default `postgresql://postgres@localhost:5432/plaza_test`).
   Created and migrated with `prisma migrate deploy` before each run; tests empty the tables with
   `resetDatabase()`. If you edit a migration locally, drop `plaza_test` by hand.
-- `plaza_e2e`: Playwright (`E2E_DATABASE_URL`; ports `E2E_API_PORT`, default 3100, and `E2E_WEB_PORT`, default 5173).
+- `plaza_e2e`: Playwright (`E2E_DATABASE_URL`; ports `E2E_API_PORT`, default 3100, and `E2E_WEB_PORT`, default 5173; one worker unless `E2E_WORKERS` says otherwise, because the media and timing specs are CPU-sensitive).
 
 ## Conventions for contributors
 
