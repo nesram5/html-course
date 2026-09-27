@@ -2,6 +2,7 @@ import { chatSpaceExtension } from '@/features/chat';
 import { mediaSpaceExtension } from '@/features/media';
 import { personalizationSpaceExtension } from '@/features/personalization';
 import { presenceSpaceExtension } from '@/features/presence';
+import { roomsSpaceExtension } from '@/features/rooms';
 import type { SpaceExtension } from '@/features/world';
 
 /**
@@ -11,6 +12,8 @@ import type { SpaceExtension } from '@/features/world';
  */
 export const spaceExtensions: readonly SpaceExtension[] = [
   mediaSpaceExtension,
+  // After media: its room signal reaches a media controller that is already running.
+  roomsSpaceExtension,
   presenceSpaceExtension,
   chatSpaceExtension,
   personalizationSpaceExtension,

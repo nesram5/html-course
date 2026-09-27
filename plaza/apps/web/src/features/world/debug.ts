@@ -1,6 +1,7 @@
 import { worldEvents } from './bridge/event-bus';
 import { liveGameCount, worldProbe, type AvatarProbe } from './game/game-registry';
 import type { OfficeProbe } from './game/office/attach-office';
+import type { RoomProbe } from './game/rooms/RoomLayer';
 import { realtimeClient } from './realtime/realtime-client';
 import { sessionStore } from './realtime/space-session';
 import { worldStore } from './store/world-store';
@@ -24,6 +25,8 @@ export interface WorldDebug {
   dropConnection(): void;
   /** Style drawn, style textures alive and drawn desks (E9), `null` without a running scene. */
   office(): OfficeProbe | null;
+  /** Meeting rooms and whether they are drawn as occupied (E6-S4); empty without a scene. */
+  rooms(): RoomProbe[];
 }
 
 declare global {
@@ -53,5 +56,6 @@ export function installWorldDebug(): void {
       realtimeClient.simulateNetworkDrop();
     },
     office: () => worldProbe()?.office?.() ?? null,
+    rooms: () => worldProbe()?.rooms?.() ?? [],
   };
 }

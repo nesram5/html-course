@@ -63,6 +63,11 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
     return this.sprites.get(userId)?.sprite.inConversation ?? false;
   }
 
+  /** Whether the 📹 of a meeting room is drawn over a player (debug probe). */
+  inMeeting(userId: string): boolean {
+    return this.sprites.get(userId)?.sprite.inMeeting ?? false;
+  }
+
   /** Depth of the name label of a player (debug probe), `undefined` when not drawn. */
   labelDepth(userId: string): number | undefined {
     return this.sprites.get(userId)?.sprite.nameLabel.depth;
@@ -94,7 +99,8 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
       .setMotion(player.dir, player.moving)
       .setOpacity(player.alpha)
       .setPresence(effectivePresence(state))
-      .setInConversation(state.inConversation);
+      .setInConversation(state.inConversation)
+      .setInMeeting(state.roomId !== null);
     if (state.displayName !== entry.displayName) {
       entry.displayName = state.displayName;
       entry.sprite.setDisplayName(state.displayName);

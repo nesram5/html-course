@@ -154,6 +154,7 @@ export function SpacePage() {
     spaceName: detail.name,
     userId: user.id,
     displayName: user.displayName,
+    isOwner: detail.role === 'OWNER',
     roomNames,
     map,
   };

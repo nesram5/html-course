@@ -41,7 +41,7 @@ const FINAL_DISCONNECTS: ReadonlySet<DisconnectReason> = new Set([
 export interface MediaControllerDeps {
   /** Source of `media:peers` and of realtime reconnections (the world `RealtimeClient`). */
   readonly realtime: Pick<RealtimeClient, 'on' | 'onConnect'>;
-  /** Source of `presence:self-away` (the world `EventBus`). */
+  /** Source of `presence:self-away` and `media:self-in-room` (the world `EventBus`). */
   readonly events: Pick<EventBus, 'on'>;
   readonly store: MediaStore;
   readonly fetchToken: (spaceId: string) => Promise<MediaTokenResponse>;
@@ -99,7 +99,10 @@ class StaleRun extends Error {}
  *   reconnection; a `NOT_A_MEMBER` answer (removed from the space) ends the media.
  * - LiveKit resumes short cuts by itself; after a full disconnection it reconnects with a fresh
  *   token and backoff. Either way the last `media:peers` is applied again.
- * - `presence:self-away` mutes the microphone and camera and restores them on return.
+ * - `presence:self-away` and `media:self-in-room` turn the microphone and camera off and, once
+ *   the person is neither away nor in a meeting room, restore exactly what was on. Inside a room
+ *   the server revokes the permission to publish (E6-S3): the restore waits until LiveKit grants
+ *   it back.
  * - Records the time from `media:peers` to the first video frame of a new peer.
  * - `stop()` disconnects and releases every track and element.
  */
@@ -125,8 +128,10 @@ export class MediaController {
   /** Wanted state of the local devices (what the person chose). */
   #wantMic = false;
   #wantCamera = false;
-  /** What was on before going away (E7), restored on return. */
-  #awayRestore: { mic: boolean; camera: boolean } | null = null;
+  /** Why the devices are held off: away (E7) and / or in a meeting room (E6-S2). */
+  #holds = { away: false, room: false };
+  /** What was on before the first hold, restored when every hold is gone. */
+  #restore: { mic: boolean; camera: boolean } | null = null;
 
   constructor(deps: MediaControllerDeps) {
     this.#deps = deps;
@@ -153,7 +158,10 @@ export class MediaController {
         this.#onRealtimeReconnect(run);
       }),
       events.on('presence:self-away', ({ away }) => {
-        this.#setAway(away);
+        this.#setHold('away', away);
+      }),
+      events.on('media:self-in-room', ({ inRoom }) => {
+        this.#setHold('room', inRoom);
       }),
     ];
     store.getState().patch({ connection: 'connecting', micOn: false, cameraOn: false });
@@ -182,7 +190,8 @@ export class MediaController {
     this.#pendingFrames.clear();
     this.#token = null;
     this.#spaceId = null;
-    this.#awayRestore = null;
+    this.#holds = { away: false, room: false };
+    this.#restore = null;
     this.#reconnectAttempt = 0;
     this.#reconnecting = false;
     this.#deps.store.getState().reset();
@@ -190,14 +199,19 @@ export class MediaController {
 
   // ── Local devices ────────────────────────────────────────────────────────
 
-  /** Microphone on/off (bottom bar, shortcut). Others see the mute state. */
+  /**
+   * Microphone on/off (bottom bar, shortcut). Others see the mute state. Ignored inside a meeting
+   * room: the meeting is in Google Meet, and the server does not let anyone publish there.
+   */
   async setMicEnabled(enabled: boolean): Promise<void> {
+    if (this.#holds.room) return;
     this.#cancelAwayRestore();
     this.#wantMic = enabled;
     await this.#applyMic();
   }
 
   async setCameraEnabled(enabled: boolean): Promise<void> {
+    if (this.#holds.room) return;
     this.#cancelAwayRestore();
     this.#wantCamera = enabled;
     await this.#applyCamera();
@@ -412,6 +426,14 @@ export class MediaController {
       .on(RoomEvent.ActiveSpeakersChanged, sync)
       .on(RoomEvent.LocalTrackPublished, sync)
       .on(RoomEvent.LocalTrackUnpublished, sync)
+      .on(RoomEvent.ParticipantPermissionsChanged, (_previous, participant) => {
+        // Back from a meeting room: the server let us publish again (E6-S3).
+        if (run !== this.#run || participant !== room.localParticipant) return;
+        if (room.localParticipant.permissions?.canPublish === true) {
+          void this.#applyMic();
+          void this.#applyCamera();
+        }
+      })
       .on(RoomEvent.AudioPlaybackStatusChanged, () => {
         if (run === this.#run) store.getState().patch({ audioBlocked: !room.canPlaybackAudio });
       })
@@ -519,9 +541,17 @@ export class MediaController {
     });
   }
 
+  /**
+   * `false` while LiveKit does not let us publish (inside a meeting room, E6-S3): turning a
+   * device on then would fail, so it waits for `ParticipantPermissionsChanged`.
+   */
+  #canPublish(room: Room): boolean {
+    return room.localParticipant.permissions?.canPublish !== false;
+  }
+
   async #applyMic(): Promise<void> {
     const room = this.#room;
-    if (room?.state !== ConnectionState.Connected) {
+    if (room?.state !== ConnectionState.Connected || (this.#wantMic && !this.#canPublish(room))) {
       this.#sync();
       return;
     }
@@ -536,7 +566,10 @@ export class MediaController {
 
   async #applyCamera(): Promise<void> {
     const room = this.#room;
-    if (room?.state !== ConnectionState.Connected) {
+    if (
+      room?.state !== ConnectionState.Connected ||
+      (this.#wantCamera && !this.#canPublish(room))
+    ) {
       this.#sync();
       return;
     }
@@ -549,30 +582,45 @@ export class MediaController {
     this.#sync();
   }
 
-  // ── Internals: away (E7) ─────────────────────────────────────────────────
+  // ── Internals: away (E7) and meeting rooms (E6-S2) ───────────────────────
 
-  #setAway(away: boolean): void {
-    if (away) {
-      if (this.#awayRestore !== null) return;
-      this.#awayRestore = { mic: this.#wantMic, camera: this.#wantCamera };
+  #held(): boolean {
+    return this.#holds.away || this.#holds.room;
+  }
+
+  /**
+   * Away and meeting rooms both turn the devices off and may overlap: what was on is remembered
+   * when the first one starts and restored only when neither is left.
+   */
+  #setHold(reason: 'away' | 'room', on: boolean): void {
+    if (this.#holds[reason] === on) return;
+    const wasHeld = this.#held();
+    this.#holds = { ...this.#holds, [reason]: on };
+    if (!wasHeld) {
+      this.#restore = { mic: this.#wantMic, camera: this.#wantCamera };
       this.#wantMic = false;
       this.#wantCamera = false;
-    } else {
-      const restore = this.#awayRestore;
-      if (restore === null) return;
-      this.#awayRestore = null;
-      this.#wantMic = restore.mic;
-      this.#wantCamera = restore.camera;
+    } else if (!this.#held()) {
+      const restore = this.#restore;
+      this.#restore = null;
+      this.#wantMic = restore?.mic ?? this.#wantMic;
+      this.#wantCamera = restore?.camera ?? this.#wantCamera;
     }
-    this.#deps.store.getState().patch({ awayMuted: away });
+    this.#deps.store.getState().patch({ awayMuted: this.#holds.away, roomMuted: this.#holds.room });
     void this.#applyMic();
     void this.#applyCamera();
   }
 
-  /** A manual toggle while away wins over the automatic restore. */
+  /** What holds the devices off right now (tests and diagnostics). */
+  get holds(): { readonly away: boolean; readonly room: boolean } {
+    return this.#holds;
+  }
+
+  /** A manual toggle while away (and not in a room) wins over the automatic restore. */
   #cancelAwayRestore(): void {
-    if (this.#awayRestore === null) return;
-    this.#awayRestore = null;
+    if (!this.#holds.away) return;
+    this.#holds = { ...this.#holds, away: false };
+    this.#restore = null;
     this.#deps.store.getState().patch({ awayMuted: false });
   }
 }

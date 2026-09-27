@@ -28,8 +28,9 @@ import { attachOffice } from '../office/attach-office';
 import { AvatarTextures } from '../remote/avatar-textures';
 import { RemotePlayersSystem } from '../remote/RemotePlayersSystem';
 import { StressDriver } from '../remote/stress';
+import { RoomLayer } from '../rooms/RoomLayer';
 import { ABOVE_DEPTH, AvatarSprite } from '../sprites/AvatarSprite';
-import { BELOW_DEPTH, ROOM_DEPTH } from '../sprites/depth';
+import { BELOW_DEPTH } from '../sprites/depth';
 import { SCENES, TEXTURES } from '../textures';
 
 export interface WorldSceneDeps {
@@ -91,7 +92,7 @@ export class WorldScene extends Phaser.Scene {
     const aboveKey = this.styleTexture(TEXTURES.above);
     const below = this.add.image(0, 0, belowKey).setOrigin(0).setDepth(BELOW_DEPTH);
     const above = this.add.image(0, 0, aboveKey).setOrigin(0).setDepth(ABOVE_DEPTH);
-    this.drawRooms();
+    const rooms = new RoomLayer(this, map, store);
     const office = attachOffice(this, {
       ...this.deps,
       drawn: { belowKey, aboveKey, below, above, extraKeys: [TEXTURES.below, TEXTURES.above] },
@@ -158,11 +159,15 @@ export class WorldScene extends Phaser.Scene {
         this.startStress(count);
       }),
       office.dispose,
+      () => {
+        rooms.destroy();
+      },
       setWorldProbe({
         fps: () => this.game.loop.actualFps,
         avatars: () => this.probeAvatars(),
         cameraTarget: () => this.locating?.userId ?? null,
         office: () => office.probe(),
+        rooms: () => rooms.probe(),
       }),
       () => {
         this.stopStress();
@@ -239,9 +244,9 @@ export class WorldScene extends Phaser.Scene {
 
   private publishLocal(tile: Tile, dir: Direction): void {
     const { map, store } = this.deps;
-    store
-      .getState()
-      .setLocalPlayer({ x: tile.x, y: tile.y, dir, roomId: roomAt(map, tile.x, tile.y) });
+    const roomId = roomAt(map, tile.x, tile.y);
+    store.getState().setLocalPlayer({ x: tile.x, y: tile.y, dir, roomId });
+    this.avatar?.setInMeeting(roomId !== null);
   }
 
   private onLocalStep(step: LocalStep): void {
@@ -344,6 +349,7 @@ export class WorldScene extends Phaser.Scene {
         presence: this.avatar.presenceState,
         reaction: this.avatar.currentReaction,
         inConversation: this.avatar.inConversation,
+        inMeeting: this.avatar.inMeeting,
       });
     }
     for (const system of [this.remote, this.stress?.system]) {
@@ -360,36 +366,11 @@ export class WorldScene extends Phaser.Scene {
           presence: effectivePresence(player.state),
           reaction: system?.spriteOf(player.userId)?.currentReaction ?? null,
           inConversation: system?.inConversation(player.userId) ?? false,
+          inMeeting: system?.inMeeting(player.userId) ?? false,
         });
       }
     }
     return avatars;
-  }
-
-  /** Meeting rooms: a soft border and the name on the floor (E3-S2). */
-  private drawRooms(): void {
-    const graphics = this.add.graphics().setDepth(ROOM_DEPTH);
-    for (const room of this.deps.map.rooms) {
-      const x = room.x * TILE_SIZE;
-      const y = room.y * TILE_SIZE;
-      const w = room.width * TILE_SIZE;
-      const h = room.height * TILE_SIZE;
-      graphics.fillStyle(0xffffff, 0.06).fillRect(x, y, w, h);
-      graphics.lineStyle(2, 0xffffff, 0.55).strokeRect(x + 1, y + 1, w - 2, h - 2);
-      const name = this.add
-        .text(x + w / 2, y + h - 8, room.name, {
-          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-          fontSize: '12px',
-          fontStyle: 'bold',
-          color: '#ffffff',
-        })
-        .setOrigin(0.5, 1)
-        .setAlpha(0.8)
-        .setDepth(ROOM_DEPTH)
-        .setShadow(0, 1, 'rgba(15, 23, 42, 0.6)', 2);
-      name.setResolution(Math.max(2, Math.ceil(window.devicePixelRatio * 2)));
-      name.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
   }
 
   private readonly cleanup = (): void => {

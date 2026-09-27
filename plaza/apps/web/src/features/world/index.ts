@@ -51,6 +51,14 @@ export { ZOOM_LEVELS, type ZoomLevel } from './game/constants';
 export { useDecorCatalog } from './hooks/useDecorCatalog';
 export { isTypingTarget } from './game/controller/keyboard-input';
 export {
+  InteractionKeys,
+  interactionKeys,
+  isInteractKey,
+  useInteraction,
+  type Interaction,
+} from './interaction/interaction-keys';
+export { peopleInRoom, roomOccupancy } from './game/rooms/room-occupancy';
+export {
   createOfficeStore,
   deskOfUser,
   officeStore,

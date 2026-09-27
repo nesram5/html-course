@@ -117,6 +117,12 @@ Solo se pierde el audio y el vídeo del pasillo; el mapa, el chat y las salas de
   nuevo 2 min antes de que caduque y tras cada reconexión del tiempo real. Al expulsar a alguien
   del espacio se le saca de la sala de LiveKit (`removeParticipant`) y el _endpoint_ de _tokens_
   le responde `404`, así que no puede volver con el que tenía más allá de esos 10 min.
+- Salas de reunión (E6-S3): al pisar una sala, el servidor silencia las pistas de la persona y le
+  quita el permiso de publicar en LiveKit (`updateParticipant` con `canPublish: false`, que
+  despublica todo lo que tenga), y los _tokens_ que se le emitan dentro de la sala tampoco permiten
+  publicar; al volver al pasillo (o salir del espacio) se le devuelve el permiso y es su cliente
+  quien vuelve a encender micro y cámara. Si LiveKit falla se registra un aviso y se envía a
+  Sentry (`World media isolation on room entry failed`).
 - Rotar las claves: generar un par nuevo, ponerlo en `.env` de la VM y en el servidor de la app y
   reiniciar ambos (los clientes reconectan solos).
 

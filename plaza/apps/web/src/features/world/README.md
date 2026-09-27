@@ -4,11 +4,11 @@ The only feature that imports Phaser, and home of the `RealtimeClient` (the only
 client). React owns the page and the DOM; Phaser owns one `<canvas>`. They talk through two
 objects only (architecture §6):
 
-| Bridge        | File                    | Direction                        | Used for                                                                                                                                                                                         |
-| ------------- | ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `worldStore`  | `store/world-store.ts`  | both (state)                     | loading progress/errors, zoom, local player tile and room, the other people                                                                                                                      |
-| `EventBus`    | `bridge/event-bus.ts`   | commands and one-off facts       | `camera:center`, `camera:locate`, `camera:desk`, `world:snapshot`, `world:delta`, `player:correct`, `avatar:reaction` (→ scene), `local:step` (scene →), `presence:self-away` (presence → media) |
-| `officeStore` | `store/office-store.ts` | server → React and scene (state) | office style, held desks with name and decoration, decoration preview (E9)                                                                                                                       |
+| Bridge        | File                    | Direction                        | Used for                                                                                                                                                                                                                               |
+| ------------- | ----------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worldStore`  | `store/world-store.ts`  | both (state)                     | loading progress/errors, zoom, local player tile and room, the other people                                                                                                                                                            |
+| `EventBus`    | `bridge/event-bus.ts`   | commands and one-off facts       | `camera:center`, `camera:locate`, `camera:desk`, `world:snapshot`, `world:delta`, `player:correct`, `avatar:reaction` (→ scene), `local:step` (scene →), `presence:self-away` (presence → media), `media:self-in-room` (rooms → media) |
+| `officeStore` | `store/office-store.ts` | server → React and scene (state) | office style, held desks with name and decoration, decoration preview (E9), meeting rooms with their Meet link (E6)                                                                                                                    |
 
 ```text
 SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
@@ -32,10 +32,10 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
   ├─ SpaceBottomBar ── "Tus controles": avatar · name · the `BarItems` of every extension
-  └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, presence, chat,
-     personalization)
+  └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, rooms, presence,
+     chat, personalization)
        Gate     before joining (media pre-join); the map loads behind it
-       Overlay  over the map (video strip, first-use notice, X desk menu and "Decorar")
+       Overlay  over the map (video strip, first-use notice, room card, X desk menu and "Decorar")
        BarItems in the bottom bar (mic/camera · status/"Personas" · reactions/chat ·
                 "Mi escritorio"); they also start the presence and chat sessions
        Panel    side panels after the map controls ("Personas", chat); one open at a time
@@ -52,6 +52,21 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   local avatar again ("Centrar en mí" cancels it). The probe tells who is followed: `cameraTarget()`.
 - `presence:self-away { away }` is emitted by `presence` when the tab is hidden / idle 10 min / back;
   the media feature mutes microphone and camera and restores exactly what was on.
+
+## Meeting rooms (E6) and the interaction key
+
+- `officeStore.rooms` holds the rooms of the snapshot and every `room:updated` (a Meet link added by
+  the owner shows up at once in the room card of the `rooms` feature).
+- `game/rooms/RoomLayer.ts` draws the room borders and names; a room with someone inside (the local
+  `roomId` or any `PublicPlayer.roomId`, `roomOccupancy`) is tinted amber, and avatars inside show
+  📹 next to their name (`AvatarSprite.setInMeeting`). Probes: `rooms()` and `avatars()[].inMeeting`.
+- `media:self-in-room { inRoom }` is emitted by the `rooms` feature when the local person walks in or
+  out; the media feature keeps microphone and camera off inside and restores what was on (together
+  with `presence:self-away`: restored only when neither holds).
+- **Interaction key (`X`)**: `interaction/interaction-keys.ts` is the only `keydown` listener for
+  `X`. Features offer what `X` does with `useInteraction(id, priority, run | null)`; the highest
+  priority wins (meeting room 20 over desk 10) and the hook says whether `X` is theirs, so only
+  that feature shows the `X` hint.
 
 ## Real time (E4)
 

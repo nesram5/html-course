@@ -62,6 +62,7 @@ export function spaceInfoFixture(overrides: Partial<SpaceInfo> = {}): SpaceInfo 
     spaceName: 'Acme',
     userId: 'user-1',
     displayName: 'Ana',
+    isOwner: false,
     roomNames: { sala: 'Sala' },
     map: {
       width: 4,

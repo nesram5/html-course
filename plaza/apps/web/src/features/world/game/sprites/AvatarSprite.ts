@@ -3,7 +3,7 @@ import * as Phaser from 'phaser';
 
 import { PRESENCE_COLORS } from '../constants';
 import { AVATAR_FRAMES_PER_ROW, AVATAR_ROW } from '../textures';
-import { ConversationBubble } from './ConversationBubble';
+import { ConversationBubble, MEETING_GLYPH } from './ConversationBubble';
 import { avatarDepth, labelDepth } from './depth';
 
 export { ABOVE_DEPTH, AVATAR_BASE_DEPTH } from './depth';
@@ -53,7 +53,8 @@ export function ensureAvatarAnimations(scene: Phaser.Scene, textureKey: string):
 
 /**
  * An avatar and its name label (E3-S3, E3-S5, E4-S5), for the local and the remote players,
- * with a status dot (E7-S1), the 💬 of a hallway conversation (E5-S2) and reactions (E7-S4). Position it with `setTilePosition`
+ * with a status dot (E7-S1), the 💬 of a hallway conversation (E5-S2), the 📹 of a meeting room
+ * (E6-S4) and reactions (E7-S4). Position it with `setTilePosition`
  * (fractional tiles while walking), animate it with `setMotion`, fade it with `setOpacity`.
  *
  * The label, the dot, the 💬 and the reaction are separate game objects drawn over the `above` art layer
@@ -73,6 +74,8 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
   private opacity = 1;
   /** Created the first time the person talks in the hallway. */
   private bubble: ConversationBubble | null = null;
+  /** Created the first time the person enters a meeting room. */
+  private meeting: ConversationBubble | null = null;
 
   constructor(scene: Phaser.Scene, textureKey: string, displayName: string) {
     super(scene, 0, 0);
@@ -105,6 +108,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
       this.dot.setDepth(labelDepth(y));
       this.reaction?.setDepth(labelDepth(y));
       this.bubble?.setDepth(labelDepth(y));
+      this.meeting?.setDepth(labelDepth(y));
     }
     return this;
   }
@@ -162,6 +166,24 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** Shows the 📹 next to the name while the person is in a meeting room (E6-S4). */
+  setInMeeting(inMeeting: boolean): this {
+    if (inMeeting === (this.meeting?.visible ?? false)) return this;
+    if (this.meeting === null) {
+      this.meeting = new ConversationBubble(this.scene, MEETING_GLYPH)
+        .setDepth(this.label.depth)
+        .setAlpha(this.opacity);
+      this.placeOverlays();
+    }
+    this.meeting.setVisible(inMeeting);
+    return this;
+  }
+
+  /** Whether the 📹 is shown (debug probe). */
+  get inMeeting(): boolean {
+    return this.meeting?.visible ?? false;
+  }
+
   /** Whether the 💬 is shown (debug probe). */
   get inConversation(): boolean {
     return this.bubble?.visible ?? false;
@@ -186,6 +208,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     this.dot.setAlpha(alpha);
     this.reaction?.setAlpha(alpha);
     this.bubble?.setAlpha(alpha);
+    this.meeting?.setAlpha(alpha);
     return this;
   }
 
@@ -226,10 +249,11 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     this.label.destroy();
     this.dot.destroy();
     this.bubble?.destroy();
+    this.meeting?.destroy();
     super.destroy(fromScene);
   }
 
-  /** Label over the head, the dot left of it, the 💬 right of it, the reaction over them. */
+  /** Label over the head, the dot left of it, the 💬 / 📹 right of it, the reaction over them. */
   private placeOverlays(): void {
     const labelY = this.y + LABEL_OFFSET_Y;
     this.label.setPosition(this.x, labelY);
@@ -239,6 +263,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
       labelY - labelHeight / 2,
     );
     this.bubble?.setPosition(this.x + this.label.width / 2 + DOT_GAP, labelY);
+    this.meeting?.setPosition(this.x + this.label.width / 2 + DOT_GAP, labelY);
     this.reaction?.setPosition(this.x, labelY - labelHeight - 2);
   }
 

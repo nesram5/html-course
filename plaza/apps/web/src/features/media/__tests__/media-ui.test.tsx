@@ -7,7 +7,7 @@ import { I18nextProvider } from 'react-i18next';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { presenceStore } from '@/features/presence';
-import { worldStore } from '@/features/world';
+import { worldStore, type EventBus } from '@/features/world';
 import { createI18n } from '@/shared/i18n';
 import { spaceInfoFixture } from '@/test/fixtures';
 
@@ -40,6 +40,7 @@ function player(userId: string, displayName: string, x: number, y: number): Publ
 let controller: MediaController;
 let realtime: FakeRealtime;
 let rooms: FakeRoom[];
+let events: EventBus;
 
 function room(): FakeRoom {
   const last = rooms.at(-1);
@@ -70,7 +71,7 @@ async function renderOffice() {
 
 beforeEach(() => {
   window.localStorage.clear();
-  ({ controller, realtime, rooms } = testController());
+  ({ controller, realtime, rooms, events } = testController());
   worldStore.getState().setLocalPlayer({ x: 5, y: 5, dir: 'down', roomId: null });
   worldStore.getState().applySnapshot({
     v: PROTOCOL_VERSION,
@@ -301,6 +302,33 @@ describe('MediaControls (E5-S6)', () => {
     });
 
     expect(screen.getByRole('status')).toHaveTextContent('Te silenciamos mientras estás ausente');
+  });
+});
+
+describe('MediaControls inside a meeting room (E6-S2)', () => {
+  it('turns off and disables microphone and camera, says why, and restores them outside', async () => {
+    const user = userEvent.setup();
+    await renderOffice();
+
+    act(() => {
+      events.emit('media:self-in-room', { inRoom: true });
+    });
+
+    const mic = await screen.findByRole('button', { name: 'Activar micrófono' });
+    const camera = screen.getByRole('button', { name: 'Encender cámara' });
+    expect(mic).toBeDisabled();
+    expect(camera).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'En la sala tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet',
+    );
+    await user.keyboard('{Control>}d{/Control}');
+    expect(room().localParticipant.isMicrophoneEnabled).toBe(false);
+
+    act(() => {
+      events.emit('media:self-in-room', { inRoom: false });
+    });
+    expect(await screen.findByRole('button', { name: 'Silenciar micrófono' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Apagar cámara' })).toBeEnabled();
   });
 });
 

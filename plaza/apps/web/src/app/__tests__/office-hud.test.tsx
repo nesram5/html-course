@@ -6,6 +6,7 @@ import { chatSpaceExtension } from '@/features/chat';
 import { mediaSpaceExtension } from '@/features/media';
 import { personalizationSpaceExtension } from '@/features/personalization';
 import { presenceSpaceExtension } from '@/features/presence';
+import { roomsSpaceExtension } from '@/features/rooms';
 import { sidePanelStore } from '@/features/world';
 import { spaceInfoFixture } from '@/test/fixtures';
 import { mockApi } from '@/test/mock-api';
@@ -45,13 +46,15 @@ afterEach(() => {
 });
 
 describe('office page extensions', () => {
-  it('draw, in order, the hallway media, presence, chat and desks (E5, E7, E9)', () => {
+  it('draw, in order, the hallway media, meeting rooms, presence, chat and desks (E5, E6, E7, E9)', () => {
     expect(spaceExtensions).toEqual([
       mediaSpaceExtension,
+      roomsSpaceExtension,
       presenceSpaceExtension,
       chatSpaceExtension,
       personalizationSpaceExtension,
     ]);
+    expect(roomsSpaceExtension.Overlay).toBeDefined();
     expect(personalizationSpaceExtension.Overlay).toBeDefined();
     expect(personalizationSpaceExtension.BarItems).toBeDefined();
     expect(mediaSpaceExtension.Gate).toBeDefined();

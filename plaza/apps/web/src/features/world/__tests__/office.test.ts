@@ -112,6 +112,52 @@ describe('office sync with the realtime session (E9)', () => {
   });
 });
 
+describe('meeting rooms in the office store (E6-S2)', () => {
+  const SALA = {
+    areaId: 'sala-1',
+    name: 'Sala 1',
+    meetUri: null,
+    source: null,
+  } as const;
+
+  it('takes the rooms of the snapshot, then the Meet links of room:updated', async () => {
+    const socket = new FakeSocket();
+    const client = new RealtimeClient({
+      createSocket: () => socket.asSocket(),
+      store: createConnectionStore(),
+      onInvalidEvent: vi.fn(),
+    });
+    const world = createWorldStore();
+    const office = createOfficeStore();
+    const session = new SpaceSession({
+      spaceId: 'space-1',
+      client,
+      events: new EventBus(),
+      world,
+      store: createSessionStore(),
+      office,
+    });
+    session.start();
+    socket.accept();
+    world.getState().setLoad({ kind: 'ready' });
+    socket.lastAck('space:join').resolve({ ok: true, data: testSnapshot({ rooms: [SALA] }) });
+    await vi.waitFor(() => {
+      expect(office.getState().rooms).toEqual({ 'sala-1': SALA });
+    });
+
+    const withLink = {
+      ...SALA,
+      meetUri: 'https://meet.google.com/abc-defg-hij',
+      source: 'manual',
+    } as const;
+    socket.serverEmit('room:updated', withLink);
+
+    expect(office.getState().rooms['sala-1']).toEqual(withLink);
+    session.stop();
+    expect(office.getState().rooms).toEqual({});
+  });
+});
+
 describe('deskDrawings (E9-S2, E9-S3)', () => {
   it('draws the name over held desks and their objects in the slots', () => {
     const drawings = deskDrawings(AREAS, { 'desk-01': LUIS_DESK }, null);
