@@ -23,6 +23,7 @@ import { LiveKitMediaProvider, liveKitApiUrl } from '../../../adapters/livekit.j
 import { testConfig } from '../../../test/config.js';
 import { resetDatabase } from '../../../test/db.js';
 import { ManualTimers } from '../../../test/manual-timers.js';
+import { signedWebhook } from '../../../test/livekit-webhook.js';
 import { RealtimeHarness, type TestClient } from '../../../test/realtime.js';
 import type { TestUser } from '../../../test/session.js';
 
@@ -191,6 +192,92 @@ describe('meeting rooms isolate the media of a modified client (E6-S3, RNF-06)',
     );
     expect((await serverSide(luis.user.id)).tracks).toBeGreaterThan(0);
   }, 60_000);
+
+  it('walking in and out at the border quickly leaves the permission where the person ends up', async () => {
+    const luisWorld = await harness.enter(luis, spaceId);
+    await harness.enter(ana, spaceId);
+    harness.world.store.get(spaceId)?.place(luis.user.id, DOOR);
+    const luisMedia = await connectMedia(luis);
+    const anaMedia = await connectMedia(ana);
+    const mic = microphone('mic-border');
+    await luisMedia.localParticipant!.publishTrack(mic.track, mic.options);
+    await waitFor('Ana to see the microphone of Luis', () =>
+      publicationsOf(anaMedia, luis.user.id).length === 1 ? true : undefined,
+    );
+
+    // Seven steps back and forth without waiting (within the 10 steps/s), ending inside.
+    for (let i = 0; i < 7; i++) move(luisWorld.client, i % 2 === 0 ? INSIDE : DOOR);
+    await harness.barrier(spaceId, luisWorld.client);
+    expect(harness.world.inMeetingRoom(spaceId, luis.user.id)).toBe(true);
+    await waitForAsync('LiveKit to settle on "may not publish"', async () => {
+      const state = await serverSide(luis.user.id);
+      return state.canPublish === false && state.tracks === 0;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // no late "grant" lands after
+    expect(await serverSide(luis.user.id)).toEqual({ canPublish: false, tracks: 0 });
+    expect(publicationsOf(anaMedia, luis.user.id)).toEqual([]);
+
+    // And the other way round: six more steps, ending in the hallway.
+    for (let i = 0; i < 6; i++) move(luisWorld.client, i % 2 === 0 ? DOOR : INSIDE);
+    move(luisWorld.client, DOOR);
+    await harness.barrier(spaceId, luisWorld.client);
+    expect(harness.world.inMeetingRoom(spaceId, luis.user.id)).toBe(false);
+    await waitForAsync('LiveKit to settle on "may publish"', async () => {
+      return (await serverSide(luis.user.id)).canPublish === true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500)); // no late "revoke" lands after
+    expect((await serverSide(luis.user.id)).canPublish).toBe(true);
+  }, 30_000);
+
+  it('someone who connects from inside a room with a hallway token is isolated on the webhook', async () => {
+    const luisWorld = await harness.enter(luis, spaceId);
+    await harness.enter(ana, spaceId);
+    harness.world.store.get(spaceId)?.place(luis.user.id, DOOR);
+    // Luis fetches a token in the hallway (it may publish) but connects only once inside.
+    const response = await harness.testApp.app.inject({
+      method: 'POST',
+      url: apiPath(API_PATHS.mediaToken, { spaceId }),
+      headers: luis.headers,
+    });
+    const { url, token } = MediaTokenResponseSchema.parse(response.json());
+    move(luisWorld.client, INSIDE);
+    await harness.barrier(spaceId, luisWorld.client);
+    const anaMedia = await connectMedia(ana);
+    const luisMedia = new Room();
+    rooms.push(luisMedia);
+    await luisMedia.connect(url, token, { autoSubscribe: false, dynacast: false });
+    const mic = microphone('mic-stale');
+    await luisMedia.localParticipant!.publishTrack(mic.track, mic.options);
+    // Entering the room found nobody to mute: without the webhook, the track goes out.
+    await waitFor('the modified hallway client to see the track', () =>
+      publicationsOf(anaMedia, luis.user.id).length === 1 ? true : undefined,
+    );
+
+    // LiveKit reports the join and the publication (signed webhooks), as the media VM does.
+    const started = Date.now();
+    for (const event of ['participant_joined', 'track_published'] as const) {
+      const call = await signedWebhook(livekit, {
+        event,
+        room: { name: mediaRoomName(spaceId) },
+        participant: { identity: luis.user.id },
+      });
+      const delivered = await harness.testApp.app.inject({
+        method: 'POST',
+        url: API_PATHS.mediaWebhook,
+        headers: call.headers,
+        payload: call.payload,
+      });
+      expect(delivered.statusCode).toBe(204);
+    }
+    await waitFor('the hallway to lose the track', () =>
+      publicationsOf(anaMedia, luis.user.id).length === 0 ? true : undefined,
+    );
+    expect(Date.now() - started).toBeLessThan(500);
+    await waitForAsync('LiveKit to revoke publishing', async () => {
+      const state = await serverSide(luis.user.id);
+      return state.canPublish === false && state.tracks === 0;
+    });
+  }, 30_000);
 
   it('a token issued inside a room does not allow publishing', async () => {
     const luisWorld = await harness.enter(luis, spaceId);

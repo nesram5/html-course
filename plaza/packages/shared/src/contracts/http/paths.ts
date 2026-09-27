@@ -33,6 +33,11 @@ export const API_PATHS = {
 
   // E5 · Hallway media
   mediaToken: '/api/spaces/:spaceId/media-token',
+  /**
+   * E6-S3 · Webhook of the media server (LiveKit): no session, signed by LiveKit with the API
+   * secret. Only ever restricts publishing (someone who connects from inside a meeting room).
+   */
+  mediaWebhook: '/api/media/livekit-webhook',
 
   // E7 · Chat
   messages: '/api/spaces/:spaceId/messages',

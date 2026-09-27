@@ -1,8 +1,9 @@
-# LiveKit on the media VM (E5-S7, architecture §11.5). Versioned WITHOUT secrets or domains:
-# docker-compose.yml passes them as environment variables, which LiveKit reads on top of this file:
+# LiveKit on the media VM (E5-S7, architecture §11.5). Versioned WITHOUT secrets: docker-compose.yml
+# passes them as environment variables, which LiveKit reads on top of this file:
 #   LIVEKIT_KEYS           "<api key>: <api secret>" (the same pair as the app server's
 #                          LIVEKIT_API_KEY / LIVEKIT_API_SECRET)
 #   LIVEKIT_TURN_DOMAIN    turn.<domain>
+# ./render-config.sh renders it to livekit.yaml, filling ${LIVEKIT_API_KEY} and ${APP_URL} from .env.
 # Upgrades: change the image tag in docker-compose.yml by hand (see docs/runbook.md).
 
 # Signalling (WebSocket + HTTP API). Reached through Caddy (TLS on 443, livekit.<domain>); the
@@ -44,3 +45,11 @@ prometheus:
 logging:
   json: true
   level: info
+
+# Signed webhooks to the app server (E6-S3): on "participant_joined" and "track_published" the
+# app isolates again someone who connected from inside a meeting room with a token fetched in the
+# hallway. Signed with the secret of this API key; the app refuses anything else (401).
+webhook:
+  api_key: ${LIVEKIT_API_KEY}
+  urls:
+    - ${APP_URL}/api/media/livekit-webhook

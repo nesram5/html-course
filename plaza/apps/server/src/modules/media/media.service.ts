@@ -3,6 +3,9 @@ import { MEDIA_TOKEN_TTL_SECONDS, mediaRoomName, type MediaTokenResponse } from 
 import type { MediaProvider } from '../../adapters/media-provider.js';
 import { AppError } from '../../platform/errors.js';
 
+/** `space_<spaceId>`: prefix of the media room of each space ({@link mediaRoomName}). */
+const MEDIA_ROOM_PREFIX = mediaRoomName('');
+
 /** Membership lookup needed by the media use cases. */
 export interface MediaMembers {
   /** Display name of the member, or `null` when the person is not a member of the space. */
@@ -18,6 +21,8 @@ export class MediaService {
   readonly #media: MediaProvider;
   /** Who is in a meeting room right now (set by the world module, which knows `roomId`). */
   #inMeetingRoom: (spaceId: string, userId: string) => boolean = () => false;
+  /** Told when someone connects to or publishes in a space's media room (the world module). */
+  #participantActive: (spaceId: string, userId: string) => void = () => undefined;
 
   constructor(deps: { members: MediaMembers; media: MediaProvider }) {
     this.#members = deps.members;
@@ -51,6 +56,27 @@ export class MediaService {
    */
   trackMeetingRooms(inMeetingRoom: (spaceId: string, userId: string) => boolean): void {
     this.#inMeetingRoom = inMeetingRoom;
+  }
+
+  /**
+   * Registers who hears about people connecting to or publishing in the media room (the world
+   * module), so someone inside a meeting room is isolated again (E6-S3). Registered once.
+   */
+  onParticipantActive(listener: (spaceId: string, userId: string) => void): void {
+    this.#participantActive = listener;
+  }
+
+  /**
+   * The media server says `identity` joined or published a track in `roomName` (its signed
+   * webhook, E6-S3). Someone who fetched a token in the hallway may connect only after walking
+   * into a meeting room, where muting and revoking found nobody to act on: the listener isolates
+   * them now. Rooms that are not a space's media room are ignored.
+   */
+  participantActive(roomName: string, identity: string): void {
+    if (!roomName.startsWith(MEDIA_ROOM_PREFIX) || identity === '') return;
+    const spaceId = roomName.slice(MEDIA_ROOM_PREFIX.length);
+    if (spaceId === '' || mediaRoomName(spaceId) !== roomName) return;
+    this.#participantActive(spaceId, identity);
   }
 
   /**

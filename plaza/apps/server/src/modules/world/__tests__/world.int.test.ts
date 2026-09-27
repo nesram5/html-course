@@ -29,6 +29,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { buildTestApp, type TestApp } from '../../../test/app.js';
 import { resetDatabase } from '../../../test/db.js';
 import { ManualTimers } from '../../../test/manual-timers.js';
+import { signedWebhook } from '../../../test/livekit-webhook.js';
 import { signIn, type TestUser } from '../../../test/session.js';
 import { actorIdOf, type EventsService } from '../../events/index.js';
 import { modules } from '../../index.js';
@@ -551,6 +552,117 @@ describe('world module: realtime multiplayer (E4)', () => {
         identity: ana.user.id,
         canPublish: false,
       });
+    });
+  });
+
+  describe('media server webhook (E6-S3)', () => {
+    const keys = { apiKey: 'devkey', apiSecret: 'secret' };
+
+    function webhook(request: { payload: string; headers: Record<string, string> }) {
+      return testApp.app.inject({
+        method: 'POST',
+        url: API_PATHS.mediaWebhook,
+        headers: request.headers,
+        payload: request.payload,
+      });
+    }
+
+    function joined(userId: string) {
+      return signedWebhook(keys, {
+        event: 'participant_joined',
+        room: { name: `space_${space.id}` },
+        participant: { identity: userId },
+      });
+    }
+
+    it('isolates again someone who connects to the media server from inside a room', async () => {
+      const mover = await enter(ana);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
+      });
+
+      // No session and no X-Plaza-Client: LiveKit's signature is the credential.
+      expect((await webhook(await joined(ana.user.id))).statusCode).toBe(204);
+      const published = await signedWebhook(keys, {
+        event: 'track_published',
+        room: { name: `space_${space.id}` },
+        participant: { identity: ana.user.id },
+      });
+      expect((await webhook(published)).statusCode).toBe(204);
+
+      await vi.waitFor(() => {
+        expect(testApp.media.mutes).toEqual([target, target, target]);
+        expect(testApp.media.permissions).toEqual([
+          { ...target, canPublish: false },
+          { ...target, canPublish: false },
+          { ...target, canPublish: false },
+        ]);
+      });
+
+      // Walking out afterwards still grants publishing back (same queue, never overtaken).
+      move(mover.client, 27, 6, 'left');
+      await barrier(mover.client);
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions.at(-1)).toEqual({ ...target, canPublish: true });
+      });
+    });
+
+    it('does nothing for people in the hallway, other events or rooms that are not a space', async () => {
+      await enter(ana);
+      for (const request of [
+        await joined(ana.user.id),
+        await signedWebhook(keys, {
+          event: 'participant_left',
+          room: { name: `space_${space.id}` },
+          participant: { identity: ana.user.id },
+        }),
+        await signedWebhook(keys, {
+          event: 'participant_joined',
+          room: { name: 'another-room' },
+          participant: { identity: ana.user.id },
+        }),
+      ]) {
+        expect((await webhook(request)).statusCode).toBe(204);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(testApp.media.mutes).toEqual([]);
+      expect(testApp.media.permissions).toEqual([]);
+    });
+
+    it('refuses calls not signed by the media server, or altered after signing', async () => {
+      const mover = await enter(ana);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toHaveLength(1);
+      });
+      const valid = await joined(ana.user.id);
+      const forged = await signedWebhook(
+        { apiKey: 'devkey', apiSecret: 'not-the-secret' },
+        { event: 'participant_joined', room: { name: `space_${space.id}` } },
+      );
+
+      const attempts = [
+        { headers: { 'content-type': 'application/webhook+json' }, payload: valid.payload },
+        forged,
+        {
+          headers: valid.headers,
+          payload: valid.payload.replace('participant_joined', 'track_published'),
+        },
+        { headers: { ...valid.headers, authorization: 'Bearer nonsense' }, payload: valid.payload },
+      ];
+      for (const attempt of attempts) {
+        const response = await webhook(attempt);
+        expect(response.statusCode).toBe(401);
+        expect(response.json<ErrorResponse>().error.code).toBe('UNAUTHORIZED');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(testApp.media.permissions).toHaveLength(1);
     });
   });
 

@@ -325,6 +325,27 @@ export class WorldService {
   }
 
   /**
+   * The media server says the person connected or published (its webhook, E6-S3). Muting and
+   * revoking on room entry act only on a participant who is connected at that moment; someone
+   * who connects afterwards with a token fetched in the hallway could publish. If they stand in a
+   * meeting room now, their tracks are muted and publishing revoked again, in the same queue as
+   * every other permission change of the person, so it never overtakes a later exit.
+   */
+  mediaParticipantActive(spaceId: string, userId: string): void {
+    const key = `${spaceId}:${userId}`;
+    void this.#publishing.run(key, async () => {
+      if (!this.inMeetingRoom(spaceId, userId)) return;
+      this.#revoked.add(key);
+      try {
+        await this.deps.media.enterMeetingRoom(spaceId, userId);
+      } catch (error) {
+        this.deps.logger.warn({ err: error, spaceId }, 'World media isolation on connect failed');
+        this.deps.reporter.captureException(error, { spaceId });
+      }
+    });
+  }
+
+  /**
    * Brings the media-server permission of a person in line with where they are NOW (not where
    * they were when the change was queued), one change at a time: walking in and out quickly
    * never leaves someone in the hallway unable to publish, nor someone in a room able to.

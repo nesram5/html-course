@@ -20,14 +20,14 @@ El audio y el vídeo de la charla de pasillo pasan por un LiveKit propio en una 
 [`infra/livekit/`](../infra/livekit/) **sin secretos**: las claves y los dominios se inyectan por
 variables de entorno (`.env`, que nunca se sube al repositorio).
 
-| Pieza                                                                       | Qué hace                                                                                      |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`livekit.yaml`](../infra/livekit/livekit.yaml)                             | LiveKit: señalización en `:7880`, ICE/TCP en `7881`, UDP `50000–60000`, TURN/UDP en UDP `443` |
-| [`caddy.yaml.tmpl`](../infra/livekit/caddy.yaml.tmpl)                       | Caddy (módulo layer4) en TCP `443`: certificados Let's Encrypt y enrutado por SNI             |
-| [`docker-compose.yml`](../infra/livekit/docker-compose.yml)                 | Ambos servicios con `network_mode: host` y `restart: unless-stopped`; versiones fijadas       |
-| [`render-config.sh`](../infra/livekit/render-config.sh)                     | Genera `caddy.yaml` con los dominios de `.env` y valida las claves                            |
-| [`firewall.sh`](../infra/livekit/firewall.sh)                               | Reglas `ufw`: solo los puertos de medios y SSH desde la IP del equipo                         |
-| [`turn-test/run-turn-test.sh`](../infra/livekit/turn-test/run-turn-test.sh) | Prueba local de TURN/TLS con UDP bloqueado (ver más abajo)                                    |
+| Pieza                                                                       | Qué hace                                                                                                                            |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [`livekit.yaml.tmpl`](../infra/livekit/livekit.yaml.tmpl)                   | LiveKit: señalización en `:7880`, ICE/TCP en `7881`, UDP `50000–60000`, TURN/UDP en UDP `443`, _webhooks_ firmados a la app (E6-S3) |
+| [`caddy.yaml.tmpl`](../infra/livekit/caddy.yaml.tmpl)                       | Caddy (módulo layer4) en TCP `443`: certificados Let's Encrypt y enrutado por SNI                                                   |
+| [`docker-compose.yml`](../infra/livekit/docker-compose.yml)                 | Ambos servicios con `network_mode: host` y `restart: unless-stopped`; versiones fijadas                                             |
+| [`render-config.sh`](../infra/livekit/render-config.sh)                     | Genera `caddy.yaml` y `livekit.yaml` con los dominios, `APP_URL` y la clave de `.env`, y valida las claves                          |
+| [`firewall.sh`](../infra/livekit/firewall.sh)                               | Reglas `ufw`: solo los puertos de medios y SSH desde la IP del equipo                                                               |
+| [`turn-test/run-turn-test.sh`](../infra/livekit/turn-test/run-turn-test.sh) | Prueba local de TURN/TLS con UDP bloqueado (ver más abajo)                                                                          |
 
 ### Dimensionado y proveedor
 
@@ -67,13 +67,16 @@ métricas Prometheus para un agente local). Replicar estas reglas en el _firewal
 2. En la VM: instalar Docker, copiar `infra/livekit/` (por ejemplo, `git clone` con
    `--sparse` de esa carpeta) y activar Docker al arranque (`systemctl enable docker`).
 3. Claves: `docker run --rm livekit/livekit-server:v1.9.12 generate-keys`; guardar el par en el
-   gestor de secretos del equipo. `cp .env.example .env` y rellenar claves y dominios.
+   gestor de secretos del equipo. `cp .env.example .env` y rellenar claves, dominios y `APP_URL`
+   (origen `https://` de la app de ese entorno: LiveKit le envía sus _webhooks_ firmados).
 4. `./render-config.sh` y `ADMIN_CIDR=<ip del equipo>/32 sudo ./firewall.sh`.
 5. `docker compose up -d`. Caddy obtiene los certificados por TLS-ALPN en el 443; si el
    proveedor lo impide, abrir temporalmente TCP 80 para el reto HTTP y volver a cerrarlo.
 6. Fijar la imagen de Caddy por _digest_:
    `docker inspect --format '{{index .RepoDigests 0}}' livekit/caddyl4` → `CADDY_L4_IMAGE` en `.env`.
-7. Comprobar: `curl https://livekit.<dominio>/` responde `OK`; `openssl s_client -connect
+7. Comprobar: `curl https://livekit.<dominio>/` responde `OK`; en los logs de LiveKit
+   (`docker compose logs livekit | grep webhook`) cada entrada a la oficina deja un `sent webhook`
+   sin errores (un `401` de la app indica que la clave de `.env` no es la del servidor); `openssl s_client -connect
 turn.<dominio>:443 -servername turn.<dominio>` muestra un certificado válido.
 8. Servidor de la app (_staging_): `LIVEKIT_URL=wss://livekit.<dominio>`, `LIVEKIT_API_KEY`,
    `LIVEKIT_API_SECRET` (mismo par) y reiniciar. **Sin cambios de código.**

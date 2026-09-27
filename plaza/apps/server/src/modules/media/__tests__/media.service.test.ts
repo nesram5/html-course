@@ -45,6 +45,19 @@ describe('MediaService', () => {
     expect(media.tokens.map((token) => token.canPublish)).toEqual([false, true]);
   });
 
+  it('passes webhook activity in a space media room to the listener, and ignores other rooms', () => {
+    const service = new MediaService({ members, media: new FakeMediaProvider() });
+    const heard: [string, string][] = [];
+    service.onParticipantActive((spaceId, userId) => heard.push([spaceId, userId]));
+
+    service.participantActive('space_space-1', 'user-ana');
+    service.participantActive('space_', 'user-ana');
+    service.participantActive('lobby', 'user-ana');
+    service.participantActive('space_space-1', '');
+
+    expect(heard).toEqual([['space-1', 'user-ana']]);
+  });
+
   it('entering a meeting room mutes the tracks and revokes publishing; leaving grants it back', async () => {
     const media = new FakeMediaProvider();
     const service = new MediaService({ members, media });

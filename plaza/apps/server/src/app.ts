@@ -4,7 +4,7 @@ import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
-import { CLIENT_HEADER } from '@plaza/shared';
+import { API_PATHS, CLIENT_HEADER } from '@plaza/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { Container } from './container.js';
@@ -15,6 +15,11 @@ import { MAP_ASSETS_PREFIX, mapsPackageDir } from './platform/maps-catalog.js';
 import { attachSocketServer } from './platform/socket.js';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+/**
+ * Server-to-server endpoints without the CSRF header: they take no session cookie and verify a
+ * signature instead (the LiveKit webhook, E6-S3).
+ */
+const CSRF_EXEMPT_PATHS: ReadonlySet<string> = new Set([API_PATHS.mediaWebhook]);
 /** Public folders of @plaza/maps served at /assets/maps/. */
 const MAP_ASSET_FOLDERS = ['templates/', 'avatars/', 'decor/'];
 
@@ -76,6 +81,7 @@ export async function buildApp(
     const missingHeader =
       STATE_CHANGING_METHODS.has(request.method) &&
       request.url.startsWith('/api/') &&
+      !CSRF_EXEMPT_PATHS.has(request.url) &&
       request.headers[CLIENT_HEADER] === undefined;
     done(missingHeader ? new AppError('FORBIDDEN', 'Missing X-Plaza-Client header') : undefined);
   });
