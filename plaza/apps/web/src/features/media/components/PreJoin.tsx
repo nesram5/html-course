@@ -144,7 +144,7 @@ export function PreJoin({
         )}
 
         <footer className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">{t('prejoin.remembered')}</p>
+          <p className="text-xs text-slate-600">{t('prejoin.remembered')}</p>
           <button
             ref={enterRef}
             type="button"

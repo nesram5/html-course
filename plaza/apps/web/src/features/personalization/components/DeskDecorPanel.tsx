@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { officeStore, type OfficeStore } from '@/features/world';
 
-import { useDialog } from '../hooks/useDialog';
+import { useDialog } from '@/shared/ui';
 
 export interface DeskDecorPanelProps {
   readonly deskId: string;

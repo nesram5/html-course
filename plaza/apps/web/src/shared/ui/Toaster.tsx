@@ -30,7 +30,7 @@ export function Toaster() {
           <button
             type="button"
             aria-label={t('toasts.dismiss')}
-            className="rounded px-1 text-slate-500 hover:text-slate-900"
+            className="rounded px-1 text-slate-600 hover:text-slate-900"
             onClick={() => {
               dismiss(item.id);
             }}

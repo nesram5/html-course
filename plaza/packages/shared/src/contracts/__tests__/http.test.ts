@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   API_PATHS,
+  AccountDeletionPreviewSchema,
+  AdminMetricsQuerySchema,
   AllowedDomainSchema,
   AuthStartQuerySchema,
   ClaimDeskBodySchema,
@@ -13,7 +15,9 @@ import {
   MapTemplateIdSchema,
   MediaTokenResponseSchema,
   MeResponseSchema,
+  SERVER_ONLY_PRODUCT_EVENTS,
   SpaceBansResponseSchema,
+  TelemetryBodySchema,
   TrackEventBodySchema,
   UpdateMeBodySchema,
   UpdateRoomBodySchema,
@@ -187,5 +191,61 @@ describe('space bans (E2-S6 follow-up)', () => {
     expect(SpaceBansResponseSchema.safeParse({ bans: [{ ...ban, email: 'nope' }] }).success).toBe(
       false,
     );
+  });
+});
+
+describe('telemetry, admin metrics and account deletion (E8-S6, E8-S7)', () => {
+  it('accepts the client samples of O3, O4 and O5 and nothing else', () => {
+    const samples = [
+      { metric: 'av_first_frame', spaceId: 's1', valueMs: 640 },
+      { metric: 'join_time', spaceId: 's1', valueMs: 18_000 },
+      { metric: 'session_started', spaceId: 's1', sessionKey: 'a1b2c3d4e5' },
+      { metric: 'session_error', spaceId: 's1', sessionKey: 'a1b2c3d4e5', kind: 'media_lost' },
+    ];
+    expect(TelemetryBodySchema.parse({ samples }).samples).toEqual(samples);
+    for (const bad of [
+      { samples: [] },
+      { samples: [{ metric: 'av_first_frame', spaceId: 's1', valueMs: 1.5 }] },
+      { samples: [{ metric: 'join_time', spaceId: 's1', valueMs: 600_001 }] },
+      { samples: [{ metric: 'session_started', spaceId: 's1', sessionKey: 'short' }] },
+      { samples: [{ metric: 'session_error', spaceId: 's1', sessionKey: 'a1b2c3d4e5' }] },
+      { samples: [{ metric: 'mouse_moves', spaceId: 's1', valueMs: 1 }] },
+    ]) {
+      expect(TelemetryBodySchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it('keeps the events the server computes out of the client', () => {
+    expect(SERVER_ONLY_PRODUCT_EVENTS).toEqual([
+      'space_joined',
+      'conversation_started',
+      'conversation_ended',
+      'room_entered',
+    ]);
+  });
+
+  it('reads the period of the metrics page, 28 days by default', () => {
+    expect(AdminMetricsQuerySchema.parse({})).toEqual({ days: 28 });
+    expect(AdminMetricsQuerySchema.parse({ days: '7' })).toEqual({ days: 7 });
+    expect(AdminMetricsQuerySchema.safeParse({ days: '365' }).success).toBe(false);
+  });
+
+  it('describes what deleting the account would do, and who is an admin', () => {
+    const preview = {
+      blockingSpaces: [{ id: 's1', name: 'Oficina Acme' }],
+      spacesDeleted: [],
+    };
+    expect(AccountDeletionPreviewSchema.parse(preview)).toEqual(preview);
+    expect(apiPath(API_PATHS.meDeletion, {})).toBe('/api/me/deletion');
+    const user = {
+      id: 'u1',
+      email: 'ana@acme.com',
+      displayName: 'Ana',
+      avatarId: 'avatar-01',
+      avatarChosen: true,
+      pictureUrl: null,
+    };
+    expect(MeResponseSchema.parse({ user: { ...user, isAdmin: true } }).user.isAdmin).toBe(true);
+    expect(MeResponseSchema.parse({ user }).user.isAdmin).toBeUndefined();
   });
 });

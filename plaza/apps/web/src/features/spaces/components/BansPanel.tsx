@@ -37,7 +37,7 @@ export function BansPanel({ spaceId }: { spaceId: string }) {
               {avatar !== undefined && <AvatarSprite avatar={avatar} scale={1} walking={false} />}
               <div className="flex flex-1 flex-col">
                 <span>{ban.displayName}</span>
-                <span className="text-slate-500">
+                <span className="text-slate-600">
                   {ban.email} ·{' '}
                   {t('bans.since', { date: DATE_FORMAT.format(new Date(ban.createdAt)) })}
                 </span>

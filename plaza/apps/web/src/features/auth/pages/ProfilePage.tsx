@@ -2,12 +2,13 @@ import { useTranslation } from 'react-i18next';
 
 import { toast } from '@/shared/ui';
 
+import { DeleteAccountSection } from '../components/DeleteAccountSection';
 import { PageLoading } from '../components/RequireAuth';
 import { ProfileForm } from '../components/ProfileForm';
 import { UserMenu } from '../components/UserMenu';
 import { useSession } from '../hooks/useSession';
 
-/** `/profile`: display name and avatar (E1-S4). Mounted inside `RequireAuth`. */
+/** `/profile`: display name and avatar (E1-S4), "Borrar mi cuenta" (E8-S6). Inside `RequireAuth`. */
 export function ProfilePage() {
   const { t } = useTranslation('auth');
   const session = useSession();
@@ -41,6 +42,7 @@ export function ProfilePage() {
             submitLabel={t('profile.save')}
             onSaved={() => toast.success(t('profile.saved'))}
           />
+          <DeleteAccountSection />
         </main>
       )}
     </>

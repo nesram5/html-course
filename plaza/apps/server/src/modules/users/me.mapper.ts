@@ -20,3 +20,8 @@ export function initialDisplayName(name: string, email: string): string {
   const local = (email.split('@')[0] ?? '').slice(0, DISPLAY_NAME_MAX_LEN);
   return local === '' ? 'Plaza' : local;
 }
+
+/** Whether an e-mail is listed in `ADMIN_EMAILS` (already lowercased by the config). */
+export function isAdminEmail(adminEmails: readonly string[], email: string): boolean {
+  return adminEmails.includes(email.trim().toLowerCase());
+}

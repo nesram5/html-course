@@ -30,6 +30,7 @@ import { buildTestApp, type TestApp } from '../../../test/app.js';
 import { resetDatabase } from '../../../test/db.js';
 import { ManualTimers } from '../../../test/manual-timers.js';
 import { signIn, type TestUser } from '../../../test/session.js';
+import { actorIdOf, type EventsService } from '../../events/index.js';
 import { modules } from '../../index.js';
 import type { SpaceRuntime } from '../space-runtime.js';
 import { createWorldModule, type WorldService } from '../index.js';
@@ -49,11 +50,13 @@ interface Inbox {
 // office-small@1 (see space-runtime.test.ts): spawns (11..14, 25); room "sala-reuniones" entered
 // from (27,6) → (28,6); wall below (11,28); desk-01 has its spawn tile at (2,5).
 const MAX_PLAYERS = 3;
+const SECRET = 'test-session-secret-at-least-32-characters';
 
 describe('world module: realtime multiplayer (E4)', () => {
   const timers = new ManualTimers();
   let testApp: TestApp;
   let world: WorldService;
+  let events: EventsService;
   let url: string;
   let space: SpaceDetailDto;
   let ana: TestUser;
@@ -77,6 +80,7 @@ describe('world module: realtime multiplayer (E4)', () => {
           name: 'capture-world',
           register({ services }) {
             world = services.get('world');
+            events = services.get('events');
           },
         },
       ],
@@ -91,6 +95,8 @@ describe('world module: realtime multiplayer (E4)', () => {
   });
 
   beforeEach(async () => {
+    // Product events of the previous test are written in the background: none may land later.
+    await events.flush();
     await resetDatabase(testApp.container.db);
     testApp.media.mutes.length = 0;
     testApp.media.removals.length = 0;
@@ -428,12 +434,15 @@ describe('world module: realtime multiplayer (E4)', () => {
         expect(testApp.media.mutes).toEqual([target]);
         expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
       });
-      const events = await testApp.container.db.productEvent.findMany();
-      expect(events).toMatchObject([
+      await events.flush();
+      const recorded = await testApp.container.db.productEvent.findMany({
+        where: { name: 'room_entered' },
+      });
+      expect(recorded).toMatchObject([
         {
           name: 'room_entered',
           spaceId: space.id,
-          actorId: ana.user.id,
+          actorId: actorIdOf(SECRET, ana.user.id),
           props: { areaId: 'sala-reuniones' },
         },
       ]);
@@ -473,7 +482,10 @@ describe('world module: realtime multiplayer (E4)', () => {
       });
       // Leaving is a permission, not a remote unmute; and only entries are counted.
       expect(testApp.media.mutes).toEqual([target]);
-      expect(await testApp.container.db.productEvent.count()).toBe(1);
+      await events.flush();
+      expect(
+        await testApp.container.db.productEvent.count({ where: { name: 'room_entered' } }),
+      ).toBe(1);
     });
 
     it('walking in and out quickly ends with the permission of where the person is', async () => {

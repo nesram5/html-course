@@ -11,7 +11,7 @@ import { useSession } from '../hooks/useSession';
 export function PageLoading() {
   const { t } = useTranslation('auth');
   return (
-    <p role="status" className="p-8 text-center text-slate-500">
+    <p role="status" className="p-8 text-center text-slate-600">
       {t('loading')}
     </p>
   );

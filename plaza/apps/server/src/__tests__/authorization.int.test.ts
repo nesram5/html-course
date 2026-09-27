@@ -154,6 +154,14 @@ const ENDPOINTS: Endpoint[] = [
     payload: { slots: ['plant'] },
     expected: { anonymous: 401, outsider: 404, member: 403, owner: 403 },
   },
+  {
+    // E6-S2 / E8-S7: "Unirse a la reunión" reported by the client (metric O6).
+    name: 'POST product event',
+    method: 'POST',
+    url: (s) => apiPath(API_PATHS.events, { spaceId: s.id }),
+    payload: { name: 'room_meet_opened', props: { areaId: 'sala-reuniones' } },
+    expected: { anonymous: 401, outsider: 404, member: 204, owner: 204 },
+  },
 ];
 
 /**

@@ -2,9 +2,10 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
+import type { MemberDeskCellProps } from '@/features/spaces';
 import { toast } from '@/shared/ui';
 
-import { useClaimDesk, useReleaseDesk } from '../hooks/useDesks';
+import { useClaimDesk, useMapDeskIds, useReleaseDesk } from '../hooks/useDesks';
 import { deskLink } from '../hooks/useShowDeskFromUrl';
 import { deskLabel } from '../lib/desk-label';
 
@@ -116,5 +117,31 @@ export function MemberDeskControls({
         {t('members.assign')}
       </button>
     </form>
+  );
+}
+
+/**
+ * The "Escritorio" cell of "Miembros" in the space settings: `app/` hands it to the `spaces`
+ * feature (`SpaceSettingsExtensions.MemberDeskCell`), which does not import this feature.
+ */
+export function MemberDeskCell({
+  spaceId,
+  spacePath,
+  mapUrl,
+  member,
+  takenDeskIds,
+  onChanged,
+}: MemberDeskCellProps) {
+  const deskIds = useMapDeskIds(mapUrl);
+  return (
+    <MemberDeskControls
+      spaceId={spaceId}
+      spacePath={spacePath}
+      member={member}
+      deskId={member.deskId}
+      deskIds={deskIds.data ?? []}
+      takenDeskIds={takenDeskIds}
+      onChanged={onChanged}
+    />
   );
 }

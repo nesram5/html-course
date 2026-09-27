@@ -8,7 +8,7 @@ import { createSocketAuthMiddleware } from './auth.socket.js';
 import { createRequireUser } from './session-http.js';
 
 export type { AuthContext } from './auth.service.js';
-export { currentUser } from './session-http.js';
+export { clearSessionCookie, currentUser, sessionRateLimitKey } from './session-http.js';
 export { socketUserId } from './auth.socket.js';
 export { OAuthFlowCookie, type FlowSecrets } from './oauth-flow.js';
 

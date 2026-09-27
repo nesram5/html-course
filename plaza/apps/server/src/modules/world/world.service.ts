@@ -60,7 +60,7 @@ export interface WorldServiceDeps {
   spaces: SpacesService;
   maps: MapsCatalog;
   media: MediaService;
-  /** Product events (`room_entered`, metric O6). */
+  /** Product events (E6-S2, E8-S7): entering the map, hallway conversations and `room_entered`. */
   events: Pick<EventsService, 'record'>;
   metrics: InMemoryRealtimeMetrics;
   timers: Timers;
@@ -202,6 +202,8 @@ export class WorldService {
         runtime.spawnFor(deskId),
         socket.id,
       );
+      // A new visit of the map (not a reconnection nor a second tab): O2 days of use, O1 people.
+      this.deps.events.record('space_joined', { spaceId, userId });
     }
     if (previousSocketId !== socket.id) this.#hallway(runtime).resend(userId);
     socket.data.spaceId = spaceId;
@@ -316,14 +318,8 @@ export class WorldService {
     const { spaceId } = runtime;
     const { roomId } = result.roomChanged;
     if (roomId !== null) {
-      this.#background('room_entered event', spaceId, () =>
-        this.deps.events.record({
-          name: 'room_entered',
-          spaceId,
-          actorId: userId,
-          props: { areaId: roomId },
-        }),
-      );
+      // Written in the background by the events service; a failed write is only reported.
+      this.deps.events.record('room_entered', { spaceId, userId, props: { areaId: roomId } });
     }
     this.#syncPublishing(spaceId, userId);
   }
@@ -452,7 +448,23 @@ export class WorldService {
   #hallway(runtime: SpaceRuntime): HallwayPeers {
     let hallway = this.#hallways.get(runtime);
     if (hallway === undefined) {
-      hallway = new HallwayPeers();
+      const { spaceId } = runtime;
+      const { events } = this.deps;
+      hallway = new HallwayPeers(
+        {
+          started: (userId) => {
+            events.record('conversation_started', { spaceId, userId });
+          },
+          ended: (userId, durationMs, maxPeers) => {
+            events.record('conversation_ended', {
+              spaceId,
+              userId,
+              props: { durationMs, maxPeers },
+            });
+          },
+        },
+        () => this.deps.timers.now(),
+      );
       this.#hallways.set(runtime, hallway);
     }
     return hallway;

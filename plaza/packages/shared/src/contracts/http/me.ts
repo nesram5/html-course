@@ -15,6 +15,8 @@ export const MeSchema = z.object({
   avatarChosen: z.boolean(),
   /** Google profile picture, if any. */
   pictureUrl: z.url().nullable(),
+  /** Listed in `ADMIN_EMAILS`: may open the metrics page (E8-S7). Only sent by `GET /api/me`. */
+  isAdmin: z.boolean().optional(),
 });
 export type Me = z.infer<typeof MeSchema>;
 
@@ -32,4 +34,22 @@ export const UpdateMeBodySchema = z
   });
 export type UpdateMeBody = z.infer<typeof UpdateMeBodySchema>;
 
-// `DELETE /api/me` → 204 (E8-S6: deletes the account; chat messages stay as "deleted user").
+const SpaceRefSchema = z.object({ id: IdSchema, name: z.string() });
+
+/**
+ * `GET /api/me/deletion` (E8-S6): what "Borrar mi cuenta" would do.
+ * - `blockingSpaces`: spaces where I am the only owner and other people are members. The account
+ *   cannot be deleted until they have no other members (409 `SOLE_OWNER`).
+ * - `spacesDeleted`: spaces where I am the only member; they are deleted with the account.
+ */
+export const AccountDeletionPreviewSchema = z.object({
+  blockingSpaces: z.array(SpaceRefSchema),
+  spacesDeleted: z.array(SpaceRefSchema),
+});
+export type AccountDeletionPreview = z.infer<typeof AccountDeletionPreviewSchema>;
+
+/**
+ * `DELETE /api/me` → 204 (E8-S6): deletes my profile, sessions, memberships (freeing my desks),
+ * bans and feedback, and the spaces where I was the only member; my chat messages stay as
+ * "Usuario eliminado". Sole owner of a space with other members → 409 `SOLE_OWNER`.
+ */

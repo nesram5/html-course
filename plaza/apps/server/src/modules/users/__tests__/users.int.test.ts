@@ -51,6 +51,7 @@ describe('users module (E1-S4)', () => {
       avatarId: 'avatar-01',
       avatarChosen: false,
       pictureUrl: null,
+      isAdmin: false,
     });
   });
 

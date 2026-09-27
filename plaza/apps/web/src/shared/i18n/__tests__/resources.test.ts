@@ -22,6 +22,7 @@ describe('i18n resources', () => {
       'media',
       'personalization',
       'presence',
+      'product',
       'rooms',
       'spaces',
       'world',

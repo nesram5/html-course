@@ -18,6 +18,8 @@ import {
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 
 import { createChatModule } from '../modules/chat/index.js';
+import type { EventsService } from '../modules/events/index.js';
+import type { KeyedSerial } from '../platform/keyed-serial.js';
 import { modules } from '../modules/index.js';
 import { createPresenceModule } from '../modules/presence/index.js';
 import type { PlazaModule } from '../modules/types.js';
@@ -55,6 +57,8 @@ export interface RealtimeHarnessOptions {
   joinLimit?: JoinRateLimit;
   /** Real adapters instead of the fakes (e.g. the LiveKit media provider). */
   overrides?: TestAppOptions['overrides'];
+  /** Extra environment of the app (e.g. `ADMIN_EMAILS`). */
+  env?: TestAppOptions['env'];
 }
 
 /**
@@ -65,6 +69,10 @@ export interface RealtimeHarnessOptions {
 export class RealtimeHarness {
   testApp!: TestApp;
   world!: WorldService;
+  /** Product events (E8-S7); `await events.flush()` before reading `ProductEvent`. */
+  events!: EventsService;
+  /** Per-space desk queue of the spaces module (E8-S2). */
+  deskChanges!: KeyedSerial;
   url = '';
   readonly #clients: TestClient[] = [];
   readonly #inboxes = new Map<TestClient, Received>();
@@ -81,12 +89,15 @@ export class RealtimeHarness {
     };
     this.testApp = await buildTestApp({
       ...(this.options.overrides !== undefined && { overrides: this.options.overrides }),
+      ...(this.options.env !== undefined && { env: this.options.env }),
       modules: [
         ...modules.map((module) => replaced[module.name] ?? module),
         {
           name: 'capture-world',
           register: ({ services }) => {
             this.world = services.get('world');
+            this.events = services.get('events');
+            this.deskChanges = services.get('spaces').deskChanges;
           },
         },
       ],

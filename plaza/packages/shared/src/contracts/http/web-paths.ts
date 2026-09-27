@@ -13,4 +13,10 @@ export const WEB_PATHS = {
   join: '/join/:token',
   /** The office itself (world feature). */
   space: '/s/:slug',
+  /** What Plaza stores and what it does not (E8-S6). Public. */
+  privacy: '/privacidad',
+  /** In-app feedback form (E8-S7). */
+  feedback: '/comentarios',
+  /** O1–O6 metrics for the people in `ADMIN_EMAILS` (E8-S7). */
+  adminMetrics: '/admin/metricas',
 } as const;

@@ -28,6 +28,8 @@ export interface HttpOptions {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
   signal?: AbortSignal;
+  /** Lets the request outlive the page (telemetry sent while leaving). */
+  keepalive?: boolean;
 }
 
 function codeForStatus(status: number): ErrorCode {
@@ -89,6 +91,7 @@ export async function http<S extends z.ZodType>(
       headers,
       ...(options.body !== undefined && { body: JSON.stringify(options.body) }),
       ...(options.signal !== undefined && { signal: options.signal }),
+      ...(options.keepalive === true && { keepalive: true }),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;

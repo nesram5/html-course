@@ -83,6 +83,18 @@ export const MEET_URI_PREFIX = 'https://meet.google.com/';
 
 /** Maximum length of an in-app feedback message (E8-S7). */
 export const FEEDBACK_MAX_LEN = 2000;
+/** In-app feedback messages per person and hour (E8-S7). */
+export const FEEDBACK_RATE_PER_HOUR = 10;
+
+/** Client telemetry (E8-S7): samples per request and requests per minute and session. */
+export const TELEMETRY_MAX_SAMPLES = 20;
+export const TELEMETRY_RATE_PER_MINUTE = 30;
+/** Longest duration accepted in a telemetry sample (10 min). */
+export const TELEMETRY_MAX_VALUE_MS = 600_000;
+/** O1: a hallway conversation counts as spontaneous when it lasts longer than this (brief §3). */
+export const CONVERSATION_MIN_MS = 30_000;
+/** RNF-04: a connection or media cut not recovered within this is a critical error (O4). */
+export const CRITICAL_OUTAGE_MS = 30_000;
 
 /** Limits of user-provided text fields. */
 export const DISPLAY_NAME_MAX_LEN = 40;

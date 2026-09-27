@@ -4,7 +4,10 @@ import { Link, useNavigate } from 'react-router';
 
 import { useLogout, useSession } from '../hooks/useSession';
 
-/** Top bar of the signed-in pages: my name and photo, "Mis espacios", "Mi perfil", logout. */
+/**
+ * Top bar of the signed-in pages: "Mis espacios", "Enviar comentarios" (E8-S7), "Métricas" for
+ * admins, my name and photo ("Mi perfil") and logout.
+ */
 export function UserMenu() {
   const { t } = useTranslation('auth');
   const { t: tc } = useTranslation();
@@ -21,6 +24,14 @@ export function UserMenu() {
         <Link to={WEB_PATHS.spaces} className="hover:underline">
           {t('menu.spaces')}
         </Link>
+        <Link to={WEB_PATHS.feedback} className="hover:underline">
+          {t('menu.feedback')}
+        </Link>
+        {session.user?.isAdmin === true && (
+          <Link to={WEB_PATHS.adminMetrics} className="hover:underline">
+            {t('menu.metrics')}
+          </Link>
+        )}
         <Link to={WEB_PATHS.profile} className="flex items-center gap-2 hover:underline">
           {session.user !== null && session.user.pictureUrl !== null && (
             <img

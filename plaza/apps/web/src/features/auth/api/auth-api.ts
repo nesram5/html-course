@@ -1,10 +1,12 @@
 import {
+  AccountDeletionPreviewSchema,
   API_PATHS,
   AvatarsResponseSchema,
   MeResponseSchema,
   SafeNextPathSchema,
   TestLoginResponseSchema,
   WEB_PATHS,
+  type AccountDeletionPreview,
   type AvatarDto,
   type Me,
   type UpdateMeBody,
@@ -16,6 +18,7 @@ import { http, isApiError } from '@/shared/api';
 export const authKeys = {
   me: ['auth', 'me'] as const,
   avatars: ['auth', 'avatars'] as const,
+  deletion: ['auth', 'deletion'] as const,
 };
 
 /** My user, or `null` when there is no valid session (401). */
@@ -41,6 +44,16 @@ export async function fetchAvatars(signal?: AbortSignal): Promise<AvatarDto[]> {
     signal ? { signal } : {},
   );
   return avatars;
+}
+
+/** What "Borrar mi cuenta" would do: spaces blocking it and spaces deleted with it (E8-S6). */
+export function fetchDeletionPreview(signal?: AbortSignal): Promise<AccountDeletionPreview> {
+  return http(API_PATHS.meDeletion, AccountDeletionPreviewSchema, signal ? { signal } : {});
+}
+
+/** Deletes the account for good (E8-S6). */
+export function deleteAccount(): Promise<void> {
+  return http(API_PATHS.me, null, { method: 'DELETE' });
 }
 
 export function logout(): Promise<void> {

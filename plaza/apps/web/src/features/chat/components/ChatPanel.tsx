@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type SyntheticE
 import { useTranslation } from 'react-i18next';
 
 import { isRealtimeRequestError } from '@/features/world';
+import { useEscapeKey } from '@/shared/ui';
 
 import { sendChatMessage } from '../hooks/useChatSession';
 import { chatStore, useChatStore, type ChatStore } from '../store/chat-store';
@@ -23,6 +24,7 @@ const TIME = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digi
  * Chat of the space (E7-S3): the last 100 messages and a text box. While the box has the focus,
  * the keyboard types instead of walking (the world ignores keys typed in text fields). Enter
  * sends; messages over 1000 characters and server errors (5 per second) are explained.
+ * `Escape` closes it (E8-S6).
  */
 export function ChatPanel({
   names,
@@ -39,6 +41,7 @@ export function ChatPanel({
   const [sending, setSending] = useState(false);
   const titleId = useId();
   const errorId = useId();
+  const panelRef = useEscapeKey<HTMLElement>(onClose);
   const listRef = useRef<HTMLOListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -100,6 +103,7 @@ export function ChatPanel({
 
   return (
     <section
+      ref={panelRef}
       aria-labelledby={titleId}
       className="flex h-full w-80 max-w-full flex-col rounded-lg bg-white text-slate-900 shadow-xl"
     >
@@ -110,7 +114,7 @@ export function ChatPanel({
         <button
           type="button"
           aria-label={t('panel.close')}
-          className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100"
+          className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100"
           onClick={onClose}
         >
           ✕
@@ -122,12 +126,12 @@ export function ChatPanel({
         aria-live="polite"
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3"
       >
-        {messages.length === 0 && <li className="text-sm text-slate-500">{t('panel.empty')}</li>}
+        {messages.length === 0 && <li className="text-sm text-slate-600">{t('panel.empty')}</li>}
         {messages.map((message) => (
           <li key={message.id} data-testid="chat-message">
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-semibold">{authorOf(message)}</span>
-              <time dateTime={message.createdAt} className="text-xs text-slate-500">
+              <time dateTime={message.createdAt} className="text-xs text-slate-600">
                 {TIME.format(new Date(message.createdAt))}
               </time>
             </div>
@@ -166,7 +170,7 @@ export function ChatPanel({
           </button>
         </div>
         {length > CHAT_MAX_LEN * 0.9 && (
-          <span className={`text-xs ${tooLong ? 'text-red-700' : 'text-slate-500'}`}>
+          <span className={`text-xs ${tooLong ? 'text-red-700' : 'text-slate-600'}`}>
             {t('input.counter', { count: length, max: CHAT_MAX_LEN })}
           </span>
         )}

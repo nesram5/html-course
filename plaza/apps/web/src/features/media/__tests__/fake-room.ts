@@ -168,6 +168,15 @@ export class FakeRoom extends EventEmitter {
     return Promise.resolve();
   }
 
+  /** `[kind, deviceId]` of every device switch asked for. */
+  readonly switchedDevices: [string, string][] = [];
+  switchError: Error | null = null;
+
+  switchActiveDevice(kind: string, deviceId: string): Promise<boolean> {
+    this.switchedDevices.push([kind, deviceId]);
+    return this.switchError === null ? Promise.resolve(true) : Promise.reject(this.switchError);
+  }
+
   /** A remote participant joins the room with microphone and camera published. */
   addParticipant(identity: string, name = identity): FakeParticipant {
     const participant = new FakeParticipant(identity, name);

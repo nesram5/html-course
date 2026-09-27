@@ -53,6 +53,8 @@ export default defineConfig({
         RATE_LIMIT_PER_MINUTE: '10000',
         // Every browser of the run connects from 127.0.0.1 (E8-S2 per-IP connection limit).
         REALTIME_CONNECTIONS_PER_MINUTE: '10000',
+        // The metrics page (E8-S7) of `a11y.spec.ts` and `product.spec.ts`.
+        ADMIN_EMAILS: 'producto@plaza.test',
       },
     },
     {

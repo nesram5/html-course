@@ -66,7 +66,7 @@ export function ThemeSettings({ space }: { space: SpaceDetailDto }) {
                     />
                     {theme.name}
                     {theme.id === space.themeId && (
-                      <span className="text-xs font-normal text-slate-500">
+                      <span className="text-xs font-normal text-slate-600">
                         {t('theme.current')}
                       </span>
                     )}

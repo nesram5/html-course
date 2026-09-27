@@ -112,13 +112,13 @@ export function StatusMenu({
                 <StatusDot presence={option} className="mt-1.5" />
                 <span className="flex flex-col">
                   <span className="text-sm font-medium">{t(`status.${option}`)}</span>
-                  <span className="text-xs text-slate-500">{t(`statusMenu.${option}Hint`)}</span>
+                  <span className="text-xs text-slate-600">{t(`statusMenu.${option}Hint`)}</span>
                 </span>
               </button>
             </li>
           ))}
           {away && (
-            <li role="none" className="px-3 py-2 text-xs text-slate-500">
+            <li role="none" className="px-3 py-2 text-xs text-slate-600">
               {t('statusMenu.awayNote')}
             </li>
           )}

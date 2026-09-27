@@ -20,6 +20,7 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  tapKey,
   tile,
   type CreatedSpace,
 } from './support/world';
@@ -76,7 +77,7 @@ async function bumpIntoTheBottomWall(page: Page, map: TestMap): Promise<Tile[]> 
     const at = await tile(page);
     const next = { x: at.x + STEPS[key].x, y: at.y + STEPS[key].y };
     const expected = map.blocked(next.x, next.y) ? at : next;
-    await page.keyboard.press(key);
+    await tapKey(page, key);
     if (expected === at) await page.waitForTimeout(300);
     await expect(canvas).toHaveAttribute('data-tile-y', String(expected.y));
     expect(await tile(page)).toEqual(expected);
@@ -101,6 +102,11 @@ test.describe('office personalization (E9)', () => {
     await expect.poll(async () => (await remoteAvatar(luis.page, ana.userId))?.alpha).toBe(1);
     const anaSeen = await remoteAvatar(luis.page, ana.userId);
     expect((await office(luis.page))?.themeId).toBe('pixel');
+    // The other styles of the template are loaded ahead, so the change only has to fade.
+    await expect
+      .poll(async () => (await office(luis.page))?.preloaded.sort(), { timeout: 15_000 })
+      .toEqual(['night', 'watercolor']);
+    const texturesBefore = (await office(luis.page))?.styleTextures.sort();
 
     // Same route in the pixel style…
     const pixelRoute = await bumpIntoTheBottomWall(luis.page, map);
@@ -127,9 +133,11 @@ test.describe('office personalization (E9)', () => {
     expect(Date.now() - started).toBeLessThan(2_000);
     await expect(settings.getByText('Estilo «Acuarela» aplicado.')).toBeVisible();
 
-    // The old textures are gone; only the new style is loaded.
+    // Nothing was downloaded for the change: the same style textures, one pair per style.
     const probe = await office(luis.page);
-    expect(probe?.styleTextures.sort()).toEqual(['theme:1:above', 'theme:1:below']);
+    expect(probe?.styleTextures.sort()).toEqual(texturesBefore);
+    expect(probe?.styleTextures).toHaveLength(6);
+    expect(probe?.preloaded.sort()).toEqual(['night', 'pixel']);
     // Nobody moved.
     expect(await tile(luis.page)).toEqual(pixelRoute.at(-1));
     expect(await remoteAvatar(luis.page, ana.userId)).toMatchObject({
@@ -148,8 +156,7 @@ test.describe('office personalization (E9)', () => {
     expect((await office(luis.page))?.swaps).toBe(0);
 
     await luis.page.screenshot({ path: 'test-results/office-watercolor.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a member claims and decorates a desk; the other person sees the name and the objects', async ({
@@ -242,7 +249,6 @@ test.describe('office personalization (E9)', () => {
       .toEqual([{ deskId, label: 'Luis', items: ['plant', 'lamp'] }]);
 
     await ana.page.screenshot({ path: 'test-results/office-desk-decorated.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

@@ -2,7 +2,7 @@ import type { DeskState } from '@plaza/shared';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useDialog } from '../hooks/useDialog';
+import { useDialog } from '@/shared/ui';
 
 export interface DeskMenuProps {
   readonly deskId: string;

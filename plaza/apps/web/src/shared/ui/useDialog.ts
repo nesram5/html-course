@@ -8,7 +8,7 @@ function focusablesIn(root: HTMLElement): HTMLElement[] {
 }
 
 /**
- * Keyboard behaviour of the in-world dialogs (desk menu, "Decorar"): focus moves into the dialog
+ * Keyboard behaviour of modal dialogs (desk menu, "Decorar", "Borrar mi cuenta"): focus moves into the dialog
  * (to `[data-autofocus]` or its first control) and back where it was on close, `Tab` stays
  * inside, `Escape` closes, and no key reaches the map while it is open (arrows must not walk
  * the avatar while choosing an object).

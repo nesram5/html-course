@@ -24,7 +24,7 @@ function SpaceCard({ space }: { space: SpaceSummaryDto }) {
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
           <h2 className="text-lg font-semibold">{space.name}</h2>
-          <p className="text-sm text-slate-500">{t(`role.${space.role}`)}</p>
+          <p className="text-sm text-slate-600">{t(`role.${space.role}`)}</p>
         </div>
         <div className="mt-auto flex items-center gap-3">
           <Link to={apiPath(WEB_PATHS.space, { slug: space.slug })} className={primaryLink}>

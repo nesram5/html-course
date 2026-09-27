@@ -1,3 +1,4 @@
+import { WEB_PATHS } from '@plaza/shared';
 import type { RouteObject } from 'react-router';
 
 import { authRoutes } from '@/features/auth';
@@ -5,6 +6,7 @@ import { chatRoutes } from '@/features/chat';
 import { mediaRoutes } from '@/features/media';
 import { personalizationRoutes } from '@/features/personalization';
 import { presenceRoutes } from '@/features/presence';
+import { productRoutes } from '@/features/product';
 import { roomsRoutes } from '@/features/rooms';
 import { spacesRoutes } from '@/features/spaces';
 import { worldRoutes } from '@/features/world';
@@ -12,6 +14,7 @@ import { worldRoutes } from '@/features/world';
 import { RootLayout } from './RootLayout';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
 
 /**
@@ -24,6 +27,7 @@ export const routes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: WEB_PATHS.privacy, element: <PrivacyPage /> },
       ...authRoutes,
       ...spacesRoutes,
       ...worldRoutes,
@@ -32,6 +36,7 @@ export const routes: RouteObject[] = [
       ...presenceRoutes,
       ...chatRoutes,
       ...personalizationRoutes,
+      ...productRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],
   },

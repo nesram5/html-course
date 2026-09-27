@@ -93,7 +93,8 @@
     "cancel": "Cancelar",
     "saved": "Enlace guardado.",
     "sourceApi": "Creado con Google Meet",
-    "sourceManual": "Pegado a mano"
+    "sourceManual": "Pegado a mano",
+    "meetPlaceholder": "https://meet.google.com/abc-defg-hij"
   },
   "join": {
     "title": "Te han invitado a {{name}}",

@@ -16,6 +16,8 @@ export const ERROR_CODES = [
   // Auth (E1)
   'OAUTH_FAILED',
   'UNKNOWN_AVATAR',
+  /** "Borrar mi cuenta" while being the only owner of a space with other members (E8-S6). */
+  'SOLE_OWNER',
   // Spaces and access (E2)
   'UNKNOWN_MAP_TEMPLATE',
   'INVALID_INVITE',
@@ -59,6 +61,7 @@ export const ERROR_HTTP_STATUS = {
   INTERNAL: 500,
   OAUTH_FAILED: 401,
   UNKNOWN_AVATAR: 400,
+  SOLE_OWNER: 409,
   UNKNOWN_MAP_TEMPLATE: 400,
   INVALID_INVITE: 404,
   DOMAIN_NOT_ALLOWED: 403,

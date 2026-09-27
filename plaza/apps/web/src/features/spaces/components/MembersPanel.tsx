@@ -4,16 +4,17 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarSprite, useAvatars, useSession } from '@/features/auth';
-import { MemberDeskControls, useMapDeskIds } from '@/features/personalization';
 import { toast } from '@/shared/ui';
 
 import { spacesKeys } from '../api/spaces-api';
+import { useSpaceSettingsExtensions } from '../extensions';
 import { useMapTemplates, useMembers, useRemoveMember } from '../hooks/useSpaces';
 import { ConfirmAction } from './ConfirmAction';
 
 /**
- * Owner panel: name, avatar, e-mail, role and desk of every member, with "Expulsar" (E2-S6) and
- * desk assignment / "Ir a su escritorio" (E9-S2).
+ * Owner panel: name, avatar, e-mail, role and desk of every member, with "Expulsar" (E2-S6). The
+ * desk column (assignment, "Ir a su escritorio", E9-S2) comes from `personalization` through
+ * {@link useSpaceSettingsExtensions}.
  */
 export function MembersPanel({ space }: { space: SpaceDetailDto }) {
   const { t } = useTranslation('spaces');
@@ -26,7 +27,7 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
   const remove = useRemoveMember(spaceId);
   const templates = useMapTemplates();
   const mapUrl = templates.data?.find((template) => template.id === space.mapTemplateId)?.mapUrl;
-  const deskIds = useMapDeskIds(mapUrl);
+  const { MemberDeskCell } = useSpaceSettingsExtensions();
   const avatarById = new Map((avatars.data ?? []).map((avatar) => [avatar.id, avatar]));
   const taken = new Set((members.data ?? []).flatMap((m) => (m.deskId === null ? [] : [m.deskId])));
   const spacePath = apiPath(WEB_PATHS.space, { slug: space.slug });
@@ -40,12 +41,12 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
         {t('members.title')}
       </h2>
       <table className="w-full text-left text-sm">
-        <thead className="text-slate-500">
+        <thead className="text-slate-600">
           <tr>
             <th scope="col">{t('members.name')}</th>
             <th scope="col">{t('members.email')}</th>
             <th scope="col">{t('members.role')}</th>
-            <th scope="col">{t('members.desk')}</th>
+            {MemberDeskCell !== undefined && <th scope="col">{t('members.desk')}</th>}
             <th scope="col">
               <span className="sr-only">{t('members.actions')}</span>
             </th>
@@ -67,17 +68,18 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
                 </td>
                 <td>{member.email}</td>
                 <td>{t(`role.${member.role}`)}</td>
-                <td>
-                  <MemberDeskControls
-                    spaceId={spaceId}
-                    spacePath={spacePath}
-                    member={member}
-                    deskId={member.deskId}
-                    deskIds={deskIds.data ?? []}
-                    takenDeskIds={taken}
-                    onChanged={refresh}
-                  />
-                </td>
+                {MemberDeskCell !== undefined && (
+                  <td>
+                    <MemberDeskCell
+                      spaceId={spaceId}
+                      spacePath={spacePath}
+                      mapUrl={mapUrl}
+                      member={member}
+                      takenDeskIds={taken}
+                      onChanged={refresh}
+                    />
+                  </td>
+                )}
                 <td className="text-right">
                   {!isMe && member.role !== 'OWNER' && (
                     <ConfirmAction

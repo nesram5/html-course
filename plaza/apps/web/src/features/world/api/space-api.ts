@@ -1,4 +1,4 @@
-import { API_PATHS, DecorCatalogResponseSchema } from '@plaza/shared';
+import { API_PATHS, DecorCatalogResponseSchema, MapTemplatesResponseSchema } from '@plaza/shared';
 
 import { http } from '@/shared/api';
 
@@ -17,4 +17,17 @@ export const worldKeys = {
 export async function fetchDecorCatalog({ signal }: { signal?: AbortSignal } = {}) {
   return (await http(API_PATHS.decorCatalog, DecorCatalogResponseSchema, signal ? { signal } : {}))
     .items;
+}
+
+/** Style ids of a map template, to load them ahead in the office (E9 follow-up). */
+export async function fetchTemplateThemeIds(
+  mapTemplateId: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<string[]> {
+  const { templates } = await http(
+    API_PATHS.mapTemplates,
+    MapTemplatesResponseSchema,
+    signal ? { signal } : {},
+  );
+  return templates.find((template) => template.id === mapTemplateId)?.themes.map((t) => t.id) ?? [];
 }

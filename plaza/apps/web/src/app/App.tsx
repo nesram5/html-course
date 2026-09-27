@@ -2,10 +2,12 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { i18n } from 'i18next';
 import { RouterProvider, type createBrowserRouter } from 'react-router';
 
+import { SpaceSettingsExtensionsProvider } from '@/features/spaces';
 import { SpaceExtensionsProvider, type SpaceExtension } from '@/features/world';
 
 import { AppProviders } from './providers';
 import { spaceExtensions as defaultSpaceExtensions } from './space-extensions';
+import { spaceSettingsExtensions } from './space-settings-extensions';
 
 export type AppRouter = ReturnType<typeof createBrowserRouter>;
 
@@ -26,7 +28,9 @@ export function App({
   return (
     <AppProviders i18n={i18n} queryClient={queryClient}>
       <SpaceExtensionsProvider extensions={spaceExtensions}>
-        <RouterProvider router={router} />
+        <SpaceSettingsExtensionsProvider extensions={spaceSettingsExtensions}>
+          <RouterProvider router={router} />
+        </SpaceSettingsExtensionsProvider>
       </SpaceExtensionsProvider>
     </AppProviders>
   );

@@ -10,6 +10,8 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  step,
+  tapKey,
   tile,
   type CreatedSpace,
 } from './support/world';
@@ -60,12 +62,12 @@ test.describe('multiplayer in real time (E4)', () => {
 
     // Luis walks two tiles up; Ana sees the remote avatar walk there (animated, then still).
     await luis.page.getByTestId('world-canvas').focus();
-    await luis.page.keyboard.press('ArrowUp');
+    await tapKey(luis.page, 'ArrowUp');
     await expect(luis.page.getByTestId('world-canvas')).toHaveAttribute(
       'data-tile-y',
       String(luisStart.y - 1),
     );
-    await luis.page.keyboard.press('ArrowUp');
+    await tapKey(luis.page, 'ArrowUp');
     await expect(luis.page.getByTestId('world-canvas')).toHaveAttribute(
       'data-tile-y',
       String(luisStart.y - 2),
@@ -81,8 +83,7 @@ test.describe('multiplayer in real time (E4)', () => {
     for (const avatar of await avatars(ana.page)) expect(avatar.labelAboveArt).toBe(true);
 
     await ana.page.screenshot({ path: 'test-results/realtime-two-people.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('three people walk in the same office and each sees the other two (Hito M2)', async ({
@@ -102,7 +103,7 @@ test.describe('multiplayer in real time (E4)', () => {
       await canvas.focus();
       for (let step = 1; step <= index + 1; step++) {
         const before = await tile(walker.page);
-        await walker.page.keyboard.press('ArrowUp');
+        await tapKey(walker.page, 'ArrowUp');
         await expect(canvas).toHaveAttribute('data-tile-y', String(before.y - 1));
       }
       ends.set(walker.userId, await tile(walker.page));
@@ -120,7 +121,7 @@ test.describe('multiplayer in real time (E4)', () => {
       }
     }
 
-    for (const someone of people) await someone.context.close();
+    await Promise.all(people.map((someone) => someone.context.close()));
   });
 
   test('a short network cut: "Reconectando…", semi-transparent for others, back in place', async ({
@@ -129,12 +130,11 @@ test.describe('multiplayer in real time (E4)', () => {
     const { ana, luis, space } = await anaAndLuis(browser);
     await openOffice(ana.page, space.slug);
     await openOffice(luis.page, space.slug);
+    // One step up, confirmed by the server: Ana sees Luis on the new tile.
     await luis.page.getByTestId('world-canvas').focus();
-    await luis.page.keyboard.press('ArrowUp');
-    const before = { x: (await tile(luis.page)).x, y: (await tile(luis.page)).y };
-    await expect
-      .poll(async () => (await remoteAvatar(ana.page, luis.userId))?.tileY)
-      .toBe(before.y);
+    const before = await step(luis.page, 'ArrowUp', {
+      seenBy: { page: ana.page, userId: luis.userId },
+    });
 
     // The network goes away: the open WebSocket closes and new connections fail.
     await luis.context.setOffline(true);
@@ -157,8 +157,7 @@ test.describe('multiplayer in real time (E4)', () => {
       tileY: before.y,
     });
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a second tab replaces the first, which can take the session back', async ({ browser }) => {
@@ -198,8 +197,7 @@ test.describe('multiplayer in real time (E4)', () => {
       .poll(async () => remoteAvatar(ana.page, luis.userId), { timeout: 5_000 })
       .toBeUndefined();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a person removed by the owner leaves the office with an explanation', async ({
@@ -221,7 +219,6 @@ test.describe('multiplayer in real time (E4)', () => {
     // Ana sees Luis fade out and disappear.
     await expect.poll(async () => remoteAvatar(ana.page, luis.userId)).toBeUndefined();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

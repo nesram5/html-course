@@ -10,7 +10,7 @@ import { errorMessageKey, isApiError } from '@/shared/api';
 import { toast } from '@/shared/ui';
 
 import { avatarUrl, decorUrl, loadTheme, loadWorldAssets } from '../api/assets';
-import { worldKeys } from '../api/space-api';
+import { fetchTemplateThemeIds, worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
 import { useSpaceExtensions, type SpaceInfo } from '../extensions';
 import { useDecorCatalog } from '../hooks/useDecorCatalog';
@@ -59,6 +59,7 @@ export function SpacePage() {
     (nextThemeId: string) => loadTheme(mapTemplateId, nextThemeId),
     [mapTemplateId],
   );
+  const listThemes = useCallback(() => fetchTemplateThemeIds(mapTemplateId), [mapTemplateId]);
   // Decoration sprites are looked up when drawn, so the catalog arriving later does not
   // recreate the game; until it does, the conventional path is used.
   const decor = useDecorCatalog();
@@ -185,6 +186,7 @@ export function SpacePage() {
           avatarUrl={sprite}
           avatarUrls={avatarUrls}
           resolveTheme={resolveTheme}
+          listThemes={listThemes}
           decorUrlOf={decorUrlOf}
           label={t('canvas.label', { space: detail.name })}
         />

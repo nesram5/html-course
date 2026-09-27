@@ -47,11 +47,11 @@ export function RoomRow({ spaceId, room, canEdit }: RoomRowProps) {
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-medium">{room.name}</span>
         {room.meetUri === null ? (
-          <span className="text-sm text-slate-500">{t('rooms.noLink')}</span>
+          <span className="text-sm text-slate-600">{t('rooms.noLink')}</span>
         ) : (
           <>
             <span className="font-mono text-sm text-slate-700">{room.meetUri}</span>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-600">
               {t(room.source === 'manual' ? 'rooms.sourceManual' : 'rooms.sourceApi')}
             </span>
             <a
@@ -87,7 +87,7 @@ export function RoomRow({ spaceId, room, canEdit }: RoomRowProps) {
               id={inputId}
               type="url"
               value={meetUri}
-              placeholder="https://meet.google.com/abc-defg-hij"
+              placeholder={t('rooms.meetPlaceholder')}
               aria-invalid={invalid}
               aria-describedby={invalid ? `${inputId}-error` : undefined}
               onChange={(event) => {

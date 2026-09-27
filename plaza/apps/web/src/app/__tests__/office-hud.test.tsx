@@ -6,6 +6,7 @@ import { chatSpaceExtension } from '@/features/chat';
 import { mediaSpaceExtension } from '@/features/media';
 import { personalizationSpaceExtension } from '@/features/personalization';
 import { presenceSpaceExtension } from '@/features/presence';
+import { productSpaceExtension } from '@/features/product';
 import { roomsSpaceExtension } from '@/features/rooms';
 import { sidePanelStore } from '@/features/world';
 import { spaceInfoFixture } from '@/test/fixtures';
@@ -47,16 +48,18 @@ afterEach(() => {
 });
 
 describe('office page extensions', () => {
-  it('draw, in order, the hallway media, meeting rooms, presence, chat and desks (E5, E6, E7, E9)', () => {
+  it('draw, in order, the hallway media, meeting rooms, presence, chat and desks (E5, E6, E7, E9), then measure (E8)', () => {
     expect(spaceExtensions).toEqual([
       mediaSpaceExtension,
       roomsSpaceExtension,
       presenceSpaceExtension,
       chatSpaceExtension,
       personalizationSpaceExtension,
+      productSpaceExtension,
       errorContextSpaceExtension,
     ]);
     expect(roomsSpaceExtension.Overlay).toBeDefined();
+    expect(productSpaceExtension.Overlay).toBeDefined();
     expect(personalizationSpaceExtension.Overlay).toBeDefined();
     expect(personalizationSpaceExtension.BarItems).toBeDefined();
     expect(mediaSpaceExtension.Gate).toBeDefined();
@@ -94,5 +97,27 @@ describe('office page extensions', () => {
     await user.click(people);
     await user.click(screen.getByRole('button', { name: 'Cerrar la lista de personas' }));
     expect(people).toHaveFocus();
+  });
+
+  it('works from the keyboard: the panel takes the focus and Escape closes it (E8-S6)', async () => {
+    const user = userEvent.setup();
+    renderHud();
+    const bar = screen.getByRole('group', { name: 'Tus controles' });
+    const people = within(bar).getByRole('button', { name: /^Personas/ });
+    const chat = within(bar).getByRole('button', { name: 'Chat del espacio' });
+
+    people.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('searchbox', { name: 'Buscar por nombre' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', { name: 'Personas' })).toBeNull();
+    expect(people).toHaveFocus();
+
+    chat.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('textbox', { name: 'Mensaje para todo el espacio' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', { name: 'Chat del espacio' })).toBeNull();
+    expect(chat).toHaveFocus();
   });
 });
