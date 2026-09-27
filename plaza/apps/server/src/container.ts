@@ -1,9 +1,6 @@
-import {
-  FakeIdentityProvider,
-  FakeMediaProvider,
-  FakeMeetingProvider,
-} from './adapters/fakes/index.js';
+import { FakeIdentityProvider, FakeMeetingProvider } from './adapters/fakes/index.js';
 import type { IdentityProvider } from './adapters/identity-provider.js';
+import { LiveKitMediaProvider } from './adapters/livekit.js';
 import type { MediaProvider } from './adapters/media-provider.js';
 import type { MeetingProvider } from './adapters/meeting-provider.js';
 import type { AppConfig } from './platform/config.js';
@@ -38,18 +35,18 @@ export interface ContainerInput {
 }
 
 function selectAdapters(config: AppConfig): Pick<Container, 'identity' | 'meetings' | 'media'> {
+  // LIVEKIT_URL/API_KEY/API_SECRET are always set (config validation), so the real LiveKit
+  // adapter is used everywhere (locally against `livekit-server --dev` or LiveKit Cloud);
+  // tests replace it with `FakeMediaProvider` through `overrides.media`.
+  const media = new LiveKitMediaProvider(config.livekit);
   if (config.isProduction) {
-    // TODO(E1-S2, E2-S7, E5-S3): wire GoogleIdentityProvider, GoogleMeetProvider and
-    // LiveKitMediaProvider here (fakes stay for tests and local development without credentials).
+    // TODO(E1-S2, E2-S7): wire GoogleIdentityProvider and GoogleMeetProvider here
+    // (fakes stay for tests and local development without credentials).
     throw new Error(
-      'Real Google/LiveKit adapters are not implemented yet; refusing to use fakes in production',
+      'Real Google adapters are not implemented yet; refusing to use fakes in production',
     );
   }
-  return {
-    identity: new FakeIdentityProvider(),
-    meetings: new FakeMeetingProvider(),
-    media: new FakeMediaProvider(config.livekit.url),
-  };
+  return { identity: new FakeIdentityProvider(), meetings: new FakeMeetingProvider(), media };
 }
 
 export function createContainer({
