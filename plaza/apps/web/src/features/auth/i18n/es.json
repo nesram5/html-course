@@ -1,1 +1,42 @@
-{}
+{
+  "loading": "Cargando…",
+  "login": {
+    "title": "Entra en Plaza",
+    "subtitle": "La oficina virtual de tu equipo. Entra con tu cuenta de Google, sin contraseñas nuevas.",
+    "google": "Entrar con Google",
+    "cancelled": "No se completó el inicio de sesión.",
+    "failed": "No se completó el inicio de sesión.",
+    "retryHint": "Puedes volver a intentarlo cuando quieras."
+  },
+  "testLogin": {
+    "title": "Entrada de prueba (solo desarrollo)",
+    "email": "Email de prueba",
+    "submit": "Entrar como prueba"
+  },
+  "menu": {
+    "label": "Menú de la cuenta",
+    "spaces": "Mis espacios",
+    "profile": "Mi perfil",
+    "logout": "Cerrar sesión"
+  },
+  "profile": {
+    "title": "Mi perfil",
+    "subtitle": "Así te verán los demás en el mapa.",
+    "displayName": "Nombre visible",
+    "email": "Cuenta de Google",
+    "save": "Guardar cambios",
+    "saving": "Guardando…",
+    "saved": "Perfil guardado."
+  },
+  "avatarPicker": {
+    "label": "Elige tu avatar",
+    "empty": "Todavía no hay avatares disponibles.",
+    "loadError": "No se pudieron cargar los avatares."
+  },
+  "avatarPrompt": {
+    "title": "Elige cómo te verán en el mapa",
+    "description": "Escoge un avatar y revisa tu nombre antes de entrar. Podrás cambiarlos cuando quieras en tu perfil.",
+    "continue": "Continuar",
+    "chooseFirst": "Elige un avatar para continuar."
+  }
+}
