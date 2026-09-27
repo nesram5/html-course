@@ -88,7 +88,11 @@ export function attachSocketServer(
   });
   app.decorate('io', io);
   app.addHook('preClose', (done) => {
-    io.local.disconnectSockets(true);
+    // Shutting down (a deploy): close the connections, so that the HTTP server can close, but
+    // do not end the Socket.IO sessions. Clients then see a transport close and reconnect by
+    // themselves once the server is back (E4-S6); after an "io server disconnect" they would
+    // never retry.
+    for (const socket of io.sockets.sockets.values()) socket.conn.close();
     done();
   });
   app.addHook('onClose', async () => {

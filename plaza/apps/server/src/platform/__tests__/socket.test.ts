@@ -169,3 +169,31 @@ describe('realtime heartbeat (E4-S6)', () => {
     }
   });
 });
+
+describe('realtime shutdown (E4-S6)', () => {
+  it('closes the connections so that clients reconnect by themselves once the server is back', async () => {
+    const app = Fastify();
+    attachSocketServer(app, { corsOrigin: 'http://localhost:5173' });
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = app.server.address() as AddressInfo;
+    const client: Client = connect(`http://127.0.0.1:${String(port)}`, {
+      path: REALTIME_PATH,
+      transports: ['websocket'],
+      reconnectionDelay: 60_000,
+    });
+    await new Promise<void>((resolve) => client.on('connect', resolve));
+    const disconnected = new Promise<string>((resolve) => {
+      client.on('disconnect', resolve);
+    });
+
+    try {
+      await app.close();
+
+      // Not "io server disconnect", after which Socket.IO clients never retry.
+      expect(await disconnected).toBe('transport close');
+      expect(client.active).toBe(true);
+    } finally {
+      client.disconnect();
+    }
+  });
+});
