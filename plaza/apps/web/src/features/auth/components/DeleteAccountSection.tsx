@@ -9,7 +9,7 @@ import { toast, useDialog } from '@/shared/ui';
 import { useDeleteAccount, useDeletionPreview } from '../hooks/useSession';
 
 const DANGER =
-  'rounded-md bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800 disabled:opacity-50';
+  'rounded-md bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800 disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 const SECONDARY = 'rounded-md border border-slate-300 px-4 py-2 font-medium hover:bg-slate-50';
 
 /**
@@ -140,8 +140,10 @@ function ConfirmDeleteDialog({
           <button
             type="button"
             className={DANGER}
-            disabled={remove.isPending}
+            // aria-disabled: the focused button keeps the focus inside the dialog while pending.
+            aria-disabled={remove.isPending || undefined}
             onClick={() => {
+              if (remove.isPending) return;
               remove.mutate(undefined, {
                 onSuccess: () => {
                   toast.success(t('deleteAccount.done'));

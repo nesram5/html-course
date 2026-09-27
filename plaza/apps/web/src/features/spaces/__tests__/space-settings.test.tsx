@@ -127,8 +127,15 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
     expect(within(anaRow as HTMLElement).queryByRole('button', { name: 'Expulsar' })).toBeNull();
 
     await user.click(within(luis).getByRole('button', { name: 'Expulsar' }));
+    // The focus follows the question (RNF-07): on "Cancelar", then back on "Expulsar".
+    expect(document.activeElement).toBe(within(luis).getByRole('button', { name: 'Cancelar' }));
+    await user.keyboard('{Enter}');
+    expect(document.activeElement).toBe(within(luis).getByRole('button', { name: 'Expulsar' }));
+    await user.keyboard('{Enter}');
     await user.click(within(luis).getByRole('button', { name: 'Confirmar' }));
 
+    // The row goes away: the focus waits on the section heading, not on <body>.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Miembros' }));
     expect(await screen.findByText('Luis ya no es miembro del espacio.')).toBeInTheDocument();
     expect(api.callsTo('DELETE /api/spaces/space-1/members/user-luis')).toHaveLength(1);
   });

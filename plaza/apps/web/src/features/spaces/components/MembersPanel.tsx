@@ -37,7 +37,7 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
 
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-3">
-      <h2 id={titleId} className="text-lg font-semibold">
+      <h2 id={titleId} tabIndex={-1} className="text-lg font-semibold">
         {t('members.title')}
       </h2>
       <table className="w-full text-left text-sm">
@@ -87,6 +87,8 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
                       label={t('members.kick')}
                       question={t('members.kickConfirm', { name: member.displayName })}
                       disabled={remove.isPending}
+                      // The row goes away with the member: the focus waits on the heading.
+                      focusAfterConfirm={() => document.getElementById(titleId)}
                       onConfirm={() => {
                         remove.mutate(member.userId, {
                           onSuccess: () =>

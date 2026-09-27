@@ -128,7 +128,9 @@ describe('PeoplePanel (E7-S2)', () => {
   it('offers "Llamar" to everyone but me', () => {
     renderPanel();
 
-    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
     expect(screen.queryByRole('button', { name: 'Llamar a Ana' })).toBeNull();
   });
 
@@ -158,8 +160,12 @@ describe('RingButton (E7-S5, RN-11)', () => {
     const button = await screen.findByRole('button', {
       name: 'Podrás volver a llamar a Mary en 30 s',
     });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveTextContent('Llamar (30 s)');
+    // The button keeps the focus (Escape still closes the panel) and does nothing meanwhile.
+    expect(document.activeElement).toBe(button);
+    await user.click(button);
+    expect(ring).toHaveBeenCalledOnce();
     expect(screen.getByRole('status')).toHaveTextContent('Has llamado a Mary.');
 
     act(() => {
@@ -170,7 +176,9 @@ describe('RingButton (E7-S5, RN-11)', () => {
     act(() => {
       vi.advanceTimersByTime(RING_COOLDOWN_MS - 10_000);
     });
-    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('asks for the notification permission on the first use only', async () => {
@@ -199,6 +207,9 @@ describe('RingButton (E7-S5, RN-11)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Espera un poco antes de volver a llamar.',
     );
-    expect(screen.getByRole('button', { name: /Podrás volver a llamar a Luis/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Podrás volver a llamar a Luis/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 });

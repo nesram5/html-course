@@ -18,7 +18,7 @@ export interface DeskMenuProps {
 }
 
 const ACTION =
-  'rounded-md px-3 py-2 text-left text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50';
+  'rounded-md px-3 py-2 text-left text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 const PRIMARY = `${ACTION} bg-brand-600 text-white hover:bg-brand-700`;
 const SECONDARY = `${ACTION} border border-slate-300 hover:bg-slate-50`;
 
@@ -54,7 +54,15 @@ export function DeskMenu({
     body = (
       <>
         <p className="text-sm text-slate-600">{t('menu.changeQuestion')}</p>
-        <button type="button" data-autofocus className={PRIMARY} disabled={busy} onClick={onClaim}>
+        <button
+          type="button"
+          data-autofocus
+          className={PRIMARY}
+          aria-disabled={busy || undefined}
+          onClick={() => {
+            if (!busy) onClaim();
+          }}
+        >
           {t('menu.changeConfirm')}
         </button>
         <button
@@ -75,8 +83,9 @@ export function DeskMenu({
         type="button"
         data-autofocus
         className={PRIMARY}
-        disabled={busy}
+        aria-disabled={busy || undefined}
         onClick={() => {
+          if (busy) return;
           if (myDeskId === null) onClaim();
           else setConfirming(true);
         }}
@@ -91,7 +100,14 @@ export function DeskMenu({
         <button type="button" data-autofocus className={PRIMARY} onClick={onDecorate}>
           {t('menu.decorate')}
         </button>
-        <button type="button" className={SECONDARY} disabled={busy} onClick={onRelease}>
+        <button
+          type="button"
+          className={SECONDARY}
+          aria-disabled={busy || undefined}
+          onClick={() => {
+            if (!busy) onRelease();
+          }}
+        >
           {t('menu.release')}
         </button>
       </>

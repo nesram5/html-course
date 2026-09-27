@@ -36,6 +36,7 @@ export function RingButton({
   const [now, setNow] = useState(() => Date.now());
   const [sending, setSending] = useState(false);
   const seconds = secondsLeft(until, now);
+  const waiting = seconds > 0;
 
   // Countdown: refresh the clock now (another button may have started the cooldown) and then
   // every second until the person can be rung again.
@@ -55,6 +56,7 @@ export function RingButton({
   }, [until]);
 
   const onClick = async () => {
+    if (waiting || sending) return;
     requestNotificationPermissionOnce();
     setSending(true);
     try {
@@ -76,17 +78,18 @@ export function RingButton({
     }
   };
 
-  const waiting = seconds > 0;
   return (
     <button
       type="button"
-      disabled={waiting || sending}
+      // aria-disabled, not disabled: the button keeps the focus while ringing and during the
+      // cooldown, so Escape and Tab keep working in the panel around it.
+      aria-disabled={waiting || sending || undefined}
       aria-label={
         waiting
           ? t('ring.cooldownLabel', { name: displayName, seconds })
           : t('ring.label', { name: displayName })
       }
-      className={`rounded-md bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${className}`}
+      className={`rounded-md bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-700 aria-disabled:cursor-not-allowed aria-disabled:bg-slate-300 aria-disabled:text-slate-600 ${className}`}
       onClick={() => {
         void onClick();
       }}
