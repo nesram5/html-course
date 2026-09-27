@@ -27,6 +27,8 @@ import { readPngSize, type PngInfo } from './png.js';
 
 /** Licenses accepted for art (SPDX ids). Anything else needs a conscious review. */
 export const ALLOWED_LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-4.0', 'OFL-1.1', 'MIT'] as const;
+/** Office styles each template offers at least (E9-S1: "mínimo 2"). */
+export const MIN_THEMES = 2;
 /** Minimum spawn points per template (E2-S1). */
 export const MIN_SPAWNS = 2;
 /** Avatar sheets: 3 walking frames × 4 directions (E1-S4). */
@@ -127,6 +129,11 @@ function checkMap(c: Checker, template: ManifestTemplate): WorldMap | undefined 
 }
 
 function checkThemes(c: Checker, template: ManifestTemplate, map: WorldMap | undefined): void {
+  if (template.themes.length < MIN_THEMES) {
+    c.problem(
+      `manifest.json: template "${template.id}" needs at least ${String(MIN_THEMES)} themes, found ${String(template.themes.length)}`,
+    );
+  }
   const themes = new Map<string, ThemeFile>();
   for (const theme of template.themes) {
     const dir = `templates/${template.dir}/themes/${theme.id}`;

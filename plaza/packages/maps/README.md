@@ -44,8 +44,10 @@ packages/maps/
 ```
 
 Templates: **Oficina pequeña** (`office-small@1`, 40×30, 1 meeting room, 24 desks) and **Campus**
-(`campus@1`, 80×60, 3 meeting rooms, 32 desks), each with the `pixel` style and its `night`
-color variant ("Noche").
+(`campus@1`, 80×60, 3 meeting rooms, 32 desks), each with three styles: `pixel`, its `night`
+color variant ("Noche") and `watercolor` ("Acuarela", painted washes with their own images, made by
+`scripts/generator/watercolor.ts` from the same tile layers). `validate:maps` requires at least 2 styles
+per template (E9-S1).
 
 ## Map templates (`map.tmj`, architecture §8)
 
@@ -72,7 +74,7 @@ A style is a **skin over the same geometry**: it changes the art, never collisio
 - `below.png` and `above.png` measure exactly `width × 32` by `height × 32` px (max 4096 px per side).
   The client draws `below` → avatars → `above`.
 - The default `pixel` style is rasterized from the tile layers by the generator;
-  other styles are painted over that same base.
+  other styles are painted over that same base (`watercolor` is a procedural painting of it).
 - **Color variant (plan B):** a `theme.json` with `baseThemeId` and a 4×5 `colorMatrix` (20 numbers)
   reuses another theme's images through a Phaser color filter; no `below.png`/`above.png` needed.
 - `theme.json` must declare `name`, `author` and `license`.

@@ -15,6 +15,10 @@
         {
           "id": "night",
           "name": "Noche"
+        },
+        {
+          "id": "watercolor",
+          "name": "Acuarela"
         }
       ]
     },
@@ -31,6 +35,10 @@
         {
           "id": "night",
           "name": "Noche"
+        },
+        {
+          "id": "watercolor",
+          "name": "Acuarela"
         }
       ]
     }
