@@ -93,6 +93,27 @@ describe('auth feature (E1-S3, E1-S4)', () => {
       expect(api.callsTo('POST /api/auth/test-login')[0]?.body).toEqual({ email: 'ana@acme.com' });
     });
 
+    it('sends the Workspace domain of the test login when given (allowedDomain tests)', async () => {
+      const api = mockApi({
+        ...anonymous,
+        'POST /api/auth/test-login': { body: { user: meFixture() } },
+        'GET /api/avatars': { body: { avatars: avatarsFixture } },
+      });
+      const user = userEvent.setup();
+      renderApp({ route: '/login?next=/profile' });
+
+      await user.type(await screen.findByLabelText('Email de prueba'), 'ana@acme.com');
+      await user.type(screen.getByLabelText(/Dominio de Google Workspace/), 'acme.com');
+      await user.click(screen.getByRole('button', { name: 'Entrar como prueba' }));
+
+      await waitFor(() => {
+        expect(api.callsTo('POST /api/auth/test-login')[0]?.body).toEqual({
+          email: 'ana@acme.com',
+          hostedDomain: 'acme.com',
+        });
+      });
+    });
+
     it('logs out and goes back to the login page', async () => {
       const api = mockApi({
         'GET /api/me': { body: { user: meFixture() } },

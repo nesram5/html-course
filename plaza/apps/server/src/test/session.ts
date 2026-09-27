@@ -13,7 +13,7 @@ export interface TestUser {
 export async function signIn(
   app: FastifyInstance,
   email: string,
-  options: { displayName?: string; googleSub?: string } = {},
+  options: { displayName?: string; googleSub?: string; hostedDomain?: string } = {},
 ): Promise<TestUser> {
   const response = await app.inject({
     method: 'POST',

@@ -57,8 +57,8 @@ export class AuthService {
 
   /**
    * Exchanges the code, verifies the `id_token` (in the adapter) and opens a session.
-   * Unverified e-mails are refused: every stored e-mail is verified, which is what the
-   * `allowedDomain` auto-join relies on (E2-S4).
+   * Unverified e-mails are refused. The Workspace domain (`hd` claim) is stored on every sign-in:
+   * the `allowedDomain` auto-join relies on it, not on the e-mail domain (E2-S4).
    */
   async completeGoogleLogin(input: {
     code: string;
@@ -78,6 +78,7 @@ export class AuthService {
       email: identity.email.toLowerCase(),
       displayName: initialDisplayName(identity.name, identity.email),
       pictureUrl: identity.pictureUrl,
+      hostedDomain: identity.hostedDomain?.toLowerCase() ?? null,
     });
     return this.openSession(user);
   }
@@ -89,7 +90,10 @@ export class AuthService {
     throw new AppError('OAUTH_FAILED', `Sign-in rejected: ${reason}`, { cause });
   }
 
-  /** `POST /api/auth/test-login` (only with `AUTH_TEST_LOGIN=true`). */
+  /**
+   * `POST /api/auth/test-login` (only with `AUTH_TEST_LOGIN=true`). Without `hostedDomain` the
+   * account behaves as a personal Google account (no `hd` claim).
+   */
   async testLogin(body: TestLoginBody): Promise<NewSession> {
     const email = body.email.toLowerCase();
     const user = await this.repository.upsertUser({
@@ -97,6 +101,7 @@ export class AuthService {
       email,
       displayName: initialDisplayName(body.displayName ?? '', email),
       pictureUrl: null,
+      hostedDomain: body.hostedDomain?.toLowerCase() ?? null,
     });
     return this.openSession(user);
   }

@@ -58,10 +58,6 @@ export function freeDesk(deskId: string): DeskState {
   return { deskId, userId: null, displayName: null, decor: null };
 }
 
-function emailDomain(email: string): string {
-  return (email.split('@').pop() ?? '').toLowerCase();
-}
-
 /**
  * Spaces, memberships and access (E2-S2..S6). Guards: `assertMember` (non-members get 404
  * `NOT_A_MEMBER`, so existence is not leaked) and `assertOwner` (members get 403).
@@ -173,8 +169,10 @@ export class SpacesService {
   }
 
   /**
-   * `/s/:slug`: members enter; people whose verified e-mail belongs to `allowedDomain` become
-   * members first (E2-S4). Everyone else gets 404.
+   * `/s/:slug`: members enter; people whose Google Workspace account belongs to `allowedDomain`
+   * (the `hd` claim of their last sign-in) become members first (E2-S4). The e-mail domain alone
+   * is not enough: a personal Google account can be registered with a corporate address, and it
+   * stays verified after the person leaves the company. Everyone else gets 404.
    */
   async enterBySlug(slug: string, userId: string): Promise<EnterSpaceResponse> {
     const space = await this.#repository.findSpaceBySlug(slug);
@@ -187,7 +185,7 @@ export class SpacesService {
     if (
       space.allowedDomain === null ||
       user === null ||
-      emailDomain(user.email) !== space.allowedDomain
+      user.hostedDomain !== space.allowedDomain
     ) {
       throw new AppError('NOT_A_MEMBER', 'Space not found');
     }

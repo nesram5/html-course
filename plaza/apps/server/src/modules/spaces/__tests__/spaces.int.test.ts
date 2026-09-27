@@ -295,13 +295,13 @@ describe('spaces module (E2-S2..S6)', () => {
       expect(domain.statusCode).toBe(403);
     });
 
-    it('lets verified e-mails of the allowed domain in without an invitation', async () => {
+    it('lets Workspace accounts of the allowed domain in without an invitation', async () => {
       const space = await createSpace();
       const patch = await request(ana, 'PATCH', apiPath(API_PATHS.space, { spaceId: space.id }), {
         allowedDomain: 'ACME.com',
       });
       expect(SpaceResponseSchema.parse(patch.json()).space.allowedDomain).toBe('acme.com');
-      const carla = await signIn(testApp.app, 'carla@acme.com');
+      const carla = await signIn(testApp.app, 'carla@acme.com', { hostedDomain: 'acme.com' });
       const enterUrl = apiPath(API_PATHS.spaceEnterBySlug, { slug: space.slug });
 
       const first = EnterSpaceResponseSchema.parse((await request(carla, 'POST', enterUrl)).json());
@@ -311,6 +311,22 @@ describe('spaces module (E2-S2..S6)', () => {
       expect(first).toMatchObject({ joined: true, space: { id: space.id, role: 'MEMBER' } });
       expect(again.joined).toBe(false);
       expect(outsider.statusCode).toBe(404);
+    });
+
+    it('refuses a personal Google account with an e-mail of the allowed domain (no hd claim)', async () => {
+      const space = await createSpace();
+      await request(ana, 'PATCH', apiPath(API_PATHS.space, { spaceId: space.id }), {
+        allowedDomain: 'acme.com',
+      });
+      // A verified consumer account registered with a corporate address (e.g. someone who left).
+      const former = await signIn(testApp.app, 'former@acme.com');
+      const otherWorkspace = await signIn(testApp.app, 'eve@acme.com', {
+        hostedDomain: 'evil.example',
+      });
+      const enterUrl = apiPath(API_PATHS.spaceEnterBySlug, { slug: space.slug });
+
+      expect((await request(former, 'POST', enterUrl)).statusCode).toBe(404);
+      expect((await request(otherWorkspace, 'POST', enterUrl)).statusCode).toBe(404);
     });
 
     it('does not auto-join anybody when there is no allowed domain', async () => {
@@ -505,7 +521,7 @@ describe('spaces module (E2-S2..S6)', () => {
       await request(ana, 'PATCH', apiPath(API_PATHS.space, { spaceId: space.id }), {
         allowedDomain: 'acme.com',
       });
-      const carla = await signIn(testApp.app, 'carla@acme.com');
+      const carla = await signIn(testApp.app, 'carla@acme.com', { hostedDomain: 'acme.com' });
       const enterUrl = apiPath(API_PATHS.spaceEnterBySlug, { slug: space.slug });
       expect((await request(carla, 'POST', enterUrl)).statusCode).toBe(200);
       await kick(space, carla);

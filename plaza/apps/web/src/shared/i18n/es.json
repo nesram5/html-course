@@ -36,7 +36,7 @@
     "intro": "Plaza es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
     "stored": {
       "title": "Qué guardamos",
-      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil y el identificador de tu cuenta. También el nombre visible y el avatar que elijas.",
+      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil, el identificador de tu cuenta y, si es de Google Workspace, el dominio de tu empresa. También el nombre visible y el avatar que elijas.",
       "spaces": "Los espacios a los que perteneces: tu rol, el estado que elijas (Disponible u Ocupado), tu escritorio y su decoración.",
       "chat": "Los mensajes del chat de cada espacio (los últimos 100).",
       "feedback": "Los comentarios que nos envías desde la aplicación, con tu nombre y tu correo para poder responderte.",

@@ -61,10 +61,14 @@ export function logout(): Promise<void> {
 }
 
 /** Test-only sign-in (server with `AUTH_TEST_LOGIN=true`; the form only exists in dev builds). */
-export async function testLogin(email: string): Promise<Me> {
+export async function testLogin(input: { email: string; hostedDomain?: string }): Promise<Me> {
+  const body =
+    input.hostedDomain === undefined || input.hostedDomain === ''
+      ? { email: input.email }
+      : { email: input.email, hostedDomain: input.hostedDomain };
   const { user } = await http(API_PATHS.authTestLogin, TestLoginResponseSchema, {
     method: 'POST',
-    body: { email },
+    body,
   });
   return user;
 }

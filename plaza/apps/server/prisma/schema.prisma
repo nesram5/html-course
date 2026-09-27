@@ -21,6 +21,9 @@ model User {
   avatarChosenAt DateTime?
   /// Google profile picture URL (not a credential).
   pictureUrl     String?
+  /// Google Workspace domain of the account (`hd` claim of the last sign-in); null for personal
+  /// accounts. `allowedDomain` auto-join relies on it, never on the e-mail domain (E2-S4).
+  hostedDomain   String?
   createdAt      DateTime      @default(now())
   sessions       Session[]
   memberships    Membership[]

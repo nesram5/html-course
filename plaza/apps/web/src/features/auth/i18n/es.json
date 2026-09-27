@@ -12,6 +12,7 @@
   "testLogin": {
     "title": "Entrada de prueba (solo desarrollo)",
     "email": "Email de prueba",
+    "hostedDomain": "Dominio de Google Workspace (opcional, vacío = cuenta personal)",
     "submit": "Entrar como prueba"
   },
   "menu": {

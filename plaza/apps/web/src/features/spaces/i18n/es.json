@@ -51,7 +51,7 @@
   },
   "domain": {
     "title": "Dominio permitido",
-    "description": "Las personas con un email verificado de este dominio entran sin invitación.",
+    "description": "Las personas con una cuenta de Google Workspace de este dominio entran sin invitación. Una cuenta personal de Google con un email del dominio no basta.",
     "label": "Dominio",
     "placeholder": "empresa.com",
     "save": "Guardar dominio",

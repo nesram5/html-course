@@ -175,6 +175,25 @@ describe('auth module (E1-S1, E1-S2)', () => {
       });
     });
 
+    it('stores the Workspace domain (hd claim) of every sign-in, and clears it when it goes', async () => {
+      testApp.identity.willAuthenticate('workspace', {
+        sub: 'sub-hd',
+        email: 'ana@acme.com',
+        hostedDomain: 'ACME.com',
+      });
+      testApp.identity.willAuthenticate('personal', { sub: 'sub-hd', email: 'ana@acme.com' });
+
+      const first = await startLogin();
+      await callback({ code: 'workspace', state: first.state }, first.flowCookie);
+      const workspace = await testApp.container.db.user.findFirstOrThrow();
+      const second = await startLogin();
+      await callback({ code: 'personal', state: second.state }, second.flowCookie);
+      const personal = await testApp.container.db.user.findFirstOrThrow();
+
+      expect(workspace.hostedDomain).toBe('acme.com');
+      expect(personal.hostedDomain).toBeNull();
+    });
+
     it('stores no Google token: only the subject, e-mail, name and the hash of the session token', async () => {
       testApp.identity.willAuthenticate('code', { sub: 'sub-9', email: 'bob@acme.com' });
       const { state, flowCookie } = await startLogin();
@@ -194,6 +213,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
         'displayName',
         'email',
         'googleSub',
+        'hostedDomain',
         'id',
         'pictureUrl',
       ]);
