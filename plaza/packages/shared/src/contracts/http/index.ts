@@ -14,3 +14,4 @@ export * from './messages.js';
 export * from './paths.js';
 export * from './rooms.js';
 export * from './spaces.js';
+export * from './web-paths.js';

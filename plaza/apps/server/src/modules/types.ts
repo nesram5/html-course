@@ -21,14 +21,14 @@ export class ServiceRegistry {
   readonly #services = new Map<keyof ModuleServices, unknown>();
 
   provide<K extends keyof ModuleServices>(name: K, service: ModuleServices[K]): void {
-    if (this.#services.has(name)) throw new Error(`Service "${String(name)}" is already provided`);
+    if (this.#services.has(name)) throw new Error(`Service "${name}" is already provided`);
     this.#services.set(name, service);
   }
 
   get<K extends keyof ModuleServices>(name: K): ModuleServices[K] {
     if (!this.#services.has(name)) {
       throw new Error(
-        `Service "${String(name)}" is not available: register its module earlier in modules/index.ts`,
+        `Service "${name}" is not available: register its module earlier in modules/index.ts`,
       );
     }
     // Only `provide` writes the map, with the value type bound to the key.

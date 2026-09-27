@@ -1,5 +1,7 @@
+import { authModule } from './auth/index.js';
 import { healthModule } from './health/index.js';
 import type { PlazaModule } from './types.js';
+import { usersModule } from './users/index.js';
 
 /**
  * Registered modules, in order: a module may only use services of modules above it.
@@ -7,4 +9,4 @@ import type { PlazaModule } from './types.js';
  * here (see `modules/README.md`). Expected order: auth, users, spaces, rooms, desks, world,
  * media, presence, chat, events.
  */
-export const modules: readonly PlazaModule[] = [healthModule];
+export const modules: readonly PlazaModule[] = [healthModule, authModule, usersModule];
