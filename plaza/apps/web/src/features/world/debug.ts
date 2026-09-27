@@ -11,6 +11,8 @@ export interface WorldDebug {
   localPlayer(): { x: number; y: number; dir: string; roomId: string | null } | null;
   /** Every avatar drawn by the scene (local first), with its tile, drawn position and opacity. */
   avatars(): AvatarProbe[];
+  /** Who the camera follows: `null` for me, a userId during "Localizar" (E7-S2). */
+  cameraTarget(): string | null;
   /** Frames per second of the Phaser loop (0 without a running scene). */
   fps(): number;
   /** Connection status and realtime session state. */
@@ -35,6 +37,7 @@ export function installWorldDebug(): void {
     listenerCount: () => worldEvents.listenerCount() + realtimeClient.listenerCount(),
     localPlayer: () => worldStore.getState().localPlayer,
     avatars: () => worldProbe()?.avatars() ?? [],
+    cameraTarget: () => worldProbe()?.cameraTarget() ?? null,
     fps: () => worldProbe()?.fps() ?? 0,
     realtime: () => ({
       connection: realtimeClient.store.getState().status,

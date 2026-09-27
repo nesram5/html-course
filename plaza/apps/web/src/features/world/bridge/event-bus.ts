@@ -1,4 +1,10 @@
-import type { Direction, PlayerCorrect, SpaceSnapshot, WorldDelta } from '@plaza/shared';
+import type {
+  Direction,
+  PlayerCorrect,
+  ReactionEmoji,
+  SpaceSnapshot,
+  WorldDelta,
+} from '@plaza/shared';
 
 /** One step (or a turn in place, when the tile does not change) of the local avatar. */
 export interface LocalStep {
@@ -9,8 +15,8 @@ export interface LocalStep {
 
 /**
  * Typed events between React, the realtime session and Phaser (architecture §6). Commands flow
- * towards the scene (`camera:*`, `world:*`, `player:correct`); facts flow from the scene to the
- * rest of the app (`local:step`).
+ * towards the scene (`camera:*`, `world:*`, `player:correct`, `avatar:*`); facts flow from the
+ * scene to the rest of the app (`local:step`) and between features (`presence:self-away`).
  */
 export interface WorldEvents {
   /** The local controller moved or turned the avatar. Sent to the server as `player:move`. */
@@ -26,6 +32,16 @@ export interface WorldEvents {
   'world:delta': WorldDelta;
   /** A step was rejected (E4-S3): the scene puts the local avatar back on this tile. */
   'player:correct': PlayerCorrect;
+  /** "Localizar" (E7-S2): the camera goes to this person for 3 s, then back to the local avatar. */
+  'camera:locate': { readonly userId: string };
+  /** A reaction (E7-S4): the emoji floats over the avatar of this person for 3 s. */
+  'avatar:reaction': { readonly userId: string; readonly emoji: ReactionEmoji };
+  /**
+   * The local person became away (hidden tab, 10 min idle) or came back (RN-05). Emitted by the
+   * presence feature; the media feature mutes microphone and camera, remembering what was on,
+   * and restores exactly that when `away` is `false` again.
+   */
+  'presence:self-away': { readonly away: boolean };
   /** Development only: simulate this many remote avatars walking (0 stops), E4-S5 perf. */
   'debug:stress': { readonly count: number };
 }

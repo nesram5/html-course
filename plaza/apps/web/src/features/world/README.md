@@ -4,10 +4,10 @@ The only feature that imports Phaser, and home of the `RealtimeClient` (the only
 client). React owns the page and the DOM; Phaser owns one `<canvas>`. They talk through two
 objects only (architecture §6):
 
-| Bridge       | File                   | Direction                  | Used for                                                                                             |
-| ------------ | ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room                                            |
-| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center`, `world:snapshot`, `world:delta`, `player:correct` (→ scene), `local:step` (scene →) |
+| Bridge       | File                   | Direction                  | Used for                                                                                                                                                                          |
+| ------------ | ---------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room                                                                                                                         |
+| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center`, `camera:locate`, `world:snapshot`, `world:delta`, `player:correct`, `avatar:reaction` (→ scene), `local:step` (scene →), `presence:self-away` (presence → media) |
 
 ```text
 SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
@@ -24,8 +24,22 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   │         └─ KeyboardInput           window listeners: arrows/WASD, +/-, ignores text fields
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
   ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
-  └─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
+  ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
+  └─ SpaceHud (E7) ── bottom bar: name · StatusMenu · Personas · reactions · Chat, and the side
+       panel (PeoplePanel of `presence`, ChatPanel of `chat`); starts usePresenceSession and
+       useChatSession. `presence` and `chat` import this feature and this feature imports them:
+       none of them may use the other at module load time.
 ```
+
+## Presence, chat and reactions (E7)
+
+- Status dot left of every name (green available, red busy, grey away): `AvatarSprite.setPresence`,
+  from the snapshot and `world:delta.changed` (the local person gets their own changes too).
+- `avatar:reaction { userId, emoji }` floats the emoji over that avatar for `REACTION_DURATION_MS`.
+- `camera:locate { userId }` makes the camera follow that person for `LOCATE_MS` (3 s), then the
+  local avatar again ("Centrar en mí" cancels it). The probe tells who is followed: `cameraTarget()`.
+- `presence:self-away { away }` is emitted by `presence` when the tab is hidden / idle 10 min / back;
+  the media feature mutes microphone and camera and restores exactly what was on.
 
 ## Real time (E4)
 

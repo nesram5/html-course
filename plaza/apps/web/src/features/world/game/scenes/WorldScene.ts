@@ -1,11 +1,16 @@
 import {
+  REACTION_DURATION_MS,
   TICK_MS,
   TILE_SIZE,
+  effectivePresence,
   roomAt,
   type Direction,
   type PlayerCorrect,
+  type PresenceStatus,
+  type ReactionEmoji,
   type SpaceSnapshot,
   type Tile,
+  type WorldDelta,
   type WorldMap,
 } from '@plaza/shared';
 import * as Phaser from 'phaser';
@@ -14,7 +19,7 @@ import type { ThemeAssets } from '../../api/assets';
 import type { EventBus, LocalStep } from '../../bridge/event-bus';
 import type { WorldStore } from '../../store/world-store';
 import { recolorImage } from '../color-matrix';
-import { CAMERA_LERP, STEP_MS } from '../constants';
+import { CAMERA_LERP, LOCATE_MS, STEP_MS } from '../constants';
 import { KeyboardInput } from '../controller/keyboard-input';
 import { LocalPlayerController } from '../controller/local-player-controller';
 import { setWorldProbe, type AvatarProbe } from '../game-registry';
@@ -56,6 +61,14 @@ export class WorldScene extends Phaser.Scene {
   private remote: RemotePlayersSystem | null = null;
   private avatarTextures: AvatarTextures | null = null;
   private stress: StressRun | null = null;
+  /** The local person, known from the first snapshot. */
+  private selfId: string | null = null;
+  private selfPresence: { status: PresenceStatus; away: boolean } = {
+    status: 'available',
+    away: false,
+  };
+  /** "Localizar" in progress (E7-S2): who the camera follows and when it comes back. */
+  private locating: { userId: string; timer: Phaser.Time.TimerEvent } | null = null;
   private readonly cleanups: (() => void)[] = [];
 
   constructor(private readonly deps: WorldSceneDeps) {
@@ -113,6 +126,13 @@ export class WorldScene extends Phaser.Scene {
       }),
       events.on('world:delta', (delta) => {
         this.remote?.applyDelta(delta, this.game.loop.time);
+        this.applySelfChanges(delta);
+      }),
+      events.on('camera:locate', ({ userId }) => {
+        this.locate(userId);
+      }),
+      events.on('avatar:reaction', ({ userId, emoji }) => {
+        this.showReaction(userId, emoji);
       }),
       events.on('player:correct', (tile) => {
         this.correct(tile);
@@ -123,6 +143,7 @@ export class WorldScene extends Phaser.Scene {
       setWorldProbe({
         fps: () => this.game.loop.actualFps,
         avatars: () => this.probeAvatars(),
+        cameraTarget: () => this.locating?.userId ?? null,
       }),
       () => {
         this.stopStress();
@@ -160,9 +181,12 @@ export class WorldScene extends Phaser.Scene {
   /** Join or reconnection: the local avatar goes where the server says; others are redrawn. */
   private applySnapshot(snapshot: SpaceSnapshot): void {
     const { self } = snapshot;
+    this.selfId = self.userId;
     if (this.controller === null) this.spawnLocal(self, self.dir);
     else this.controller.teleport(self, self.dir);
     this.publishLocal(self, self.dir);
+    this.selfPresence = { status: self.status, away: self.away };
+    this.avatar?.setPresence(effectivePresence(this.selfPresence));
     this.remote?.reset(snapshot.players, this.game.loop.time, self.userId);
   }
 
@@ -204,7 +228,49 @@ export class WorldScene extends Phaser.Scene {
     this.deps.events.emit('local:step', step);
   }
 
+  /** Status and away of the local person come back in `changed` like everyone else's (E7-S1). */
+  private applySelfChanges(delta: WorldDelta): void {
+    for (const changed of delta.changed) {
+      if (changed.userId !== this.selfId) continue;
+      this.selfPresence = {
+        status: changed.status ?? this.selfPresence.status,
+        away: changed.away ?? this.selfPresence.away,
+      };
+      this.avatar?.setPresence(effectivePresence(this.selfPresence));
+    }
+  }
+
+  private spriteOf(userId: string): AvatarSprite | undefined {
+    if (userId === this.selfId) return this.avatar ?? undefined;
+    return this.remote?.spriteOf(userId);
+  }
+
+  /** "Localizar" (E7-S2): the camera glides to the person, stays 3 s, then glides back. */
+  private locate(userId: string): void {
+    const target = this.spriteOf(userId);
+    if (target === undefined || this.avatar === null) return;
+    this.stopLocating();
+    this.cameras.main.startFollow(target, true, CAMERA_LERP, CAMERA_LERP);
+    const timer = this.time.delayedCall(LOCATE_MS, () => {
+      this.locating = null;
+      if (this.avatar !== null) {
+        this.cameras.main.startFollow(this.avatar, true, CAMERA_LERP, CAMERA_LERP);
+      }
+    });
+    this.locating = { userId, timer };
+  }
+
+  private stopLocating(): void {
+    this.locating?.timer.remove();
+    this.locating = null;
+  }
+
+  private showReaction(userId: string, emoji: ReactionEmoji): void {
+    this.spriteOf(userId)?.showReaction(emoji, REACTION_DURATION_MS);
+  }
+
   private centerOnAvatar(): void {
+    this.stopLocating();
     if (this.avatar === null) return;
     const camera = this.cameras.main;
     camera.centerOn(this.avatar.x, this.avatar.y);
@@ -248,6 +314,8 @@ export class WorldScene extends Phaser.Scene {
         alpha: this.avatar.alpha,
         moving,
         labelAboveArt: this.avatar.nameLabel.depth > ABOVE_DEPTH,
+        presence: this.avatar.presenceState,
+        reaction: this.avatar.currentReaction,
       });
     }
     for (const system of [this.remote, this.stress?.system]) {
@@ -261,6 +329,8 @@ export class WorldScene extends Phaser.Scene {
           alpha: player.alpha,
           moving: player.moving,
           labelAboveArt: (system?.labelDepth(player.userId) ?? 0) > ABOVE_DEPTH,
+          presence: effectivePresence(player.state),
+          reaction: system?.spriteOf(player.userId)?.currentReaction ?? null,
         });
       }
     }
@@ -294,6 +364,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private readonly cleanup = (): void => {
+    this.stopLocating();
     for (const dispose of this.cleanups.splice(0)) dispose();
     this.controller = null;
     this.avatar = null;
