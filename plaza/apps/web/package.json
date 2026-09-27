@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "i18n:audit": "vitest run src/app/__tests__/i18n-audit.test.ts"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.24",

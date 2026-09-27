@@ -87,7 +87,7 @@ export function RoomRow({ spaceId, room, canEdit }: RoomRowProps) {
               id={inputId}
               type="url"
               value={meetUri}
-              placeholder="https://meet.google.com/abc-defg-hij"
+              placeholder={t('rooms.meetPlaceholder')}
               aria-invalid={invalid}
               aria-describedby={invalid ? `${inputId}-error` : undefined}
               onChange={(event) => {
