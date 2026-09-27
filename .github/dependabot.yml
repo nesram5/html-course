@@ -1,0 +1,34 @@
+# Dependency updates for Plaza (E0-S6). Weekly, grouped so the team reviews one PR per ecosystem;
+# CI (Plaza CI) must pass before merging. Major versions come in their own PRs.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /plaza
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: docker
+    directories:
+      - /plaza/apps/server
+      - /plaza/apps/web
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

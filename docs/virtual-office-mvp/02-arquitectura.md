@@ -274,7 +274,7 @@ Un estilo es una **piel** sobre la misma geometría: cambia el arte, nunca las c
 packages/maps/templates/<id>/
 ├── map.tmj                      # única fuente de la geometría
 └── themes/
-    ├── pixel/                   # generado desde las capas de tiles con tmxrasterizer en el build
+    ├── pixel/                   # generado desde las capas de tiles (generador propio de @plaza/maps, en lugar de tmxrasterizer)
     │   ├── below.png  above.png  thumbnail.png  theme.json
     └── watercolor/              # arte pintado sobre la misma base
         ├── below.png  above.png  thumbnail.png  theme.json   # theme.json: name, author, license
