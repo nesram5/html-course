@@ -46,13 +46,24 @@ declare module 'fastify' {
   }
 }
 
-/** Mounts Socket.IO on Fastify's HTTP server at `/realtime` (WebSocket transport only). */
+/**
+ * Mounts Socket.IO on Fastify's HTTP server at `/realtime` (WebSocket transport only).
+ * CORS does not apply to WebSocket upgrades, so the handshake itself checks `Origin`: a browser
+ * on another origin is refused even if it carries the session cookie (cross-site WebSocket
+ * hijacking). Requests without `Origin` come from non-browser clients, which cannot ride on
+ * someone else's cookie.
+ */
 export function attachSocketServer(app: FastifyInstance, options: { corsOrigin: string }): PlazaIo {
+  const allowedOrigin = new URL(options.corsOrigin).origin;
   const io: PlazaIo = new Server(app.server, {
     path: REALTIME_PATH,
     transports: ['websocket'],
     serveClient: false,
     cors: { origin: options.corsOrigin, credentials: true },
+    allowRequest: (request, callback) => {
+      const { origin } = request.headers;
+      callback(null, origin === undefined || origin === allowedOrigin);
+    },
   });
   app.decorate('io', io);
   app.addHook('preClose', (done) => {

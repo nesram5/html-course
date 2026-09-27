@@ -53,12 +53,16 @@ describe('Socket.IO handshake authentication (requireUser for sockets)', () => {
     for (const client of clients.splice(0)) client.close();
   });
 
-  function open(cookie?: string): Client {
+  function open(cookie?: string, origin?: string): Client {
+    const headers: Record<string, string> = {
+      ...(cookie !== undefined && { cookie }),
+      ...(origin !== undefined && { origin }),
+    };
     const client: Client = connect(url, {
       path: REALTIME_PATH,
       transports: ['websocket'],
       reconnection: false,
-      ...(cookie !== undefined && { extraHeaders: { cookie } }),
+      extraHeaders: headers,
     });
     clients.push(client);
     return client;
@@ -93,5 +97,23 @@ describe('Socket.IO handshake authentication (requireUser for sockets)', () => {
     expect(connected).toHaveLength(1);
     expect(connected[0]?.userId).toBe(ana.user.id);
     expect(connected[0]?.sessionId).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('refuses browsers on another origin even with a valid session (cross-site WebSocket hijacking)', async () => {
+    const ana = await signIn(testApp.app, 'ana@acme.com');
+
+    const error = await connectError(open(ana.cookie, 'https://evil.example.com'));
+
+    expect(error.message).not.toBe('');
+    expect(connected).toHaveLength(0);
+  });
+
+  it('accepts browsers on the public origin of the app', async () => {
+    const ana = await signIn(testApp.app, 'ana@acme.com');
+    const client = open(ana.cookie, testApp.container.config.publicUrl);
+
+    await new Promise<void>((resolve) => client.on('connect', resolve));
+
+    expect(connected[0]?.userId).toBe(ana.user.id);
   });
 });
