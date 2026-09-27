@@ -122,6 +122,18 @@ describe('desk menu with X (E9-S2)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('gives the focus back to the hint button after a menu it opened closes', async () => {
+    setup();
+    const user = userEvent.setup();
+    standAt(2, 2);
+
+    await user.click(screen.getByRole('button', { name: /^Escritorio \(tecla X\)/ }));
+    expect(screen.getByRole('dialog', { name: 'Escritorio libre' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('button', { name: /^Escritorio \(tecla X\)/ })).toHaveFocus();
+  });
+
   it('leaves X and its hint to a meeting room that outranks the desk (E6)', async () => {
     const keys = new InteractionKeys();
     const joinMeet = vi.fn();

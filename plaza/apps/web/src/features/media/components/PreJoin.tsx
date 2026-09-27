@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { SpaceGateProps } from '@/features/world';
+import { useDialog } from '@/shared/ui';
 
 import { usePreJoin } from '../hooks/usePreJoin';
 import { liveKitDevices, type DeviceAccess } from '../lib/devices';
@@ -39,11 +40,10 @@ export function PreJoin({
   );
   const model = usePreJoin(devices, initial);
   const { choices, update } = model;
-  const enterRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    enterRef.current?.focus();
-  }, []);
+  // A real modal (it is aria-modal): Tab stays inside, and no key reaches the map behind it
+  // (arrows scroll the dialog instead of walking). Escape does nothing: there is no "closed"
+  // state, the office is entered with one of the two buttons.
+  const dialogRef = useDialog<HTMLElement>(() => undefined);
 
   const enter = (): void => {
     if (storage === undefined) saveMediaChoices(choices);
@@ -57,6 +57,7 @@ export function PreJoin({
   return (
     <div className="absolute inset-0 z-20 overflow-y-auto bg-slate-900/80 p-4">
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="prejoin-title"
@@ -146,7 +147,7 @@ export function PreJoin({
         <footer className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-slate-600">{t('prejoin.remembered')}</p>
           <button
-            ref={enterRef}
+            data-autofocus
             type="button"
             onClick={enter}
             className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
