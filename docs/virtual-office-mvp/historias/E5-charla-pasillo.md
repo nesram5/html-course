@@ -46,7 +46,7 @@
 **Como** cliente **quiero** credenciales de medios para mi espacio **para** conectarme al servidor de medios (LiveKit Cloud en desarrollo, LiveKit propio en *staging* y beta).
 
 **Criterios de aceptación**
-- **Dado** que soy miembro, **cuando** pido el token, **entonces** recibo uno para la sala `space_<spaceId>` con identidad = mi `userId`, válido 1 h y sin permisos de administración.
+- **Dado** que soy miembro, **cuando** pido el token, **entonces** recibo uno para la sala `space_<spaceId>` con identidad = mi `userId`, válido 10 min (antes 1 h; acortado tras la verificación de E4 para que una persona expulsada no conserve un token útil) y sin permisos de administración; el cliente lo renueva antes de que caduque y tras cada reconexión.
 - **Dado** que no soy miembro, **cuando** lo pido, **entonces** recibo `404`.
 
 **Tareas técnicas**

@@ -80,6 +80,9 @@ Code, identifiers, comments and commits in English; UI texts in Spanish through 
   `<name>Routes` (mounted by `app/routes.tsx`) and `<name>Messages` (i18n namespace `<name>`,
   texts in `features/<name>/i18n/es.json`). Import other features only through their `index.ts`.
   Only `features/world` imports Phaser and only `features/media` imports `livekit-client`.
+  Features add UI to the office page (`/s/:slug`) through `SpaceExtension`s listed in
+  `app/space-extensions.ts` (a gate before entering, overlays over the map, bottom-bar controls),
+  so `world` never imports them.
 - **Database**: the Prisma schema already contains the whole MVP data model (architecture §7 + E9 +
   product events + in-app feedback of E8-S7). Prefer not to add migrations; if one is unavoidable, create it with `pnpm db:migrate`.
 - **Commits**: Conventional Commits (`feat(world): ...`), checked by commitlint. The pre-commit hook runs
@@ -91,7 +94,15 @@ Code, identifiers, comments and commits in English; UI texts in Spanish through 
 | ---------------------- | -------------------------- |
 | E0 Foundations (S1–S6) | Done                       |
 | E0-S7 LiveKit spike    | Deferred to E5 (see below) |
+| E5 Hallway media       | Done (see below)           |
 
 E0-S7 (throwaway LiveKit proximity spike) was not built; its questions (latency, selective
 subscription, `mutePublishedTrack`) are answered by E5-S1..S5 and E6-S3 tests against the local
 LiveKit dev server.
+
+E5 (hallway audio and video): the server sends `media:peers` from the tick; the web pre-join,
+`MediaController`, video strip and controls live in `features/media`. `pnpm test:e2e hallway`
+runs two people with Chromium's fake camera against the local LiveKit (`pnpm infra:up:livekit`).
+The self-hosted media server for staging and beta is in [`infra/livekit/`](infra/livekit/README.md);
+operations in [`docs/runbook.md`](docs/runbook.md) and the network guide for pilots' IT in
+[`docs/network-requirements.md`](docs/network-requirements.md).
