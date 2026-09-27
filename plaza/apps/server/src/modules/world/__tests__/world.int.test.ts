@@ -33,6 +33,7 @@ import { signIn, type TestUser } from '../../../test/session.js';
 import { modules } from '../../index.js';
 import type { SpaceRuntime } from '../space-runtime.js';
 import { createWorldModule, type WorldService } from '../index.js';
+import { WorldRepository } from '../world.repository.js';
 
 type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -107,6 +108,7 @@ describe('world module: realtime multiplayer (E4)', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     for (const client of clients.splice(0)) client.close();
     inboxes.clear();
     // Drops every runtime and pending timer of the test.
@@ -453,6 +455,54 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(third.snapshot.players.map((p) => p.userId)).toEqual([ana.user.id, luis.user.id]);
     });
 
+    it('keeps a later arrival of the same tick up to date with an earlier one', async () => {
+      const first = await enter(ana);
+      const second = await enter(luis); // same tick: his snapshot has Ana on (11,25)
+      move(first.client, 11, 24, 'up');
+      await barrier(first.client);
+      const third = await enter(eva); // her snapshot has Ana on (11,24)
+
+      await tick(first.client, second.client, third.client);
+
+      // Ana's step reaches Luis as a step (he has no joined entry for her)…
+      expect(inbox(second.client).deltas).toEqual([
+        {
+          moved: [{ userId: ana.user.id, x: 11, y: 24, dir: 'up' }],
+          joined: [third.snapshot.self],
+          left: [],
+          changed: [],
+        },
+      ]);
+      // …and Eva gets it too (harmless: same tile as in her snapshot).
+      expect(inbox(third.client).deltas).toEqual([
+        {
+          moved: [{ userId: ana.user.id, x: 11, y: 24, dir: 'up' }],
+          joined: [],
+          left: [],
+          changed: [],
+        },
+      ]);
+      expect(inbox(first.client).deltas).toEqual([
+        { moved: [], joined: [second.snapshot.self, third.snapshot.self], left: [], changed: [] },
+      ]);
+    });
+
+    it('announces in left someone who leaves in the tick they arrived, to those who saw them', async () => {
+      const first = await enter(ana);
+      const second = await enter(luis); // same tick: his snapshot has Ana
+
+      first.client.disconnect();
+      await vi.waitFor(() => {
+        expect(runtime().has(ana.user.id)).toBe(false);
+      });
+      await tick(second.client);
+
+      expect(second.snapshot.players.map((p) => p.userId)).toEqual([ana.user.id]);
+      expect(inbox(second.client).deltas).toEqual([
+        { moved: [], joined: [], left: [ana.user.id], changed: [] },
+      ]);
+    });
+
     it('reports connected people per space and the average tick in /api/health (E8-S1)', async () => {
       const first = await enter(ana);
       await enter(luis);
@@ -548,6 +598,59 @@ describe('world module: realtime multiplayer (E4)', () => {
   });
 
   describe('runtime lifecycle (E4-S2)', () => {
+    it('leaves no runtime, timer, metric or room behind, however people leave', async () => {
+      const first = await enter(ana);
+      const cutOff = await enter(luis);
+      const leaving = await enter(eva);
+      const replacing = await enter(ana); // second tab
+      await vi.waitFor(() => {
+        expect(inbox(first.client).disconnects).toEqual(['io server disconnect']);
+      });
+      cut(cutOff.client); // waiting for a reconnection…
+      await vi.waitFor(() => {
+        expect(runtime().get(luis.user.id)?.reconnecting).toBe(true);
+      });
+      const kick = await testApp.app.inject({
+        method: 'DELETE',
+        url: apiPath(API_PATHS.member, { spaceId: space.id, userId: luis.user.id }),
+        headers: ana.headers,
+      }); // …and removed meanwhile
+      leaving.client.disconnect();
+      replacing.client.disconnect();
+      await vi.waitFor(() => {
+        expect(runtime().size).toBe(0);
+      });
+
+      timers.advance(SPACE_UNLOAD_DELAY_MS);
+
+      expect(kick.statusCode).toBe(204);
+      expect(world.store.runtimes()).toEqual([]);
+      expect(timers.pending).toBe(0);
+      expect(testApp.container.metrics.connectedBySpace()).toEqual({});
+      expect(
+        [...testApp.app.io.of('/').adapter.rooms.keys()].filter((r) => r.startsWith('space:')),
+      ).toEqual([]);
+    });
+
+    it('releases the runtime when a join fails after loading it', async () => {
+      vi.spyOn(WorldRepository.prototype, 'occupiedDesks').mockRejectedValueOnce(
+        new Error('database down'),
+      );
+      const client = await open(ana);
+
+      const ack = await join(client);
+      await vi.waitFor(() => {
+        expect(world.store.get(space.id)).toBeDefined();
+      });
+      const loaded = runtime();
+      timers.advance(SPACE_UNLOAD_DELAY_MS);
+
+      expect(ack).toMatchObject({ ok: false, error: { code: 'INTERNAL' } });
+      expect(loaded.size).toBe(0);
+      expect(world.store.get(space.id)).toBeUndefined();
+      expect(timers.pending).toBe(0);
+    });
+
     it('shares one runtime while occupied and releases it 60 s after the last person leaves', async () => {
       const first = await enter(ana);
       const loaded = runtime();
@@ -574,6 +677,49 @@ describe('world module: realtime multiplayer (E4)', () => {
   });
 
   describe('kick (E2-S6 + E4-S2)', () => {
+    it('a kick while the person is still joining keeps them out (no avatar sneaks in)', async () => {
+      const owner = await enter(ana);
+      await tick(owner.client);
+      inbox(owner.client).deltas.length = 0;
+      // Luis's space:join passed the membership check and is still loading the desks…
+      let release = (): void => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const occupiedDesks = WorldRepository.prototype.occupiedDesks;
+      const loading = vi
+        .spyOn(WorldRepository.prototype, 'occupiedDesks')
+        .mockImplementationOnce(async function (this: WorldRepository, spaceId: string) {
+          await gate;
+          return occupiedDesks.call(this, spaceId);
+        });
+      const client = await open(luis);
+      // Disconnected before the answer: the client drops the pending ack.
+      const joining = join(client).catch((error: unknown) => error);
+      await vi.waitFor(() => {
+        expect(loading).toHaveBeenCalled();
+      });
+
+      // …when the owner removes him: his socket is not in the space yet, so nothing kicks it.
+      const response = await testApp.app.inject({
+        method: 'DELETE',
+        url: apiPath(API_PATHS.member, { spaceId: space.id, userId: luis.user.id }),
+        headers: ana.headers,
+      });
+      release();
+      await vi.waitFor(() => {
+        expect(inbox(client).disconnects).toEqual(['io server disconnect']);
+      });
+      await tick(owner.client);
+
+      expect(response.statusCode).toBe(204);
+      expect(inbox(client).kicked).toEqual([{ reason: 'REMOVED' }]);
+      expect(await joining).toBeInstanceOf(Error);
+      expect(runtime().has(luis.user.id)).toBe(false);
+      expect(inbox(owner.client).deltas).toEqual([]);
+      expect(testApp.container.metrics.connectedBySpace()).toEqual({ [space.id]: 1 });
+    });
+
     it('kicked people get space:kicked, are disconnected, leave at once and stay banned', async () => {
       const owner = await enter(ana);
       const kicked = await enter(luis);

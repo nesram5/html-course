@@ -127,10 +127,12 @@ export class SpaceRuntime {
       reconnecting: false,
     };
     this.#players.set(player.userId, { state, socketId });
-    // Left and came back within the same tick: `joined` carries the whole state again.
+    // Left and came back within the same tick: `joined` carries the whole state again (as the
+    // last arrival, so whoever joined in between hears about it too).
     this.#left.delete(player.userId);
     this.#moved.delete(player.userId);
     this.#changed.delete(player.userId);
+    this.#joined.delete(player.userId);
     this.#joined.add(player.userId);
     return { ...state };
   }
@@ -185,18 +187,24 @@ export class SpaceRuntime {
     this.update(userId, { reconnecting: false });
   }
 
-  /** Removes the person; announced in `left` on the next tick. No-op when absent. */
+  /**
+   * Removes the person; announced in `left` on the next tick. No-op when absent. Also announced
+   * when they arrived in this same tick: whoever joined after them has them in their snapshot
+   * (a `left` for someone a client never saw is ignored).
+   */
   leave(userId: string): void {
     if (!this.#players.delete(userId)) return;
     this.#moved.delete(userId);
     this.#changed.delete(userId);
-    // Never announced: nobody needs to hear about it.
-    if (!this.#joined.delete(userId)) this.#left.add(userId);
+    this.#joined.delete(userId);
+    this.#left.add(userId);
   }
 
   /**
    * Everything that changed since the previous call, as one `world:delta`, or `null` when
-   * nothing did (no message is sent on idle ticks, E4-S4).
+   * nothing did (no message is sent on idle ticks, E4-S4). `joined` carries the latest state of
+   * each arrival, in arrival order; `moved` and `changed` also list the steps and changes of
+   * arrivals, for the people who got them in their snapshot instead (`deltaFor` trims them).
    */
   flush(): WorldDelta | null {
     if (!this.hasPendingChanges) return null;
@@ -228,9 +236,7 @@ export class SpaceRuntime {
     state.x = tile.x;
     state.y = tile.y;
     state.dir = dir;
-    if (!this.#joined.has(state.userId)) {
-      this.#moved.set(state.userId, { userId: state.userId, x: tile.x, y: tile.y, dir });
-    }
+    this.#moved.set(state.userId, { userId: state.userId, x: tile.x, y: tile.y, dir });
     const roomId = roomAt(this.map, tile.x, tile.y);
     if (roomId === state.roomId) return { ok: true };
     this.update(state.userId, { roomId });
@@ -238,8 +244,6 @@ export class SpaceRuntime {
   }
 
   #recordChange(userId: string, diff: PlayerFields): void {
-    // A player joining this tick is sent whole in `joined`.
-    if (this.#joined.has(userId)) return;
     const previous = this.#changed.get(userId) ?? { userId };
     this.#changed.set(userId, { ...previous, ...diff });
   }

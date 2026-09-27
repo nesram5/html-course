@@ -166,8 +166,9 @@ describe('SpaceRuntime', () => {
       runtime.leave('ana');
       const delta = runtime.flush();
 
-      expect(delta?.moved).toEqual([]);
-      expect(delta?.changed).toEqual([]);
+      // Also as steps and changes, for whoever got Luis in a snapshot during the tick.
+      expect(delta?.moved).toEqual([{ userId: 'luis', x: 12, y: 24, dir: 'up' }]);
+      expect(delta?.changed).toEqual([{ userId: 'luis', status: 'busy' }]);
       expect(delta?.left).toEqual(['ana']);
       expect(delta?.joined).toEqual([
         expect.objectContaining({ userId: 'luis', x: 12, y: 24, dir: 'up', status: 'busy' }),
@@ -175,25 +176,34 @@ describe('SpaceRuntime', () => {
       expect(runtime.players().map((p) => p.userId)).toEqual(['luis']);
     });
 
-    it('says nothing about someone who joined and left within the same tick', () => {
+    it('announces in left someone who joined and left within the same tick', () => {
       const runtime = runtimeWith('ana');
 
       runtime.join(newPlayer('luis'), { x: 12, y: 25 }, 'socket-luis');
+      // Eva's snapshot has Luis: she must hear that he left.
+      runtime.join(newPlayer('eva'), { x: 13, y: 25 }, 'socket-eva');
       runtime.leave('luis');
       runtime.leave('nobody');
+      const delta = runtime.flush();
 
-      expect(runtime.flush()).toBeNull();
+      expect(delta?.joined.map((p) => p.userId)).toEqual(['eva']);
+      expect(delta?.left).toEqual(['luis']);
     });
 
     it('re-announces whole someone who left and came back within the same tick', () => {
       const runtime = runtimeWith('ana', 'luis');
 
       runtime.leave('luis');
+      runtime.join(newPlayer('eva'), { x: 12, y: 25 }, 'socket-eva');
       runtime.join(newPlayer('luis'), { x: 13, y: 25 }, 'socket-luis-2');
       const delta = runtime.flush();
 
       expect(delta?.left).toEqual([]);
-      expect(delta?.joined.map((p) => [p.userId, p.x, p.y])).toEqual([['luis', 13, 25]]);
+      // Luis is the last arrival: Eva, whose snapshot missed him, gets him too.
+      expect(delta?.joined.map((p) => [p.userId, p.x, p.y])).toEqual([
+        ['eva', 12, 25],
+        ['luis', 13, 25],
+      ]);
     });
   });
 

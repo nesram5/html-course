@@ -4,7 +4,9 @@ import {
   PROTOCOL_VERSION,
   RECONNECT_GRACE_MS,
   TICK_MS,
+  type DeskState,
   type KickReason,
+  type MeetingRoomDto,
   type PlayerMove,
   type SpaceSnapshot,
   type WorldDelta,
@@ -29,6 +31,13 @@ import type { WorldRepository } from './world.repository.js';
 /** Disconnect reason of a socket the client closed on purpose (not a network cut). */
 const CLIENT_LEFT_REASON: DisconnectReason = 'client namespace disconnect';
 
+/** A `space:join` in progress; `kickedFor` is set when the person is removed meanwhile. */
+interface PendingJoin {
+  readonly spaceId: string;
+  readonly userId: string;
+  kickedFor: KickReason | null;
+}
+
 /** Socket.IO room with every connection of a space. */
 export function spaceRoom(spaceId: string): string {
   return `space:${spaceId}`;
@@ -49,16 +58,25 @@ export interface WorldServiceDeps {
 }
 
 /**
- * The part of a delta a given person receives: their own steps are left out (they already know
- * them), and so are their own arrival and the arrivals before it in the same tick (their
- * snapshot already had them; `joined` keeps arrival order). `left` and `changed` go to everyone:
- * `changed` includes their own `roomId`, computed by the server.
+ * The part of a delta a given person receives:
+ * - their own steps are left out (they already know them);
+ * - so are their own arrival and the arrivals before it in the same tick (their snapshot
+ *   already had them; `joined` keeps arrival order). The steps and changes those arrivals made
+ *   after the snapshot still reach them through `moved` / `changed`;
+ * - the arrivals they do get whole in `joined` carry their latest state, so their `moved` and
+ *   `changed` entries are left out.
+ * `left` goes to everyone, and so does `changed` of the person (their `roomId`, computed by the
+ * server).
  */
 export function deltaFor(delta: WorldDelta, userId: string): WorldDelta | null {
-  const moved = delta.moved.filter((entry) => entry.userId !== userId);
   const ownArrival = delta.joined.findIndex((player) => player.userId === userId);
   const joined = ownArrival === -1 ? delta.joined : delta.joined.slice(ownArrival + 1);
-  const { left, changed } = delta;
+  const whole = new Set<string>();
+  for (const player of joined) whole.add(player.userId);
+  const moved = delta.moved.filter((entry) => entry.userId !== userId && !whole.has(entry.userId));
+  const changed =
+    whole.size === 0 ? delta.changed : delta.changed.filter((entry) => !whole.has(entry.userId));
+  const { left } = delta;
   if (moved.length + joined.length + left.length + changed.length === 0) return null;
   return { moved, joined, left, changed };
 }
@@ -72,6 +90,8 @@ export class WorldService {
   readonly #tickers = new Map<SpaceRuntime, CancelTimer>();
   /** Pending "left" of disconnected people, by `spaceId:userId` (E4-S6). */
   readonly #graceTimers = new Map<string, CancelTimer>();
+  /** `space:join` calls still loading: a kick meanwhile makes them fail. */
+  readonly #pendingJoins = new Set<PendingJoin>();
 
   constructor(private readonly deps: WorldServiceDeps) {
     this.store = new InMemorySpaceStateStore({
@@ -103,19 +123,47 @@ export class WorldService {
    */
   async join(socket: PlazaSocket, spaceId: string): Promise<SpaceSnapshot> {
     const userId = socketUserId(socket);
+    const pending: PendingJoin = { spaceId, userId, kickedFor: null };
+    this.#pendingJoins.add(pending);
+    try {
+      return await this.#join(socket, pending);
+    } finally {
+      this.#pendingJoins.delete(pending);
+    }
+  }
+
+  async #join(socket: PlazaSocket, pending: PendingJoin): Promise<SpaceSnapshot> {
+    const { spaceId, userId } = pending;
     const member = await this.deps.repository.findMember(spaceId, userId);
     if (member === null) throw new AppError('NOT_A_MEMBER', 'Space not found');
     const space = await this.deps.spaces.spaceWithRooms(spaceId);
-    const [rooms, desks, runtime] = await Promise.all([
-      this.deps.spaces.rooms(space),
-      this.deps.repository.occupiedDesks(spaceId),
-      this.store.getOrLoad(spaceId),
-    ]);
+    // Loading (or finding) the runtime cancels its pending release: from here on, every way out
+    // but entering releases it again if it is still empty (E4-S2).
+    const loading = this.store.getOrLoad(spaceId);
+    let rooms: MeetingRoomDto[];
+    let desks: DeskState[];
+    try {
+      [rooms, desks] = await Promise.all([
+        this.deps.spaces.rooms(space),
+        this.deps.repository.occupiedDesks(spaceId),
+      ]);
+    } catch (error) {
+      loading.then(
+        () => {
+          this.store.unloadIfEmpty(spaceId);
+        },
+        () => undefined,
+      );
+      throw error;
+    }
+    const runtime = await loading;
 
     // Synchronous from here on: no other event interleaves with the checks below.
-    if (!socket.connected) {
+    try {
+      this.#assertCanEnter(socket, pending, runtime);
+    } catch (error) {
       this.store.unloadIfEmpty(spaceId);
-      throw new AppError('NOT_IN_SPACE', 'The connection closed while joining');
+      throw error;
     }
     if (socket.data.spaceId !== undefined && socket.data.spaceId !== spaceId) {
       this.leave(socket);
@@ -128,10 +176,6 @@ export class WorldService {
         this.#replace(previousSocketId);
       }
     } else {
-      if (runtime.size >= this.deps.maxPlayersPerSpace) {
-        this.store.unloadIfEmpty(spaceId);
-        throw new AppError('SPACE_FULL', 'The space is full');
-      }
       const { deskId, ...profile } = member;
       runtime.join(
         { ...profile, away: false, inConversation: false },
@@ -155,6 +199,28 @@ export class WorldService {
       rooms,
       desks,
     };
+  }
+
+  /**
+   * Last checks of `space:join`, once everything is loaded: the connection is still open, the
+   * person was not removed from the space meanwhile (the kick could not reach a socket that was
+   * not in the space yet), and there is room for a new avatar (RN-06).
+   */
+  #assertCanEnter(socket: PlazaSocket, pending: PendingJoin, runtime: SpaceRuntime): void {
+    if (!socket.connected) {
+      throw new AppError('NOT_IN_SPACE', 'The connection closed while joining');
+    }
+    if (pending.kickedFor !== null) {
+      // Told like any other kick, unless the socket is still in another space.
+      if (socket.data.spaceId === undefined || socket.data.spaceId === pending.spaceId) {
+        socket.emit('space:kicked', { reason: pending.kickedFor });
+        socket.disconnect(true);
+      }
+      throw new AppError('NOT_A_MEMBER', 'Space not found');
+    }
+    if (!runtime.has(pending.userId) && runtime.size >= this.deps.maxPlayersPerSpace) {
+      throw new AppError('SPACE_FULL', 'The space is full');
+    }
   }
 
   /** The socket leaves its space at once, without grace (it joined another space). */
@@ -230,6 +296,11 @@ export class WorldService {
    * from the media room.
    */
   kicked(spaceId: string, userId: string, reason: KickReason): void {
+    if (reason !== 'SESSION_REPLACED') {
+      for (const pending of this.#pendingJoins) {
+        if (pending.spaceId === spaceId && pending.userId === userId) pending.kickedFor = reason;
+      }
+    }
     const runtime = this.store.get(spaceId);
     if (runtime !== undefined) this.#remove(runtime, userId);
     if (reason !== 'SESSION_REPLACED') {

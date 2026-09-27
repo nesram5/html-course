@@ -192,6 +192,48 @@ describe('deltaFor', () => {
     expect(deltaFor(arrivals, 'z')?.joined).toHaveLength(3);
   });
 
+  it('sends the steps and changes of earlier arrivals to later ones, not to those who get them whole', () => {
+    const player = (userId: string) => ({
+      userId,
+      displayName: userId,
+      avatarId: 'avatar-01',
+      x: 1,
+      y: 1,
+      dir: 'down' as const,
+      status: 'available' as const,
+      away: false,
+      roomId: null,
+      inConversation: false,
+      reconnecting: false,
+    });
+    // a and b arrived in this tick; a then stepped and dropped (b's snapshot had a before that).
+    const arrivals = {
+      moved: [{ userId: 'a', x: 1, y: 2, dir: 'down' as const }],
+      joined: [player('a'), player('b')],
+      left: [],
+      changed: [{ userId: 'a', reconnecting: true }],
+    };
+
+    expect(deltaFor(arrivals, 'b')).toEqual({
+      moved: [{ userId: 'a', x: 1, y: 2, dir: 'down' }],
+      joined: [],
+      left: [],
+      changed: [{ userId: 'a', reconnecting: true }],
+    });
+    expect(deltaFor(arrivals, 'z')).toEqual({
+      moved: [],
+      joined: arrivals.joined,
+      left: [],
+      changed: [],
+    });
+    expect(deltaFor(arrivals, 'a')).toEqual({
+      moved: [],
+      joined: [player('b')],
+      left: [],
+      changed: [{ userId: 'a', reconnecting: true }],
+    });
+  });
+
   it('sends nothing when the only news is the recipient themselves', () => {
     expect(
       deltaFor({ moved: [delta.moved[0]!], joined: [], left: [], changed: [] }, 'ana'),
