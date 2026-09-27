@@ -195,7 +195,7 @@ Dos VMs por entorno (_staging_ y beta, con **secretos distintos**; arquitectura 
 | App    | `web` (Caddy: HTTPS, SPA y _proxy_ de `/api`, `/realtime`, `/assets/maps`), `server`, `migrate` y, con el perfil `db`, `postgres` + `backup` | [`infra/app/`](../infra/app/) (compose + `.env`) |
 | Medios | LiveKit + TURN                                                                                                                               | [`infra/livekit/`](../infra/livekit/) (arriba)   |
 
-Imágenes (GHCR, construidas por [`plaza-deploy.yml`](../../.github/workflows/plaza-deploy.yml)):
+Imágenes (GHCR, construidas por [`plaza-deploy.yml`](../.github/workflows/plaza-deploy.yml)):
 
 | Imagen                         | Dockerfile                                            | Contenido                                                                                            |
 | ------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -298,7 +298,8 @@ y entrar a un espacio con dos personas (se ven, se oyen, el chat funciona).
    `docker-compose.yml` y los _scripts_ **de esa versión** (su etiqueta o su commit de `main`), no
    los actuales de `main`.
    Sin GitHub: en la VM, poner antes el `docker-compose.yml`, `backup.sh` y `deploy.sh` de esa
-   versión (`git show v0.2.1:plaza/infra/app/docker-compose.yml`) y ejecutar
+   versión (`git show v0.2.1:infra/app/docker-compose.yml`; en las versiones anteriores a la
+   reorganización del repositorio, `plaza/infra/app/…`) y ejecutar
    `./deploy.sh ghcr.io/<owner>/plaza-server:v0.2.1 ghcr.io/<owner>/plaza-web:v0.2.1`
    (tras `docker login ghcr.io` con un _token_ de solo lectura).
 3. Si la versión revertida incluía una migración **no** compatible hacia atrás: restaurar la

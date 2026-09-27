@@ -155,7 +155,6 @@ conexiones (120/min) ya cubre que todo el equipo reconecte a la vez tras un desp
 ## Cómo repetir la revisión
 
 ```bash
-cd plaza
 pnpm lint && pnpm typecheck && pnpm test          # incluye inventario de rutas, matriz y límites
 pnpm audit --prod --audit-level high
 pnpm audit

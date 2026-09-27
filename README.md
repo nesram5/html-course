@@ -2,7 +2,7 @@
 
 A 2D virtual office (Gather-style) MVP: walk around a shared map, talk to whoever is close by
 (audio/video with LiveKit) and join meeting rooms backed by Google Meet.
-Product and technical plan: [`docs/virtual-office-mvp/`](../docs/virtual-office-mvp/README.md).
+Product and technical plan: [`docs/virtual-office-mvp/`](docs/virtual-office-mvp/README.md).
 
 | Package         | Path              | What it is                                                                     |
 | --------------- | ----------------- | ------------------------------------------------------------------------------ |
@@ -19,9 +19,8 @@ Product and technical plan: [`docs/virtual-office-mvp/`](../docs/virtual-office-
 ## Run locally
 
 ```bash
-cd plaza
 cp .env.example .env          # read the comments: Google, LiveKit and Sentry are explained there
-pnpm install                  # also installs the git hooks (Husky, from the repository root)
+pnpm install                  # also installs the git hooks (Husky)
 pnpm infra:up:livekit        # PostgreSQL 16 + LiveKit dev server (pnpm infra:up: Postgres only)
 pnpm db:migrate               # apply Prisma migrations to plaza_dev
 pnpm db:seed                  # optional: demo user dev@plaza.local and space "oficina-demo"
@@ -60,6 +59,7 @@ Both read `TEST_DATABASE_URL` / `E2E_DATABASE_URL` from the environment or, fail
 | `pnpm test:coverage`                                     | `@plaza/shared` coverage (fails below 90 % lines)                                           |
 | `pnpm test:e2e`                                          | Playwright (Chromium, fake media devices); starts its own server (:3100) and web (:5174)    |
 | `pnpm format` / `pnpm format:check`                      | Prettier                                                                                    |
+| `pnpm check:links`                                       | Checks every relative link (and heading anchor) of the tracked Markdown files               |
 | `pnpm db:migrate` / `db:deploy` / `db:reset` / `db:seed` | Prisma (dev migrations / apply / reset dev DB / seed)                                       |
 | `pnpm infra:up` / `infra:up:livekit` / `infra:down`      | Docker Compose services in `infra/`                                                         |
 | `pnpm validate:maps`                                     | Validates `packages/maps`: manifest, map geometry (`parseMap`), theme sizes, licenses       |
@@ -75,7 +75,7 @@ Both read `TEST_DATABASE_URL` / `E2E_DATABASE_URL` from the environment or, fail
 
 ## Conventions for contributors
 
-Read [`docs/virtual-office-mvp/03-estandares-codigo.md`](../docs/virtual-office-mvp/03-estandares-codigo.md).
+Read [`docs/virtual-office-mvp/03-estandares-codigo.md`](docs/virtual-office-mvp/03-estandares-codigo.md).
 Code, identifiers, comments and commits in English; UI texts in Spanish through i18n.
 
 - **Contracts first.** Every REST endpoint and realtime event has its zod schema in
@@ -97,15 +97,15 @@ Code, identifiers, comments and commits in English; UI texts in Spanish through 
 - **Database**: the Prisma schema already contains the whole MVP data model (architecture §7 + E9 +
   product events + in-app feedback of E8-S7). Prefer not to add migrations; if one is unavoidable, create it with `pnpm db:migrate`.
 - **Commits**: Conventional Commits (`feat(world): ...`), checked by commitlint. The pre-commit hook runs
-  ESLint and Prettier on staged files under `plaza/`. Both hooks only act on commits that touch `plaza/`.
+  ESLint and Prettier on the staged files (lint-staged).
 
 ## Status
 
 Every MVP stage is implemented (planning and traceability:
-[`docs/virtual-office-mvp/04-plan-desarrollo.md`](../docs/virtual-office-mvp/04-plan-desarrollo.md)).
+[`docs/virtual-office-mvp/04-plan-desarrollo.md`](docs/virtual-office-mvp/04-plan-desarrollo.md)).
 Implementation status for the product owner (per stage and requirement, measured results, what
 still needs real Google/VM/network checks and how to deploy the beta, in Spanish):
-[`docs/virtual-office-mvp/estado-implementacion.md`](../docs/virtual-office-mvp/estado-implementacion.md).
+[`docs/virtual-office-mvp/estado-implementacion.md`](docs/virtual-office-mvp/estado-implementacion.md).
 
 | Stage                                            | Status |
 | ------------------------------------------------ | ------ |
@@ -128,7 +128,7 @@ and E6-S3 integration tests against the local LiveKit dev server and by
 ## Deploy and operations
 
 - App VM (Caddy + web, server, PostgreSQL + daily backup): [`infra/app/`](infra/app/), deployed by
-  [`.github/workflows/plaza-deploy.yml`](../.github/workflows/plaza-deploy.yml) (staging on every
+  [`.github/workflows/plaza-deploy.yml`](.github/workflows/plaza-deploy.yml) (staging on every
   green `main`, beta on `v0.x.y` tags with manual approval).
 - Media VM (LiveKit + TURN): [`infra/livekit/`](infra/livekit/README.md).
 - Runbook (deploy, rollback, backups and restore, key rotation, outages):

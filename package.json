@@ -19,6 +19,7 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check:links": "node scripts/check-doc-links.mjs",
     "db:migrate": "pnpm --filter @plaza/server db:migrate",
     "db:deploy": "pnpm --filter @plaza/server db:deploy",
     "db:reset": "pnpm --filter @plaza/server db:reset",
