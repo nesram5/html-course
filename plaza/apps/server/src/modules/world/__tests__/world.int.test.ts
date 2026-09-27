@@ -102,6 +102,7 @@ describe('world module: realtime multiplayer (E4)', () => {
     testApp.media.mutes.length = 0;
     testApp.media.removals.length = 0;
     testApp.media.permissions.length = 0;
+    testApp.media.connected.clear();
     ana = await signIn(testApp.app, 'ana@acme.com', { displayName: 'Ana' });
     luis = await signIn(testApp.app, 'luis@acme.com', { displayName: 'Luis' });
     eva = await signIn(testApp.app, 'eva@acme.com', { displayName: 'Eva' });
@@ -535,6 +536,25 @@ describe('world module: realtime multiplayer (E4)', () => {
       });
     });
 
+    it('a new connection in the hallway lifts a revoke the media server kept (app restarted)', async () => {
+      // The app restarted while Ana stood in a room: LiveKit, a separate process, still has her
+      // with canPublish=false, and the new runtime puts her in the hallway.
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      testApp.media.connected.set(`${target.roomName}:${target.identity}`, false);
+
+      await enter(ana);
+
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: true }]);
+      });
+      // Nothing to change when the media server already agrees.
+      testApp.media.permissions.length = 0;
+      const again = await open(ana);
+      await join(again);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(testApp.media.permissions).toEqual([]);
+    });
+
     it('issues media tokens that may not publish while the person is in a room (E6-S3)', async () => {
       const mover = await enter(ana);
       runtime().place(ana.user.id, { x: 27, y: 6 });
@@ -609,6 +629,28 @@ describe('world module: realtime multiplayer (E4)', () => {
       await vi.waitFor(() => {
         expect(testApp.media.permissions.at(-1)).toEqual({ ...target, canPublish: true });
       });
+    });
+
+    it('grants publishing back to someone who connects in the hallway without it', async () => {
+      // A token fetched inside a room (canPublish=false), used after walking out: the grant on
+      // exit found nobody connected to act on.
+      await enter(ana);
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      const revokedJoin = await signedWebhook(keys, {
+        event: 'participant_joined',
+        room: { name: `space_${space.id}` },
+        participant: {
+          identity: ana.user.id,
+          permission: { canPublish: false, canSubscribe: true },
+        },
+      });
+
+      expect((await webhook(revokedJoin)).statusCode).toBe(204);
+
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: true }]);
+      });
+      expect(testApp.media.mutes).toEqual([]);
     });
 
     it('does nothing for people in the hallway, other events or rooms that are not a space', async () => {
@@ -830,12 +872,12 @@ describe('world module: realtime multiplayer (E4)', () => {
           moved: [],
           joined: [],
           left: [],
-          changed: [{ userId: luis.user.id, reconnecting: true }],
+          // The conversation ends with the connection (E5-S2): only the avatar waits.
+          changed: [{ ...alone(luis), reconnecting: true }, alone(ana)],
         },
       ]);
       expect(inbox(staying.client).deltas.slice(1)).toEqual([
-        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
-        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
+        { moved: [], joined: [], left: [luis.user.id], changed: [] },
       ]);
       expect(runtime().has(luis.user.id)).toBe(false);
     });
@@ -901,7 +943,11 @@ describe('world module: realtime multiplayer (E4)', () => {
           moved: [],
           joined: [],
           left: [],
-          changed: [{ userId: luis.user.id, reconnecting: false }],
+          // Back within reach of Ana: their conversation starts again (E5-S2).
+          changed: [
+            { userId: luis.user.id, reconnecting: false, inConversation: true },
+            { userId: ana.user.id, inConversation: true },
+          ],
         },
       ]);
     });

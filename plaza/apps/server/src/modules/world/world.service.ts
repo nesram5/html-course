@@ -207,7 +207,12 @@ export class WorldService {
       // A new visit of the map (not a reconnection nor a second tab): O2 days of use, O1 people.
       this.deps.events.record('space_joined', { spaceId, userId });
     }
-    if (previousSocketId !== socket.id) this.#hallway(runtime).resend(userId);
+    if (previousSocketId !== socket.id) {
+      this.#hallway(runtime).resend(userId);
+      // The media server keeps a participant's permission across app restarts and lost
+      // updates: a new connection brings it in line with where the person is (E6-S3).
+      this.#reconcilePublishing(spaceId, userId);
+    }
     socket.data.spaceId = spaceId;
     void socket.join(spaceRoom(spaceId));
     this.#updateConnected(runtime);
@@ -327,22 +332,23 @@ export class WorldService {
   }
 
   /**
-   * The media server says the person connected or published (its webhook, E6-S3). Muting and
-   * revoking on room entry act only on a participant who is connected at that moment; someone
-   * who connects afterwards with a token fetched in the hallway could publish. If they stand in a
-   * meeting room now, their tracks are muted and publishing revoked again, in the same queue as
-   * every other permission change of the person, so it never overtakes a later exit.
+   * The media server says the person connected or published (its webhook, E6-S3), with the
+   * permission to publish it reports for them. Muting and revoking on room entry, and granting on
+   * exit, act only on a participant who is connected at that moment:
+   * - someone who connects afterwards from inside a meeting room with a token fetched in the
+   *   hallway could publish: their tracks are muted and publishing revoked again;
+   * - someone who connects in the hallway with a token fetched inside a room (or whose grant was
+   *   lost) could not publish: it is granted back.
+   * Both run in the same queue as every other permission change of the person, so they never
+   * overtake a later move.
    */
-  mediaParticipantActive(spaceId: string, userId: string): void {
+  mediaParticipantActive(spaceId: string, userId: string, canPublish?: boolean): void {
     const key = `${spaceId}:${userId}`;
     void this.#publishing.run(key, async () => {
-      if (!this.inMeetingRoom(spaceId, userId)) return;
-      this.#revoked.add(key);
-      try {
-        await this.deps.media.enterMeetingRoom(spaceId, userId);
-      } catch (error) {
-        this.deps.logger.warn({ err: error, spaceId }, 'World media isolation on connect failed');
-        this.deps.reporter.captureException(error, { spaceId });
+      if (this.inMeetingRoom(spaceId, userId)) {
+        await this.#applyPublishing(spaceId, userId, true);
+      } else if (canPublish === false) {
+        await this.#applyPublishing(spaceId, userId, false);
       }
     });
   }
@@ -357,20 +363,53 @@ export class WorldService {
     void this.#publishing.run(key, async () => {
       const inRoom = this.inMeetingRoom(spaceId, userId);
       if (inRoom === this.#revoked.has(key)) return;
-      if (inRoom) this.#revoked.add(key);
-      else this.#revoked.delete(key);
-      try {
-        await (inRoom
-          ? this.deps.media.enterMeetingRoom(spaceId, userId)
-          : this.deps.media.leaveMeetingRoom(spaceId, userId));
-      } catch (error) {
-        this.deps.logger.warn(
-          { err: error, spaceId },
-          `World ${inRoom ? 'media isolation on room entry' : 'media release on room exit'} failed`,
-        );
-        this.deps.reporter.captureException(error, { spaceId });
-      }
+      await this.#applyPublishing(spaceId, userId, inRoom);
     });
+  }
+
+  /**
+   * Like {@link #syncPublishing}, but compares with the permission the media server REPORTS,
+   * not with `#revoked`: that memory is empty after a restart of the app, while the media server
+   * still holds a revoked permission from before it.
+   */
+  #reconcilePublishing(spaceId: string, userId: string): void {
+    const key = `${spaceId}:${userId}`;
+    void this.#publishing.run(key, async () => {
+      let reported: boolean | null;
+      try {
+        reported = await this.deps.media.participantCanPublish(spaceId, userId);
+      } catch (error) {
+        this.deps.logger.warn({ err: error, spaceId }, 'World media permission check failed');
+        this.deps.reporter.captureException(error, { spaceId });
+        return;
+      }
+      if (reported === null) return;
+      const inRoom = this.inMeetingRoom(spaceId, userId);
+      if (reported === !inRoom) {
+        if (inRoom) this.#revoked.add(key);
+        else this.#revoked.delete(key);
+        return;
+      }
+      await this.#applyPublishing(spaceId, userId, inRoom);
+    });
+  }
+
+  /** Revokes (in a room) or grants (in the hallway) publishing; failures are only reported. */
+  async #applyPublishing(spaceId: string, userId: string, inRoom: boolean): Promise<void> {
+    const key = `${spaceId}:${userId}`;
+    if (inRoom) this.#revoked.add(key);
+    else this.#revoked.delete(key);
+    try {
+      await (inRoom
+        ? this.deps.media.enterMeetingRoom(spaceId, userId)
+        : this.deps.media.leaveMeetingRoom(spaceId, userId));
+    } catch (error) {
+      this.deps.logger.warn(
+        { err: error, spaceId },
+        `World ${inRoom ? 'media isolation in a room' : 'media release in the hallway'} failed`,
+      );
+      this.deps.reporter.captureException(error, { spaceId });
+    }
   }
 
   // ── Disconnection and kicks (E4-S6, E2-S6) ──────────────────────────────

@@ -13,6 +13,16 @@ export interface MediaMembers {
 }
 
 /**
+ * Someone connected to or published in a space's media room; `canPublish` is the permission the
+ * media server reports for them (`undefined` when the event does not say).
+ */
+export type ParticipantActiveListener = (
+  spaceId: string,
+  userId: string,
+  canPublish: boolean | undefined,
+) => void;
+
+/**
  * Media use cases (architecture §10.2): one LiveKit room per space (`space_<spaceId>`),
  * identity = userId.
  */
@@ -22,7 +32,7 @@ export class MediaService {
   /** Who is in a meeting room right now (set by the world module, which knows `roomId`). */
   #inMeetingRoom: (spaceId: string, userId: string) => boolean = () => false;
   /** Told when someone connects to or publishes in a space's media room (the world module). */
-  #participantActive: (spaceId: string, userId: string) => void = () => undefined;
+  #participantActive: ParticipantActiveListener = () => undefined;
 
   constructor(deps: { members: MediaMembers; media: MediaProvider }) {
     this.#members = deps.members;
@@ -62,7 +72,7 @@ export class MediaService {
    * Registers who hears about people connecting to or publishing in the media room (the world
    * module), so someone inside a meeting room is isolated again (E6-S3). Registered once.
    */
-  onParticipantActive(listener: (spaceId: string, userId: string) => void): void {
+  onParticipantActive(listener: ParticipantActiveListener): void {
     this.#participantActive = listener;
   }
 
@@ -74,9 +84,12 @@ export class MediaService {
    *   dropped from the room at once, every time they try.
    * - Someone who fetched a token in the hallway may connect only after walking into a meeting
    *   room, where muting and revoking found nobody to act on: the listener isolates them now.
+   * - Someone who fetched a token inside a room may connect only after walking out, where
+   *   granting found nobody to act on: with `canPublish` (as the media server reports it) false,
+   *   the listener grants it back.
    * Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit fails to drop them.
    */
-  async participantActive(roomName: string, identity: string): Promise<void> {
+  async participantActive(roomName: string, identity: string, canPublish?: boolean): Promise<void> {
     if (!roomName.startsWith(MEDIA_ROOM_PREFIX) || identity === '') return;
     const spaceId = roomName.slice(MEDIA_ROOM_PREFIX.length);
     if (spaceId === '' || mediaRoomName(spaceId) !== roomName) return;
@@ -84,7 +97,18 @@ export class MediaService {
       await this.removeParticipant(spaceId, identity);
       return;
     }
-    this.#participantActive(spaceId, identity);
+    this.#participantActive(spaceId, identity, canPublish);
+  }
+
+  /**
+   * The person's permission to publish as the media server reports it now, or `null` when they
+   * are not connected (E6-S3). Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit fails.
+   */
+  participantCanPublish(spaceId: string, userId: string): Promise<boolean | null> {
+    return this.#media.participantCanPublish({
+      roomName: mediaRoomName(spaceId),
+      identity: userId,
+    });
   }
 
   /**
