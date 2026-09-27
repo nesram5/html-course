@@ -11,6 +11,7 @@ import { spaceInfoFixture } from '@/test/fixtures';
 import { mockApi } from '@/test/mock-api';
 import { renderWithProviders } from '@/test/providers';
 
+import { errorContextSpaceExtension } from '../error-context-extension';
 import { spaceExtensions } from '../space-extensions';
 
 const SPACE = spaceInfoFixture();
@@ -51,6 +52,7 @@ describe('office page extensions', () => {
       presenceSpaceExtension,
       chatSpaceExtension,
       personalizationSpaceExtension,
+      errorContextSpaceExtension,
     ]);
     expect(personalizationSpaceExtension.Overlay).toBeDefined();
     expect(personalizationSpaceExtension.BarItems).toBeDefined();

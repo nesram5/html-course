@@ -4,10 +4,10 @@ import {
   type ErrorPayload,
   type ErrorResponse,
 } from '@plaza/shared';
-import type { FastifyError, FastifyInstance } from 'fastify';
+import type { FastifyError, FastifyInstance, FastifyRequest } from 'fastify';
 import { ZodError, prettifyError } from 'zod';
 
-import type { ErrorReporter } from './error-reporter.js';
+import type { ErrorContext, ErrorReporter } from './error-reporter.js';
 
 const DEFAULT_MESSAGES: Partial<Record<ErrorCode, string>> = {
   UNAUTHORIZED: 'Authentication required',
@@ -88,13 +88,28 @@ export function normalizeError(error: unknown): NormalizedError {
   };
 }
 
+/**
+ * What an HTTP error report says about its request (E8-S1): the request id, the person (set by
+ * `requireUser` as `request.auth`) and the space of `/api/spaces/:spaceId/...` routes. Read
+ * structurally: the platform does not depend on the auth module.
+ */
+export function requestErrorContext(request: FastifyRequest): ErrorContext {
+  const { auth } = request as { auth?: { userId?: unknown } | null };
+  const params = request.params as { spaceId?: unknown } | undefined;
+  return {
+    requestId: request.id,
+    ...(typeof auth?.userId === 'string' && { userId: auth.userId }),
+    ...(typeof params?.spaceId === 'string' && { spaceId: params.spaceId }),
+  };
+}
+
 /** Central HTTP error and 404 handlers (E0-S3). Register before any route. */
 export function registerErrorHandling(app: FastifyInstance, reporter: ErrorReporter): void {
   app.setErrorHandler((error, request, reply) => {
     const { status, payload, unexpected } = normalizeError(error);
     if (unexpected) {
       request.log.error({ err: error }, 'Unhandled error');
-      reporter.captureException(error, { requestId: request.id });
+      reporter.captureException(error, requestErrorContext(request));
     } else {
       request.log.info({ code: payload.code, status }, 'Request failed');
     }

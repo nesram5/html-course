@@ -120,6 +120,7 @@ export class WorldService {
         this.#tickers.get(runtime)?.();
         this.#tickers.delete(runtime);
         deps.metrics.setConnected(runtime.spaceId, 0);
+        deps.metrics.setInConversation(runtime.spaceId, 0);
       },
     });
   }
@@ -355,7 +356,9 @@ export class WorldService {
     if (!runtime.hasPendingChanges && !this.#hallway(runtime).pending) return;
     const started = performance.now();
     try {
-      const peers = this.#hallway(runtime).update(runtime);
+      const hallway = this.#hallway(runtime);
+      const peers = hallway.update(runtime);
+      this.deps.metrics.setInConversation(runtime.spaceId, hallway.inConversationCount);
       const delta = runtime.flush() ?? { moved: [], joined: [], left: [], changed: [] };
       const sockets = this.deps.io.sockets.sockets;
       for (const { userId, socketId } of runtime.connections()) {

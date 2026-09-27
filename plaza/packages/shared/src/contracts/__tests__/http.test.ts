@@ -157,9 +157,20 @@ describe('misc', () => {
       HealthResponseSchema.safeParse({
         status: 'ok',
         version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
+        realtime: {
+          connectedBySpace: {},
+          inConversationBySpace: {},
+          avgTickMs: null,
+          avgMediaPeersPerTick: null,
+        },
+        process: { uptimeSeconds: 1, rssMb: 80, heapUsedMb: 30 },
       }).success,
     ).toBe(true);
+    // Public liveness: no figures.
+    expect(HealthResponseSchema.parse({ status: 'ok', version: '0.1.0' })).toEqual({
+      status: 'ok',
+      version: '0.1.0',
+    });
   });
 });
 

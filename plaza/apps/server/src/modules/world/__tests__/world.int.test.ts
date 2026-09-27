@@ -561,8 +561,8 @@ describe('world module: realtime multiplayer (E4)', () => {
         (await testApp.app.inject({ method: 'GET', url: API_PATHS.health })).json(),
       );
 
-      expect(health.realtime.connectedBySpace).toEqual({ [space.id]: 2 });
-      expect(health.realtime.avgTickMs).toEqual(expect.any(Number));
+      expect(health.realtime?.connectedBySpace).toEqual({ [space.id]: 2 });
+      expect(health.realtime?.avgTickMs).toEqual(expect.any(Number));
     });
   });
 

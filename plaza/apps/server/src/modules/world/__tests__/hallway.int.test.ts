@@ -385,7 +385,7 @@ describe('hallway media: media:peers and inConversation (E5-S2)', () => {
     expect(inbox(a).peers.at(-1)).toEqual({ peers: [luis.user.id] });
   });
 
-  it('reports the media:peers sent per tick in /api/health', async () => {
+  it('reports the media:peers sent per tick and the people in a conversation in /api/health', async () => {
     const a = await enter(ana, { x: 5, y: ROW });
     const l = await enter(luis, { x: 6, y: ROW });
     await tick(a, l);
@@ -394,7 +394,9 @@ describe('hallway media: media:peers and inConversation (E5-S2)', () => {
       (await testApp.app.inject({ method: 'GET', url: API_PATHS.health })).json(),
     );
 
-    expect(health.realtime.avgMediaPeersPerTick).toEqual(expect.any(Number));
-    expect(health.realtime.avgMediaPeersPerTick).toBeGreaterThan(0);
+    expect(health.realtime?.avgMediaPeersPerTick).toEqual(expect.any(Number));
+    expect(health.realtime?.avgMediaPeersPerTick).toBeGreaterThan(0);
+    // Both are in a conversation (E8-S1: people with media peers per space).
+    expect(health.realtime?.inConversationBySpace).toEqual({ [space.id]: 2 });
   });
 });

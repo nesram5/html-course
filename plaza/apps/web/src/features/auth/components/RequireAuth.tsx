@@ -1,7 +1,9 @@
 import { WEB_PATHS } from '@plaza/shared';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation } from 'react-router';
+
+import { setErrorContext } from '@/shared/lib/sentry';
 
 import { useSession } from '../hooks/useSession';
 
@@ -22,6 +24,12 @@ export function PageLoading() {
 export function RequireAuth({ children }: { children?: ReactNode }) {
   const session = useSession();
   const location = useLocation();
+  const userId = session.user?.id ?? null;
+
+  useEffect(() => {
+    // Error reports name the person by id only (E8-S1).
+    if (session.status !== 'loading') setErrorContext({ userId });
+  }, [session.status, userId]);
 
   if (session.status === 'loading') return <PageLoading />;
   if (session.status === 'anonymous') {

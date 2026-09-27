@@ -32,6 +32,13 @@ export class HallwayPeers {
     return [...(this.#peers.get(userId) ?? [])].sort();
   }
 
+  /** People with at least one hallway peer, i.e. in a conversation (`/api/health`, E8-S1). */
+  get inConversationCount(): number {
+    let count = 0;
+    for (const peers of this.#peers.values()) if (peers.size > 0) count++;
+    return count;
+  }
+
   /** Steps 1–3 above. Call it right before `runtime.flush()`. */
   update(runtime: SpaceRuntime): PeersChange[] {
     const next = computePeers(runtime.players(), this.#peers);

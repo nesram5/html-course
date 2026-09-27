@@ -3,7 +3,16 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // Resolve workspace packages to their TypeScript sources (see tsconfig.base.json).
-  ssr: { resolve: { conditions: ['@plaza/source', ...defaultServerConditions] } },
+  // Without the `module` condition: packages such as @opentelemetry/api (used by Sentry) map it
+  // to an ESM build with extensionless imports that Node cannot load; Node itself ignores it.
+  ssr: {
+    resolve: {
+      conditions: [
+        '@plaza/source',
+        ...defaultServerConditions.filter((condition) => condition !== 'module'),
+      ],
+    },
+  },
   test: {
     environment: 'node',
     projects: [
