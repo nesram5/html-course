@@ -20,6 +20,7 @@ import {
   step,
   tapKey,
   tile,
+  type ArrowKey,
 } from './support/world';
 
 /**
@@ -66,16 +67,72 @@ function media(page: Page) {
   return page.evaluate(() => window.__plazaMedia?.state());
 }
 
-/** Walks up (or down) to row `y`, then along the row to column `x`. */
+/**
+ * Walks up (or down) to row `y`, then along the row to column `x`, inside the page: each tap as
+ * soon as the previous step has started, without a round trip to the test runner per tile.
+ */
 async function walkTo(page: Page, target: { x: number; y: number }): Promise<void> {
   await page.getByTestId('world-canvas').focus();
-  for (let attempt = 0; attempt < 80; attempt++) {
-    const at = await tile(page);
-    if (at.x === target.x && at.y === target.y) return;
-    if (at.y !== target.y) await step(page, at.y > target.y ? 'ArrowUp' : 'ArrowDown');
-    else await step(page, at.x < target.x ? 'ArrowRight' : 'ArrowLeft');
-  }
-  throw new Error(`could not walk to ${String(target.x)},${String(target.y)}`);
+  await page.evaluate(async (goal) => {
+    const canvas = document.querySelector('[data-testid="world-canvas"]');
+    const at = () => ({
+      x: Number(canvas?.getAttribute('data-tile-x')),
+      y: Number(canvas?.getAttribute('data-tile-y')),
+    });
+    for (let taps = 0; taps < 80; taps++) {
+      const from = at();
+      if (from.x === goal.x && from.y === goal.y) return;
+      const code =
+        from.y !== goal.y
+          ? from.y > goal.y
+            ? 'ArrowUp'
+            : 'ArrowDown'
+          : from.x < goal.x
+            ? 'ArrowRight'
+            : 'ArrowLeft';
+      const target = document.activeElement ?? document.body;
+      for (const type of ['keydown', 'keyup']) {
+        target.dispatchEvent(new KeyboardEvent(type, { key: code, code, bubbles: true }));
+      }
+      const started = performance.now();
+      while (performance.now() - started < 2000) {
+        const now = at();
+        if (now.x !== from.x || now.y !== from.y) break;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    }
+  }, target);
+  expect(await tile(page)).toEqual(target);
+}
+
+/**
+ * Walks back and forth along a room's border like someone hesitating at the door: one tap every
+ * `gapMs` (each tap is its own step: the next one waits until the previous step has started), all
+ * inside the page, with no round trip to the test runner and no wait for the server.
+ */
+async function dither(page: Page, keys: readonly ArrowKey[], gapMs = 200): Promise<void> {
+  await page.evaluate(
+    async ({ codes, gap }) => {
+      const canvas = document.querySelector('[data-testid="world-canvas"]');
+      const at = () =>
+        `${String(canvas?.getAttribute('data-tile-x'))},${String(canvas?.getAttribute('data-tile-y'))}`;
+      for (const code of codes) {
+        const from = at();
+        const target = document.activeElement ?? document.body;
+        for (const type of ['keydown', 'keyup']) {
+          target.dispatchEvent(new KeyboardEvent(type, { key: code, code, bubbles: true }));
+        }
+        const tapped = performance.now();
+        while (
+          (at() === from && performance.now() - tapped < 2000) ||
+          performance.now() - tapped < gap
+        ) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+      }
+    },
+    { codes: keys, gap: gapMs },
+  );
 }
 
 /** `true` when the <video> of `userId` in the hallway strip shows frames. */
@@ -254,5 +311,155 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
     await expect(eva.page.getByRole('button', { name: 'Silenciar micrófono' })).toBeEnabled();
 
     await Promise.all([ana.context.close(), eva.context.close(), admin.close()]);
+  });
+
+  test('three people: shared room, a link added live, exact restore, border dithering and account deletion inside', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    const run = randomUUID().slice(0, 8);
+    const ana = await person(browser, `ana-${run}@acme.com`, 'Ana');
+    const luis = await person(browser, `luis-${run}@acme.com`, 'Luis');
+    const eva = await person(browser, `eva-${run}@acme.com`, 'Eva');
+    const space = await createSpace(ana.context.request, `Salas3 ${run}`);
+    await joinByInvite(luis.context.request, space);
+    await joinByInvite(eva.context.request, space);
+
+    for (const someone of [ana, luis, eva]) {
+      await openOffice(someone.page, space.slug, { media: true });
+      const dismiss = someone.page.getByRole('button', { name: 'Entendido' });
+      if (await dismiss.isVisible()) await dismiss.click();
+    }
+    // Spawns (11,25), (12,25), (13,25): up columns 11/12 to row 7 and along it.
+    await walkTo(luis.page, { x: 12, y: 7 });
+    await walkTo(luis.page, { x: 27, y: 7 });
+    await walkTo(ana.page, { x: 11, y: 7 });
+    await walkTo(ana.page, { x: 27, y: 7 });
+    await walkTo(ana.page, { x: 27, y: 6 });
+    await walkTo(eva.page, { x: 12, y: (await tile(eva.page)).y });
+    await walkTo(eva.page, { x: 12, y: 7 });
+    await walkTo(eva.page, { x: 25, y: 7 });
+
+    // The room has no Meet link yet. Luis (member) is told to ask; Ana (owner) may add it.
+    await luis.page.getByTestId('world-canvas').focus();
+    await step(luis.page, 'ArrowRight');
+    const luisCard = luis.page.getByRole('region', { name: 'Sala de reuniones' });
+    await expect(luisCard).toContainText('Esta sala aún no tiene enlace de Meet.');
+    await expect(luisCard).toContainText('Pide a quien administra el espacio que lo añada.');
+    await expect(luisCard.getByRole('link')).toHaveCount(0);
+    await ana.page.getByTestId('world-canvas').focus();
+    await step(ana.page, 'ArrowRight');
+    const anaCard = ana.page.getByRole('region', { name: 'Sala de reuniones' });
+    await expect(anaCard.getByRole('link', { name: 'Añadir el enlace de Meet' })).toHaveAttribute(
+      'rel',
+      'noopener noreferrer',
+    );
+    await expect(anaCard).toContainText('2 personas dentro');
+    await expect(luisCard).toContainText('2 personas dentro');
+
+    // The owner adds it from settings: both cards offer the Meet at once, without walking.
+    const linked = await ana.context.request.put(`/api/spaces/${space.id}/rooms/${ROOM_ID}`, {
+      headers: CLIENT,
+      data: { meetUri: MEET_URI },
+    });
+    expect(linked.status()).toBe(200);
+    await expect(luisCard.getByRole('button', { name: /Unirse a la reunión/ })).toBeVisible();
+    // With the keyboard: X opens it (new tab, no opener).
+    await luis.page.evaluate(() => {
+      const opened: unknown[][] = [];
+      (window as unknown as { __opened: unknown[][] }).__opened = opened;
+      window.open = (...args: unknown[]) => {
+        opened.push(args);
+        return null;
+      };
+    });
+    await luis.page.getByTestId('world-canvas').focus();
+    await luis.page.keyboard.press('x');
+    await expect
+      .poll(() => luis.page.evaluate(() => (window as unknown as { __opened: unknown[] }).__opened))
+      .toEqual([[MEET_URI, '_blank', 'noopener,noreferrer']]);
+
+    // Eva turns her microphone off in the hallway (camera on), walks in and out: it comes back
+    // exactly like that, not "all on".
+    await eva.page.getByRole('button', { name: 'Silenciar micrófono' }).click();
+    await expect.poll(async () => (await media(eva.page))?.micOn).toBe(false);
+    await walkTo(eva.page, { x: 27, y: 7 });
+    // Luis steps back out next to her, so the hallway has someone to hear Eva.
+    await luis.page.getByTestId('world-canvas').focus();
+    await walkTo(luis.page, { x: 26, y: 7 });
+    await expect(luisCard).toHaveCount(0);
+    await expect.poll(() => playing(luis.page, eva.userId), { timeout: 15_000 }).toBe(true);
+
+    // Border dithering: seven steps, one every 200 ms, ending inside the room.
+    await eva.page.getByTestId('world-canvas').focus();
+    const inAndOut: ArrowKey[] = ['ArrowRight', 'ArrowLeft'];
+    await dither(eva.page, [...inAndOut, ...inAndOut, ...inAndOut, 'ArrowRight']);
+    await expect.poll(() => tile(eva.page), { timeout: 10_000 }).toEqual({ x: 28, y: 7 });
+    const evaCard = eva.page.getByRole('region', { name: 'Sala de reuniones' });
+    await expect(evaCard).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          const state = await media(eva.page);
+          return [state?.micOn, state?.cameraOn];
+        },
+        { timeout: 10_000 },
+      )
+      .toEqual([false, false]);
+    await expect
+      .poll(async () => (await media(luis.page))?.subscribed.includes(eva.userId), {
+        timeout: 5000,
+      })
+      .toBe(false);
+    await expect(
+      luis.page.locator(`[data-testid="hallway-video"][data-user-id="${eva.userId}"]`),
+    ).toHaveCount(0);
+    expect(await hearing(luis.page, eva.userId)).toBe(false);
+
+    // And seven more ending in the hallway: the card goes, her media are as before entering.
+    const outAndIn: ArrowKey[] = ['ArrowLeft', 'ArrowRight'];
+    await dither(eva.page, [...outAndIn, ...outAndIn, ...outAndIn, 'ArrowLeft']);
+    await expect.poll(() => tile(eva.page), { timeout: 10_000 }).toEqual({ x: 27, y: 7 });
+    await expect(evaCard).toHaveCount(0);
+    await expect
+      .poll(
+        async () => {
+          const state = await media(eva.page);
+          return [state?.micOn, state?.cameraOn];
+        },
+        { timeout: 10_000 },
+      )
+      .toEqual([false, true]);
+    await expect.poll(() => playing(luis.page, eva.userId), { timeout: 15_000 }).toBe(true);
+    await expect(eva.page.getByRole('button', { name: 'Activar micrófono' })).toBeEnabled();
+
+    // Luis deletes his account while connected (in a conversation with Eva): out of the office
+    // and of the media room at once.
+    await expect
+      .poll(async () => (await media(eva.page))?.participants.includes(luis.userId))
+      .toBe(true);
+    const deleted = await luis.context.request.delete('/api/me', { headers: CLIENT });
+    expect(deleted.status()).toBe(204);
+    await expect
+      .poll(() => remoteAvatar(ana.page, luis.userId), { timeout: 10_000 })
+      .toBe(undefined);
+    await expect
+      .poll(
+        async () => {
+          const state = await media(eva.page);
+          return [state?.participants.includes(luis.userId), state?.peers.includes(luis.userId)];
+        },
+        { timeout: 10_000 },
+      )
+      .toEqual([false, false]);
+    expect(await hearing(eva.page, luis.userId)).toBe(false);
+    const again = await luis.context.request.post(`/api/spaces/${space.id}/media-token`, {
+      headers: CLIENT,
+    });
+    expect(again.status()).toBe(401);
+    // Ana, still in the room, now counts one person.
+    await expect(anaCard).toContainText('1 persona dentro');
+
+    await Promise.all([ana.context.close(), luis.context.close(), eva.context.close()]);
   });
 });
