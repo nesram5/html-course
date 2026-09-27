@@ -18,14 +18,16 @@
     "manifest.json",
     "templates",
     "avatars",
-    "decor"
+    "decor",
+    "tilesets"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "validate": "tsx --conditions=@plaza/source scripts/validate-maps.ts"
+    "validate": "tsx --conditions=@plaza/source scripts/validate-maps.ts",
+    "generate": "tsx --conditions=@plaza/source scripts/generate.ts"
   },
   "dependencies": {
     "@plaza/shared": "workspace:*",
