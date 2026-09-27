@@ -206,11 +206,17 @@ Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta
    obligatorios** = aprobación manual). Secretos de cada uno, solo por nombre en el _workflow_:
    `APP_SSH_HOST`, `APP_SSH_USER`, `APP_SSH_KEY`, `APP_SSH_KNOWN_HOSTS`
    (`ssh-keyscan <host>`), `APP_DIR` (opcional, `/opt/plaza`). Variable de repositorio
-   `VITE_SENTRY_DSN` (pública: va en el JavaScript).
+   `VITE_SENTRY_DSN` (pública: va en el JavaScript). **Reglas de ramas de despliegue** de cada
+   _environment_ (_Deployment branches and tags_ → _Selected branches and tags_): `staging` solo
+   `main`; `beta` `main` y la etiqueta `v0.*`. El _workflow_ ya se niega a desplegar a mano desde
+   otra rama que no sea `main` y nunca corre en _pull requests_, pero quien tiene escritura podría
+   editarlo en una rama: estas reglas son las que impiden que esa rama lea los secretos SSH.
+   Proteger también las etiquetas `v0.*` (_Rulesets_ → solo mantenedores las crean).
 6. Google Cloud (proyecto de producción): pantalla de consentimiento en modo _Testing_ con los
    usuarios piloto (o _Internal_ si todos son de un Workspace); URIs de redirección
    `https://<dominio>/api/auth/google/callback` y `https://<dominio>/api/auth/google/meet/callback`.
-7. Primer despliegue: ejecutar el _workflow_ a mano (_Run workflow_) con la etiqueta a desplegar.
+7. Primer despliegue: ejecutar el _workflow_ a mano (_Run workflow_, desde `main`) con la
+   etiqueta a desplegar.
 
 ## Desplegar — E8-S5
 

@@ -4,8 +4,8 @@
 #   pushes them to GHCR (tags sha-<commit> and main) and deploys them to the staging VM.
 # - Beta: pushing a v0.x tag builds and pushes images tagged with the version; the deploy job
 #   targets the "beta" environment, whose required reviewers give the manual approval.
-# - Rollback: run this workflow by hand ("Run workflow") with an environment and an existing
-#   image tag.
+# - Rollback: run this workflow by hand ("Run workflow") on main with an environment and an
+#   existing image tag.
 #
 # It never runs on pull requests or other branches. Secrets are read by name from the GitHub
 # environments "staging" and "beta": APP_SSH_HOST, APP_SSH_USER, APP_SSH_KEY,
@@ -114,10 +114,15 @@ jobs:
   deploy:
     name: Deploy to ${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
     needs: build
+    # A manual run (rollback) only from main: "Run workflow" lets anyone with write access pick a
+    # branch, and that branch's copy of deploy.sh would run on the VM. The environments' own
+    # deployment-branch rules (main for staging; main and v0.* tags for beta) back this up, since
+    # a branch could also edit this file (docs/runbook.md).
     if: >-
       always() &&
       (needs.build.result == 'success' ||
-       (github.event_name == 'workflow_dispatch' && needs.build.result == 'skipped'))
+       (github.event_name == 'workflow_dispatch' && needs.build.result == 'skipped' &&
+        github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
