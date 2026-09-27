@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { expect, test, type Page } from '@playwright/test';
 
 declare global {
@@ -9,38 +11,47 @@ declare global {
 
 /**
  * E3 smoke test: open `/s/:slug`, see the office drawn by Phaser and walk with the keyboard.
- * The space and the signed-in user are mocked at the network level (the spaces API belongs to
- * E2); the map, theme images and avatar come from the real server (`/assets/maps`).
+ * Everything is real: the test signs in with the test login, chooses an avatar, creates a space
+ * through the spaces API and opens it; the map, theme images and avatar come from `/assets/maps`.
  */
-const SPACE = {
-  id: 'space-e2e',
-  name: 'Oficina E2E',
-  slug: 'oficina-e2e',
-  mapTemplateId: 'office-small@1',
-  themeId: 'pixel',
-  role: 'OWNER',
-  thumbnailUrl: null,
-  ownerId: 'user-e2e',
-  allowedDomain: null,
-  createdAt: '2026-09-01T10:00:00.000Z',
-  rooms: [],
-  inviteUrl: null,
-};
+const CLIENT = { 'x-plaza-client': 'e2e' };
 
-const ME = {
-  id: 'user-e2e',
-  email: 'e2e@plaza.local',
-  displayName: 'Paseante',
-  avatarId: 'avatar-02',
-  avatarChosen: true,
-  pictureUrl: null,
-};
+interface CreatedSpace {
+  id: string;
+  name: string;
+  slug: string;
+}
 
-async function mockApi(page: Page, space: Partial<typeof SPACE> = {}): Promise<void> {
-  await page.route('**/api/spaces/by-slug/oficina-e2e/enter', (route) =>
-    route.fulfill({ json: { space: { ...SPACE, ...space }, joined: false } }),
-  );
-  await page.route('**/api/me', (route) => route.fulfill({ json: { user: ME } }));
+/** Signs in (sharing the page cookies), picks an avatar and creates a space of the template. */
+async function createSpace(
+  page: Page,
+  options: { mapTemplateId?: string; themeId?: string } = {},
+): Promise<CreatedSpace> {
+  const run = randomUUID().slice(0, 8);
+  const login = await page.request.post('/api/auth/test-login', {
+    headers: CLIENT,
+    data: { email: `paseante-${run}@plaza.local`, displayName: 'Paseante' },
+  });
+  expect(login.status()).toBe(200);
+  const me = await page.request.patch('/api/me', {
+    headers: CLIENT,
+    data: { avatarId: 'avatar-02' },
+  });
+  expect(me.status()).toBe(200);
+  const created = await page.request.post('/api/spaces', {
+    headers: CLIENT,
+    data: { name: `Oficina E2E ${run}`, mapTemplateId: options.mapTemplateId ?? 'office-small@1' },
+  });
+  expect(created.status()).toBe(201);
+  const { space } = (await created.json()) as { space: CreatedSpace };
+  if (options.themeId !== undefined) {
+    const updated = await page.request.patch(`/api/spaces/${space.id}`, {
+      headers: CLIENT,
+      data: { themeId: options.themeId },
+    });
+    expect(updated.status()).toBe(200);
+  }
+  return space;
 }
 
 async function tile(page: Page): Promise<{ x: number; y: number }> {
@@ -53,10 +64,10 @@ async function tile(page: Page): Promise<{ x: number; y: number }> {
 
 test.describe('2D map engine (E3)', () => {
   test('renders the office and walks with the keyboard, colliding with walls', async ({ page }) => {
-    await mockApi(page);
-    await page.goto('/s/oficina-e2e');
+    const space = await createSpace(page);
+    await page.goto(`/s/${space.slug}`);
 
-    await expect(page.getByRole('heading', { name: 'Oficina E2E' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: space.name })).toBeVisible();
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
     await expect(canvas.locator('canvas')).toBeVisible();
@@ -109,8 +120,8 @@ test.describe('2D map engine (E3)', () => {
   test('draws the campus with its "Noche" color variant over the same geometry', async ({
     page,
   }) => {
-    await mockApi(page, { mapTemplateId: 'campus@1', themeId: 'night' });
-    await page.goto('/s/oficina-e2e');
+    const space = await createSpace(page, { mapTemplateId: 'campus@1', themeId: 'night' });
+    await page.goto(`/s/${space.slug}`);
 
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
@@ -125,9 +136,9 @@ test.describe('2D map engine (E3)', () => {
   });
 
   test('offers "Reintentar" when the style images fail to load', async ({ page }) => {
-    await mockApi(page);
+    const space = await createSpace(page);
     await page.route('**/themes/pixel/below.png', (route) => route.abort());
-    await page.goto('/s/oficina-e2e');
+    await page.goto(`/s/${space.slug}`);
 
     await expect(page.getByRole('alert')).toContainText(
       'No se pudieron cargar las imágenes de la oficina.',
@@ -143,17 +154,8 @@ test.describe('2D map engine (E3)', () => {
   });
 
   test('leaving the page destroys the game and its listeners', async ({ page }) => {
-    await mockApi(page);
-    await page.route('**/api/health', (route) =>
-      route.fulfill({
-        json: {
-          status: 'ok',
-          version: '0.0.0',
-          realtime: { connectedBySpace: {}, avgTickMs: null },
-        },
-      }),
-    );
-    await page.goto('/s/oficina-e2e');
+    const space = await createSpace(page);
+    await page.goto(`/s/${space.slug}`);
     await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-state', 'ready', {
       timeout: 30_000,
     });
@@ -162,7 +164,8 @@ test.describe('2D map engine (E3)', () => {
 
     await page.getByRole('link', { name: 'Salir' }).click();
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Plaza' })).toBeVisible();
+    await expect(page).toHaveURL(/\/spaces$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Mis espacios' })).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(0);
     expect(await page.evaluate(() => window.__plazaWorld?.liveGames())).toBe(0);
     await expect.poll(() => page.evaluate(() => window.__plazaWorld?.listenerCount())).toBe(0);
