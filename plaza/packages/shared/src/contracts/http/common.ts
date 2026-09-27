@@ -41,11 +41,22 @@ export type DeskDecor = z.infer<typeof DeskDecorSchema>;
 
 export const EMPTY_DESK_DECOR: DeskDecor = { slots: [null, null, null] };
 
-/** Relative in-app path used as post-login redirect. Rejects open redirects (`//evil.com`). */
+// eslint-disable-next-line no-control-regex -- control characters are exactly what is refused
+const URL_UNSAFE_CHARS = /[\s\u0000-\u001f\u007f\\]/;
+
+/**
+ * Relative in-app path used as post-login redirect. Rejects open redirects (`//evil.com`,
+ * `/\\evil.com`) and whitespace, control characters and backslashes anywhere: browsers drop tabs
+ * and newlines from URLs (`/\t/evil.com` becomes `//evil.com`) and a newline would break the
+ * `Location` header. Paths built from `location` are percent-encoded, so they never contain them.
+ */
 export const SafeNextPathSchema = z
   .string()
   .max(512)
-  .regex(/^\/(?![/\\])/, 'must be a relative path starting with a single "/"');
+  .regex(/^\/(?![/\\])/, 'must be a relative path starting with a single "/"')
+  .refine((path) => !URL_UNSAFE_CHARS.test(path), {
+    message: 'must not contain whitespace, control characters or "\\"',
+  });
 
 export const SpaceParamsSchema = z.object({ spaceId: IdSchema });
 export type SpaceParams = z.infer<typeof SpaceParamsSchema>;

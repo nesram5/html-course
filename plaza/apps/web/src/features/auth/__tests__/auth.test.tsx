@@ -54,6 +54,17 @@ describe('auth feature (E1-S3, E1-S4)', () => {
       );
     });
 
+    it('ignores a next path that the browser would turn into another origin', async () => {
+      mockApi({ 'GET /api/me': { body: { user: meFixture() } } });
+
+      // "/\t/evil.example.com" is "//evil.example.com" once the browser drops the tab.
+      const { router } = renderApp({ route: '/login?next=%2F%09%2Fevil.example.com' });
+
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/spaces');
+      });
+    });
+
     it('goes straight to next when already signed in', async () => {
       mockApi({ 'GET /api/me': { body: { user: meFixture() } } });
 

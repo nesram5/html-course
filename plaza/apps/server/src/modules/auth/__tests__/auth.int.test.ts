@@ -127,6 +127,19 @@ describe('auth module (E1-S1, E1-S2)', () => {
       expect(response.headers.location).toBe(`${PUBLIC_URL}/spaces`);
     });
 
+    it.each(['/\n/evil.example.com', '/\t/evil.example.com', '/s/acme\r\nSet-Cookie: x=1'])(
+      'ignores a next path with control characters (%j) instead of failing',
+      async (next) => {
+        testApp.identity.willAuthenticate('code', { email: 'ana@acme.com' });
+        const { state, flowCookie } = await startLogin(next);
+
+        const response = await callback({ code: 'code', state }, flowCookie);
+
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toBe(`${PUBLIC_URL}/spaces`);
+      },
+    );
+
     it('keeps one user per Google subject and updates the e-mail (E1-S1)', async () => {
       testApp.identity.willAuthenticate('first', {
         sub: 'sub-1',

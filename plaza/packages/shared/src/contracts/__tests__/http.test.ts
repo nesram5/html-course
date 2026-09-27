@@ -50,6 +50,22 @@ describe('auth and profile', () => {
     expect(AuthStartQuerySchema.safeParse({ next: 'https://evil.com' }).success).toBe(false);
   });
 
+  it('refuses "next" paths that browsers or the Location header would rewrite', () => {
+    // Browsers drop tabs and newlines from URLs: "/\t/evil.com" would become "//evil.com".
+    for (const next of [
+      '/\t/evil.com',
+      '/\n/evil.com',
+      '/s/acme\r\nSet-Cookie: x',
+      '/a b',
+      '/a\\b',
+    ]) {
+      expect(AuthStartQuerySchema.safeParse({ next }).success, JSON.stringify(next)).toBe(false);
+    }
+    expect(AuthStartQuerySchema.safeParse({ next: '/profile?tab=avatar%20x#top' }).success).toBe(
+      true,
+    );
+  });
+
   it('requires at least one field when updating the profile', () => {
     expect(UpdateMeBodySchema.safeParse({}).success).toBe(false);
     expect(UpdateMeBodySchema.parse({ displayName: '  Ana  ' })).toEqual({ displayName: 'Ana' });
