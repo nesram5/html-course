@@ -7,6 +7,8 @@ export interface OfficeProbe {
   themeId: string;
   swaps: number;
   styleTextures: string[];
+  /** Styles loaded ahead when the office starts, ready to be shown without loading. */
+  preloaded: string[];
   desks: { deskId: string; label: string; items: string[] }[];
 }
 

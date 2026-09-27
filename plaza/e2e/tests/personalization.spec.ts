@@ -101,6 +101,11 @@ test.describe('office personalization (E9)', () => {
     await expect.poll(async () => (await remoteAvatar(luis.page, ana.userId))?.alpha).toBe(1);
     const anaSeen = await remoteAvatar(luis.page, ana.userId);
     expect((await office(luis.page))?.themeId).toBe('pixel');
+    // The other styles of the template are loaded ahead, so the change only has to fade.
+    await expect
+      .poll(async () => (await office(luis.page))?.preloaded.sort(), { timeout: 15_000 })
+      .toEqual(['night', 'watercolor']);
+    const texturesBefore = (await office(luis.page))?.styleTextures.sort();
 
     // Same route in the pixel style…
     const pixelRoute = await bumpIntoTheBottomWall(luis.page, map);
@@ -127,9 +132,11 @@ test.describe('office personalization (E9)', () => {
     expect(Date.now() - started).toBeLessThan(2_000);
     await expect(settings.getByText('Estilo «Acuarela» aplicado.')).toBeVisible();
 
-    // The old textures are gone; only the new style is loaded.
+    // Nothing was downloaded for the change: the same style textures, one pair per style.
     const probe = await office(luis.page);
-    expect(probe?.styleTextures.sort()).toEqual(['theme:1:above', 'theme:1:below']);
+    expect(probe?.styleTextures.sort()).toEqual(texturesBefore);
+    expect(probe?.styleTextures).toHaveLength(6);
+    expect(probe?.preloaded.sort()).toEqual(['night', 'pixel']);
     // Nobody moved.
     expect(await tile(luis.page)).toEqual(pixelRoute.at(-1));
     expect(await remoteAvatar(luis.page, ana.userId)).toMatchObject({

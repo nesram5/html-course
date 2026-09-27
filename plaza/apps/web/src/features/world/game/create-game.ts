@@ -30,6 +30,8 @@ export interface WorldGameOptions {
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
   /** Sprite URL of a decoration object; the conventional `decor/<id>.png` by default (E9-S3). */
   readonly decorUrlOf?: (itemId: string) => string;
+  /** Style ids of the template, loaded ahead once the office is drawn. */
+  readonly listThemes?: () => Promise<readonly string[]>;
 }
 
 /** Handle of a running world: the only thing React keeps. */
@@ -69,6 +71,7 @@ export function createWorldGame(options: WorldGameOptions): WorldGame {
         office: options.office,
         resolveTheme: options.resolveTheme,
         decorUrlOf: options.decorUrlOf ?? conventionalDecorUrl,
+        ...(options.listThemes !== undefined && { listThemes: options.listThemes }),
       }),
     ],
   });

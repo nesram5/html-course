@@ -19,6 +19,8 @@ export interface WorldCanvasProps {
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
   /** Sprite URL of a desk decoration object (E9-S3). Keep it stable. */
   readonly decorUrlOf?: (itemId: string) => string;
+  /** Style ids of the template, loaded ahead so a style change is instant. Keep it stable. */
+  readonly listThemes?: () => Promise<readonly string[]>;
   /** Accessible name of the canvas region. */
   readonly label: string;
   readonly events?: EventBus;
@@ -39,6 +41,7 @@ export function WorldCanvas({
   avatarUrls,
   resolveTheme,
   decorUrlOf,
+  listThemes,
   label,
   events = worldEvents,
   store = worldStore,
@@ -67,6 +70,7 @@ export function WorldCanvas({
           avatarUrl,
           ...(avatarUrls !== undefined && { avatarUrls }),
           ...(decorUrlOf !== undefined && { decorUrlOf }),
+          ...(listThemes !== undefined && { listThemes }),
           resolveTheme,
           events,
           store,
@@ -89,6 +93,7 @@ export function WorldCanvas({
     avatarUrls,
     resolveTheme,
     decorUrlOf,
+    listThemes,
     events,
     store,
     office,

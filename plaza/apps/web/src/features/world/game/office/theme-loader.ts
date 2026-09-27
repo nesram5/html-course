@@ -56,6 +56,12 @@ export class ThemeLoader<T> {
   #queue: Promise<void> = Promise.resolve();
   #disposed = false;
   #swaps = 0;
+  /** Styles loaded ahead and not drawn, by theme id (only after {@link preload}). */
+  readonly #ready = new Map<string, DrawnTheme<T>>();
+  /** Styles being loaded ahead, by theme id. */
+  readonly #preloading = new Map<string, Promise<DrawnTheme<T> | null>>();
+  /** Once preloading, styles stay loaded after being replaced, to come back at once. */
+  #keep = false;
 
   constructor(private readonly options: ThemeLoaderOptions<T>) {
     this.#current = options.initial;
@@ -83,6 +89,49 @@ export class ThemeLoader<T> {
     return this.#queue;
   }
 
+  /**
+   * Loads the other styles of the template ahead (E9 follow-up), so a later change only has to
+   * cross-fade: well under the 2 s budget even on a slow network. Their textures stay loaded
+   * for the life of the scene, and so does every replaced style. Failures are only reported.
+   */
+  async preload(themeIds: readonly string[]): Promise<void> {
+    this.#keep = true;
+    for (const themeId of themeIds) {
+      if (this.#disposed) return;
+      if (themeId === this.themeId || this.#ready.has(themeId) || this.#preloading.has(themeId)) {
+        continue;
+      }
+      const loading = this.#loadAhead(themeId);
+      this.#preloading.set(themeId, loading);
+      const loaded = await loading;
+      this.#preloading.delete(themeId);
+      if (loaded !== null) this.#ready.set(themeId, loaded);
+    }
+  }
+
+  /** Styles loaded and ready to be shown at once (for the development probe and tests). */
+  get preloaded(): readonly string[] {
+    return [...this.#ready.keys()];
+  }
+
+  async #loadAhead(themeId: string): Promise<DrawnTheme<T> | null> {
+    const { backend, resolve, onError } = this.options;
+    try {
+      const assets = await resolve(themeId);
+      // Same pixels as the style drawn now: nothing to load, `#run` reuses the textures.
+      if (sameImages(assets, this.#current.assets)) return null;
+      const textures = await backend.load(assets);
+      if (this.#disposed) {
+        backend.release(textures);
+        return null;
+      }
+      return { assets, textures };
+    } catch (error) {
+      onError?.(error);
+      return null;
+    }
+  }
+
   /** The scene is going away: pending requests are dropped (and their textures freed). */
   dispose(): void {
     this.#disposed = true;
@@ -96,22 +145,28 @@ export class ThemeLoader<T> {
     if (this.#stale(themeId) || themeId === this.themeId) return;
     const { backend, resolve, onError } = this.options;
     try {
-      const assets = await resolve(themeId);
+      // Loaded ahead, or being loaded ahead: no second download.
+      const pending = this.#preloading.get(themeId);
+      const ahead = this.#ready.get(themeId) ?? (pending === undefined ? null : await pending);
+      if (this.#stale(themeId)) return;
+      const assets = ahead?.assets ?? (await resolve(themeId));
       if (this.#stale(themeId)) return;
       const previous = this.#current;
       if (sameImages(assets, previous.assets)) {
         this.#current = { assets, textures: previous.textures };
         return;
       }
-      const textures = await backend.load(assets);
+      const textures = ahead?.textures ?? (await backend.load(assets));
       if (this.#stale(themeId)) {
-        backend.release(textures);
+        if (ahead === null) backend.release(textures);
         return;
       }
+      this.#ready.delete(themeId);
       await backend.show(textures, previous.textures);
       this.#current = { assets, textures };
       this.#swaps++;
-      backend.release(previous.textures);
+      if (this.#keep) this.#ready.set(previous.assets.themeId, previous);
+      else backend.release(previous.textures);
     } catch (error) {
       onError?.(error);
     }

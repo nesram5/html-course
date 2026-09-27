@@ -20,8 +20,10 @@ export interface OfficeProbe {
   readonly themeId: string;
   /** Completed style changes. */
   readonly swaps: number;
-  /** Style textures alive in the scene (old ones are freed after a change). */
+  /** Style textures alive in the scene (the styles loaded ahead stay loaded). */
   readonly styleTextures: readonly string[];
+  /** Styles loaded ahead, ready to be shown without loading. */
+  readonly preloaded: readonly string[];
   readonly desks: readonly DeskProbe[];
 }
 
@@ -34,6 +36,8 @@ export interface OfficeDeps {
   readonly events: EventBus;
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
   readonly decorUrlOf: (itemId: string) => string;
+  /** Style ids of the template: loaded ahead, so a later change only cross-fades (< 2 s). */
+  readonly listThemes?: () => Promise<readonly string[]>;
 }
 
 export interface OfficeAttachment {
@@ -67,6 +71,12 @@ export function attachOffice(scene: Phaser.Scene, deps: OfficeDeps): OfficeAttac
 
   drawDesks();
   applyTheme(office.getState().themeId);
+  deps
+    .listThemes?.()
+    .then((themeIds) => loader.preload(themeIds))
+    .catch((error: unknown) => {
+      reportError(error);
+    });
   const cleanups = [
     office.subscribe((state, previous) => {
       if (state.desks !== previous.desks || state.preview !== previous.preview) drawDesks();
@@ -87,6 +97,7 @@ export function attachOffice(scene: Phaser.Scene, deps: OfficeDeps): OfficeAttac
       themeId: loader.themeId,
       swaps: loader.swaps,
       styleTextures: scene.textures.getTextureKeys().filter((key) => key.startsWith('theme')),
+      preloaded: loader.preloaded,
       desks: layer.probe(),
     }),
     dispose: () => {

@@ -46,6 +46,8 @@ export interface WorldSceneDeps {
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
   /** Sprite URL of a desk decoration object (E9-S3). */
   readonly decorUrlOf: (itemId: string) => string;
+  /** Style ids of the template, loaded ahead so a style change is instant (E9 follow-up). */
+  readonly listThemes?: () => Promise<readonly string[]>;
 }
 
 interface StressRun {

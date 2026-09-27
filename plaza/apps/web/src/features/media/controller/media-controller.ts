@@ -211,6 +211,25 @@ export class MediaController {
     return this.setCameraEnabled(!this.#wantCamera);
   }
 
+  /**
+   * Plays the hallway on another speaker during the call (bottom bar). `null` is the system
+   * default. Remembered in the store choices, so a reconnection keeps it.
+   */
+  async setAudioOutput(deviceId: string | null): Promise<void> {
+    const { store } = this.#deps;
+    const choices = store.getState().choices;
+    if (choices !== null)
+      store.getState().setChoices({ ...choices, audioOutputDeviceId: deviceId });
+    const room = this.#room;
+    if (room === null) return;
+    try {
+      await room.switchActiveDevice('audiooutput', deviceId ?? 'default');
+    } catch (error) {
+      reportError(error);
+      store.getState().patch({ deviceProblem: 'unavailable' });
+    }
+  }
+
   /** Browsers block audio until a gesture: call from a click ("Activar sonido"). */
   async startAudio(): Promise<void> {
     await this.#room?.startAudio();

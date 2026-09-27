@@ -36,6 +36,7 @@ declare global {
         themeId: string;
         swaps: number;
         styleTextures: string[];
+        preloaded: string[];
         desks: { deskId: string; label: string; items: string[] }[];
       } | null;
     };

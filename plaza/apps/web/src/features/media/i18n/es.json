@@ -28,7 +28,12 @@
     "shortcutMic": "Ctrl+D",
     "shortcutCamera": "Ctrl+E",
     "awayMuted": "Te silenciamos mientras estás ausente",
-    "deviceDenied": "Sin permiso para la cámara o el micrófono"
+    "deviceDenied": "Sin permiso para la cámara o el micrófono",
+    "speaker": "Altavoz: {{name}}",
+    "speakerChoose": "Elegir altavoz",
+    "speakerDefault": "predeterminado",
+    "speakerLabel": "Altavoz",
+    "speakerClose": "Cerrar"
   },
   "strip": {
     "label": "Personas con las que hablas",

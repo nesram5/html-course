@@ -224,4 +224,76 @@ describe('ThemeLoader (E9-S1)', () => {
 
     expect(backend.calls).toEqual(['load watercolor#1', 'release watercolor#1']);
   });
+
+  describe('preloading the styles of the template (E9 follow-up: a change in < 2 s)', () => {
+    it('loads the other styles once, then switches between them without loading again', async () => {
+      const { backend, loader } = setup();
+
+      await loader.preload(['pixel', 'night', 'watercolor', 'classic']);
+      expect(backend.calls).toEqual(['load night#1', 'load watercolor#2']);
+      expect(loader.preloaded).toEqual(['night', 'watercolor']);
+
+      await loader.apply('watercolor');
+      await loader.apply('pixel');
+      await loader.apply('night');
+
+      expect(backend.calls.slice(2)).toEqual([
+        'show watercolor#2 over pixel#0',
+        'show pixel#0 over watercolor#2',
+        'show night#1 over pixel#0',
+      ]);
+      expect(backend.released).toEqual([]);
+      expect(loader.swaps).toBe(3);
+    });
+
+    it('uses a style still loading ahead instead of downloading it twice', async () => {
+      const { backend, loader } = setup();
+      const hold = deferred<undefined>();
+      backend.holds.set('watercolor', hold);
+
+      const preloading = loader.preload(['watercolor']);
+      await vi.waitFor(() => {
+        expect(backend.calls).toEqual(['load watercolor#1']);
+      });
+      const applied = loader.apply('watercolor');
+      hold.resolve(undefined);
+      await Promise.all([preloading, applied]);
+
+      expect(backend.calls).toEqual(['load watercolor#1', 'show watercolor#1 over pixel#0']);
+      expect(loader.themeId).toBe('watercolor');
+    });
+
+    it('reports a style that cannot be loaded ahead and still loads it when asked', async () => {
+      let fail = true;
+      const { backend, loader, onError } = setup((themeId) =>
+        fail
+          ? Promise.reject(new Error('offline'))
+          : Promise.resolve(THEMES[themeId] as ThemeAssets),
+      );
+
+      await loader.preload(['watercolor']);
+      expect(onError).toHaveBeenCalledWith(new Error('offline'));
+      expect(loader.preloaded).toEqual([]);
+
+      fail = false;
+      await loader.apply('watercolor');
+      expect(backend.calls).toEqual(['load watercolor#1', 'show watercolor#1 over pixel#0']);
+    });
+
+    it('frees a style loaded ahead after the scene is gone', async () => {
+      const { backend, loader } = setup();
+      const hold = deferred<undefined>();
+      backend.holds.set('watercolor', hold);
+
+      const preloading = loader.preload(['watercolor', 'night']);
+      await vi.waitFor(() => {
+        expect(backend.calls).toEqual(['load watercolor#1']);
+      });
+      loader.dispose();
+      hold.resolve(undefined);
+      await preloading;
+
+      expect(backend.calls).toEqual(['load watercolor#1', 'release watercolor#1']);
+    });
+  });
 });
