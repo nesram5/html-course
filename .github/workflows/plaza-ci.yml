@@ -2,16 +2,11 @@
 # E2E runs on main and on PRs labelled "e2e".
 name: Plaza CI
 
+# The whole repository is the app: every pull request and every push to main runs it.
 on:
   pull_request:
-    paths:
-      - "plaza/**"
-      - ".github/workflows/plaza-ci.yml"
   push:
     branches: [main]
-    paths:
-      - "plaza/**"
-      - ".github/workflows/plaza-ci.yml"
 
 concurrency:
   group: plaza-ci-${{ github.ref }}
@@ -20,12 +15,8 @@ concurrency:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: plaza
-
 env:
-  HUSKY: "0"
+  HUSKY: '0'
   TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plaza_test
 
 jobs:
@@ -52,19 +43,22 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: plaza/package.json
+          package_json_file: package.json
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: plaza/.nvmrc
+          node-version-file: .nvmrc
           cache: pnpm
-          cache-dependency-path: plaza/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Format
         run: pnpm format:check
+
+      - name: Documentation links
+        run: pnpm check:links
 
       - name: Lint
         run: pnpm lint
@@ -118,13 +112,13 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: plaza/package.json
+          package_json_file: package.json
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: plaza/.nvmrc
+          node-version-file: .nvmrc
           cache: pnpm
-          cache-dependency-path: plaza/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -142,5 +136,5 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: plaza/e2e/playwright-report
+          path: e2e/playwright-report
           retention-days: 7

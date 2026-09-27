@@ -18,20 +18,20 @@ name: Plaza deploy
 
 on:
   workflow_run:
-    workflows: ["Plaza CI"]
+    workflows: ['Plaza CI']
     types: [completed]
     branches: [main]
   push:
-    tags: ["v0.*"]
+    tags: ['v0.*']
   workflow_dispatch:
     inputs:
       environment:
-        description: "Where to deploy"
+        description: 'Where to deploy'
         type: choice
         options: [staging, beta]
         required: true
       tag:
-        description: "Existing image tag to deploy (e.g. v0.2.0 or sha-abc1234) — rollbacks"
+        description: 'Existing image tag to deploy (e.g. v0.2.0 or sha-abc1234) — rollbacks'
         type: string
         required: true
 
@@ -109,8 +109,8 @@ jobs:
       - name: Server image
         uses: docker/build-push-action@v6
         with:
-          context: plaza
-          file: plaza/apps/server/Dockerfile
+          context: .
+          file: apps/server/Dockerfile
           push: true
           build-args: |
             PLAZA_VERSION=${{ steps.meta.outputs.tag }}
@@ -124,8 +124,8 @@ jobs:
       - name: Web image
         uses: docker/build-push-action@v6
         with:
-          context: plaza
-          file: plaza/apps/web/Dockerfile
+          context: .
+          file: apps/web/Dockerfile
           push: true
           build-args: |
             VITE_APP_VERSION=${{ steps.meta.outputs.tag }}
@@ -161,7 +161,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-          sparse-checkout: plaza/infra/app
+          sparse-checkout: infra/app
           fetch-depth: ${{ github.event_name == 'workflow_dispatch' && '0' || '1' }}
 
       # A rollback deploys the compose file and scripts OF THAT VERSION with its images: main's
@@ -185,8 +185,16 @@ jobs:
             echo "$INPUT_TAG is not a commit of main." >&2
             exit 1
           fi
-          git checkout "$commit" -- plaza/infra/app
-          echo "Infra files of $INPUT_TAG ($commit)"
+          # Versions from before the app moved to the repository root keep them in plaza/infra/app.
+          if git cat-file -e "$commit:infra/app/deploy.sh" 2>/dev/null; then
+            src=infra/app strip=2
+          else
+            src=plaza/infra/app strip=3
+          fi
+          rm -rf infra/app && mkdir -p infra/app
+          set -o pipefail
+          git archive "$commit" "$src" | tar -x -C infra/app --strip-components="$strip"
+          echo "Infra files of $INPUT_TAG ($commit, $src)"
 
       - name: Images to deploy
         id: images
@@ -228,7 +236,7 @@ jobs:
           target="$APP_SSH_USER@$APP_SSH_HOST"
           ssh_opts=(-i "$HOME/.ssh/plaza_deploy" -o StrictHostKeyChecking=yes)
           # The compose file and scripts of this release; .env stays on the VM.
-          scp "${ssh_opts[@]}" plaza/infra/app/docker-compose.yml plaza/infra/app/backup.sh plaza/infra/app/deploy.sh "$target:$dir/"
+          scp "${ssh_opts[@]}" infra/app/docker-compose.yml infra/app/backup.sh infra/app/deploy.sh "$target:$dir/"
           # shellcheck disable=SC2029 # the values are expanded here on purpose
           printf '%s' "$REGISTRY_TOKEN" | ssh "${ssh_opts[@]}" "$target" "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
           # shellcheck disable=SC2029

@@ -3,7 +3,7 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: /plaza
+    directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -16,8 +16,8 @@ updates:
 
   - package-ecosystem: docker
     directories:
-      - /plaza/apps/server
-      - /plaza/apps/web
+      - /apps/server
+      - /apps/web
     schedule:
       interval: weekly
     commit-message:
@@ -29,6 +29,6 @@ updates:
       interval: weekly
     groups:
       actions:
-        patterns: ["*"]
+        patterns: ['*']
     commit-message:
       prefix: ci
