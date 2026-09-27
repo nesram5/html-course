@@ -127,10 +127,11 @@ export function SpacePage() {
           label={t('canvas.label', { space: detail.name })}
         />
         <ConnectionBanner connection={connection} session={session} />
-        <SpaceHud spaceId={detail.id} displayName={user.displayName} roomNames={roomNames} />
         <div className="absolute right-3 bottom-3">
           <WorldToolbar />
         </div>
+        {/* After the map controls: Tab goes canvas → map controls → bottom bar → panel. */}
+        <SpaceHud spaceId={detail.id} displayName={user.displayName} roomNames={roomNames} />
       </div>
     </main>
   );

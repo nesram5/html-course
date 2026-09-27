@@ -1,3 +1,5 @@
+import { performance } from 'node:perf_hooks';
+
 import {
   API_PATHS,
   apiPath,
@@ -65,7 +67,15 @@ describe('chat module: space chat and reactions (E7-S3, E7-S4)', () => {
       const me = await harness.enter(ana, spaceId);
       const other = await harness.enter(luis, spaceId);
 
+      const sentAt = performance.now();
+      const delivered = new Promise<number>((resolve) => {
+        other.client.once('chat:message', () => {
+          resolve(performance.now());
+        });
+      });
       const ack = await send(me.client, '  Hola equipo  ');
+      // Broadcast at once, not on the next tick: well under the 300 ms of E7-S3.
+      expect((await delivered) - sentAt).toBeLessThan(300);
       await harness.barrier(spaceId, me.client, other.client);
 
       if (!ack.ok) throw new Error(ack.error.code);

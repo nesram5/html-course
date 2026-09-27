@@ -64,7 +64,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
   private readonly label: Phaser.GameObjects.Text;
   private readonly dot: Phaser.GameObjects.Arc;
   private reaction: Phaser.GameObjects.Text | null = null;
-  private reactionTimer: Phaser.Time.TimerEvent | null = null;
+  private reactionTimer: ReturnType<typeof setTimeout> | null = null;
   private presence: EffectivePresence = 'available';
   private textureKey: string;
   private motionDir: Direction | null = null;
@@ -113,9 +113,12 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
     return this;
   }
 
-  /** Shows `emoji` over the name for `durationMs` (E7-S4); a new reaction replaces the current one. */
+  /**
+   * Shows `emoji` over the name for `durationMs` of wall-clock time (E7-S4; the scene clock slows
+   * down in background tabs); a new reaction replaces the current one.
+   */
   showReaction(emoji: string, durationMs: number): this {
-    this.reactionTimer?.remove();
+    if (this.reactionTimer !== null) clearTimeout(this.reactionTimer);
     if (this.reaction === null) {
       this.reaction = this.scene.add
         .text(0, 0, emoji, REACTION_STYLE)
@@ -126,9 +129,9 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
       this.reaction.setText(emoji);
     }
     this.placeOverlays();
-    this.reactionTimer = this.scene.time.delayedCall(durationMs, () => {
+    this.reactionTimer = setTimeout(() => {
       this.clearReaction();
-    });
+    }, durationMs);
     return this;
   }
 
@@ -215,7 +218,7 @@ export class AvatarSprite extends Phaser.GameObjects.Container {
   }
 
   private clearReaction(): void {
-    this.reactionTimer?.remove();
+    if (this.reactionTimer !== null) clearTimeout(this.reactionTimer);
     this.reactionTimer = null;
     this.reaction?.destroy();
     this.reaction = null;

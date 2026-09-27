@@ -68,7 +68,7 @@ export class WorldScene extends Phaser.Scene {
     away: false,
   };
   /** "Localizar" in progress (E7-S2): who the camera follows and when it comes back. */
-  private locating: { userId: string; timer: Phaser.Time.TimerEvent } | null = null;
+  private locating: { userId: string; timer: ReturnType<typeof setTimeout> } | null = null;
   private readonly cleanups: (() => void)[] = [];
 
   constructor(private readonly deps: WorldSceneDeps) {
@@ -245,23 +245,26 @@ export class WorldScene extends Phaser.Scene {
     return this.remote?.spriteOf(userId);
   }
 
-  /** "Localizar" (E7-S2): the camera glides to the person, stays 3 s, then glides back. */
+  /**
+   * "Localizar" (E7-S2): the camera glides to the person, stays 3 s (wall clock: the scene clock
+   * slows down in background tabs), then glides back.
+   */
   private locate(userId: string): void {
     const target = this.spriteOf(userId);
     if (target === undefined || this.avatar === null) return;
     this.stopLocating();
     this.cameras.main.startFollow(target, true, CAMERA_LERP, CAMERA_LERP);
-    const timer = this.time.delayedCall(LOCATE_MS, () => {
+    const timer = setTimeout(() => {
       this.locating = null;
       if (this.avatar !== null) {
         this.cameras.main.startFollow(this.avatar, true, CAMERA_LERP, CAMERA_LERP);
       }
-    });
+    }, LOCATE_MS);
     this.locating = { userId, timer };
   }
 
   private stopLocating(): void {
-    this.locating?.timer.remove();
+    if (this.locating !== null) clearTimeout(this.locating.timer);
     this.locating = null;
   }
 
