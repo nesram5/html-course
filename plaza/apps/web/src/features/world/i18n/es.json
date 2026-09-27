@@ -1,1 +1,24 @@
-{}
+{
+  "page": {
+    "loading": "Entrando en el espacio…",
+    "errorTitle": "No pudimos abrir este espacio",
+    "retry": "Reintentar",
+    "backHome": "Volver al inicio",
+    "leave": "Salir",
+    "hallway": "En el pasillo",
+    "inRoom": "En {{name}}"
+  },
+  "canvas": {
+    "label": "Mapa de {{space}}. Camina con las flechas o WASD; + y - cambian el zoom.",
+    "loading": "Cargando la oficina…",
+    "loadError": "No se pudieron cargar las imágenes de la oficina.",
+    "retry": "Reintentar"
+  },
+  "toolbar": {
+    "label": "Controles del mapa",
+    "center": "Centrar en mí",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoom": "{{zoom}}×"
+  }
+}
