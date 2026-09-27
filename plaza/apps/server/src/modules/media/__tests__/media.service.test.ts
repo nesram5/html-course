@@ -45,17 +45,36 @@ describe('MediaService', () => {
     expect(media.tokens.map((token) => token.canPublish)).toEqual([false, true]);
   });
 
-  it('passes webhook activity in a space media room to the listener, and ignores other rooms', () => {
-    const service = new MediaService({ members, media: new FakeMediaProvider() });
+  it('passes webhook activity of a member in a space media room to the listener, and ignores other rooms', async () => {
+    const media = new FakeMediaProvider();
+    const service = new MediaService({ members, media });
     const heard: [string, string][] = [];
     service.onParticipantActive((spaceId, userId) => heard.push([spaceId, userId]));
 
-    service.participantActive('space_space-1', 'user-ana');
-    service.participantActive('space_', 'user-ana');
-    service.participantActive('lobby', 'user-ana');
-    service.participantActive('space_space-1', '');
+    await service.participantActive('space_space-1', 'user-ana');
+    await service.participantActive('space_', 'user-ana');
+    await service.participantActive('lobby', 'user-ana');
+    await service.participantActive('space_space-1', '');
 
     expect(heard).toEqual([['space-1', 'user-ana']]);
+    expect(media.removals).toEqual([]);
+  });
+
+  it('drops from the room someone who connects with a token kept after leaving the space (E2-S6)', async () => {
+    const media = new FakeMediaProvider();
+    const service = new MediaService({ members, media });
+    const heard: string[] = [];
+    service.onParticipantActive((_spaceId, userId) => heard.push(userId));
+
+    // Luis was removed (or deleted his account): each connection or publication drops him again.
+    await service.participantActive('space_space-1', 'user-luis');
+    await service.participantActive('space_space-1', 'user-luis');
+
+    expect(media.removals).toEqual([
+      { roomName: 'space_space-1', identity: 'user-luis' },
+      { roomName: 'space_space-1', identity: 'user-luis' },
+    ]);
+    expect(heard).toEqual([]);
   });
 
   it('entering a meeting room mutes the tracks and revokes publishing; leaving grants it back', async () => {

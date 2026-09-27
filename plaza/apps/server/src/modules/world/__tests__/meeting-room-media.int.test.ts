@@ -279,6 +279,59 @@ describe('meeting rooms isolate the media of a modified client (E6-S3, RNF-06)',
     });
   }, 30_000);
 
+  it('someone removed from the space who connects again with the token they kept is dropped on the webhook (E2-S6)', async () => {
+    await harness.enter(luis, spaceId);
+    await harness.enter(ana, spaceId);
+    // Luis keeps a copy of his token (valid for 10 min) before the owner removes him.
+    const response = await harness.testApp.app.inject({
+      method: 'POST',
+      url: apiPath(API_PATHS.mediaToken, { spaceId }),
+      headers: luis.headers,
+    });
+    const { url, token } = MediaTokenResponseSchema.parse(response.json());
+    const anaMedia = await connectMedia(ana);
+    const removed = await harness.testApp.app.inject({
+      method: 'DELETE',
+      url: apiPath(API_PATHS.member, { spaceId, userId: luis.user.id }),
+      headers: ana.headers,
+    });
+    expect(removed.statusCode).toBe(204);
+
+    // His modified client connects again with it: LiveKit accepts the token...
+    const luisMedia = new Room();
+    rooms.push(luisMedia);
+    let droppedAt: number | null = null;
+    luisMedia.on(RoomEvent.Disconnected, () => {
+      droppedAt ??= Date.now();
+    });
+    await luisMedia.connect(url, token, { autoSubscribe: true, dynacast: false });
+    await waitFor('Ana to see Luis connected again', () =>
+      anaMedia.remoteParticipants.has(luis.user.id) ? true : undefined,
+    );
+
+    // ...and the media server reports the join (signed webhook, as the media VM does): he is
+    // dropped from the room at once.
+    const started = Date.now();
+    const call = await signedWebhook(livekit, {
+      event: 'participant_joined',
+      room: { name: mediaRoomName(spaceId) },
+      participant: { identity: luis.user.id },
+    });
+    const delivered = await harness.testApp.app.inject({
+      method: 'POST',
+      url: API_PATHS.mediaWebhook,
+      headers: call.headers,
+      payload: call.payload,
+    });
+    expect(delivered.statusCode).toBe(204);
+    const dropped = await waitFor('LiveKit to drop Luis', () => droppedAt ?? undefined);
+    expect(dropped - started).toBeLessThan(500);
+    const identities = (await admin.listParticipants(mediaRoomName(spaceId))).map(
+      (participant) => participant.identity,
+    );
+    expect(identities).not.toContain(luis.user.id);
+  }, 30_000);
+
   it('a token issued inside a room does not allow publishing', async () => {
     const luisWorld = await harness.enter(luis, spaceId);
     harness.world.store.get(spaceId)?.place(luis.user.id, DOOR);

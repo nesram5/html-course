@@ -68,14 +68,22 @@ export class MediaService {
 
   /**
    * The media server says `identity` joined or published a track in `roomName` (its signed
-   * webhook, E6-S3). Someone who fetched a token in the hallway may connect only after walking
-   * into a meeting room, where muting and revoking found nobody to act on: the listener isolates
-   * them now. Rooms that are not a space's media room are ignored.
+   * webhook, E6-S3). Rooms that are not a space's media room are ignored.
+   * - Someone who is no longer a member (removed from the space, E2-S6, or account deleted) is
+   *   connecting with a token they kept (valid up to {@link MEDIA_TOKEN_TTL_SECONDS}): they are
+   *   dropped from the room at once, every time they try.
+   * - Someone who fetched a token in the hallway may connect only after walking into a meeting
+   *   room, where muting and revoking found nobody to act on: the listener isolates them now.
+   * Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit fails to drop them.
    */
-  participantActive(roomName: string, identity: string): void {
+  async participantActive(roomName: string, identity: string): Promise<void> {
     if (!roomName.startsWith(MEDIA_ROOM_PREFIX) || identity === '') return;
     const spaceId = roomName.slice(MEDIA_ROOM_PREFIX.length);
     if (spaceId === '' || mediaRoomName(spaceId) !== roomName) return;
+    if ((await this.#members.findMemberDisplayName(spaceId, identity)) === null) {
+      await this.removeParticipant(spaceId, identity);
+      return;
+    }
     this.#participantActive(spaceId, identity);
   }
 
@@ -120,7 +128,9 @@ export class MediaService {
 
   /**
    * Disconnects a member removed from the space (E2-S6) from the space's media room, so they stop
-   * hearing the hallway at once. Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit fails.
+   * hearing the hallway at once; if they connect again with the token they kept, the webhook
+   * drops them again ({@link participantActive}). Rejects with `MEDIA_PROVIDER_ERROR` if LiveKit
+   * fails.
    */
   removeParticipant(spaceId: string, userId: string): Promise<void> {
     return this.#media.removeParticipant({ roomName: mediaRoomName(spaceId), identity: userId });

@@ -48,8 +48,9 @@ export function registerMediaRoutes(
  * E6-S3: webhook of the media server (`POST /api/media/livekit-webhook`). No session: LiveKit
  * signs each call with the API secret (a JWT in `Authorization` holding the SHA-256 of the raw
  * body), and anything unsigned or altered gets 401. On `participant_joined` and
- * `track_published` the person is isolated again if they stand in a meeting room. It can only
- * ever restrict publishing, so a replayed call does no harm.
+ * `track_published` someone who is no longer a member of the space is dropped from the room, and
+ * a member is isolated again if they stand in a meeting room. It can only ever restrict, so a
+ * replayed call does no harm.
  */
 export async function registerMediaWebhook(
   app: FastifyInstance,
@@ -84,7 +85,7 @@ export async function registerMediaWebhook(
           identity !== undefined &&
           roomName !== undefined
         ) {
-          media.participantActive(roomName, identity);
+          await media.participantActive(roomName, identity);
         }
         return reply.code(204).send();
       },

@@ -14,7 +14,9 @@ docker compose up -d
 - `turn.<domain>:443` (TCP) → Caddy (TLS) → LiveKit TURN on `:5349`; TURN/UDP on UDP 443.
 - Media: UDP 50000–60000 and ICE/TCP 7881.
 - Webhooks (E6-S3): LiveKit POSTs signed events to `<APP_URL>/api/media/livekit-webhook`; the
-  app isolates again anyone who connects or publishes from inside a meeting room.
+  app isolates again anyone who connects or publishes from inside a meeting room, and drops
+  anyone who is no longer a member of the space (removed or account deleted) and connects with
+  a token they kept.
 
 Operations (sizing, monitoring, upgrades, fallback to LiveKit Cloud) are in
 [`docs/runbook.md`](../../docs/runbook.md); the one-page guide for pilots' IT is

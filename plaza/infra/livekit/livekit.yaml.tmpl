@@ -48,7 +48,8 @@ logging:
 
 # Signed webhooks to the app server (E6-S3): on "participant_joined" and "track_published" the
 # app isolates again someone who connected from inside a meeting room with a token fetched in the
-# hallway. Signed with the secret of this API key; the app refuses anything else (401).
+# hallway, and drops someone no longer a member of the space who reuses a token they kept.
+# Signed with the secret of this API key; the app refuses anything else (401).
 webhook:
   api_key: ${LIVEKIT_API_KEY}
   urls:
