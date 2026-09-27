@@ -37,6 +37,11 @@ export const PROTOCOL_VERSION = 1;
 export const MOVE_RATE_PER_SEC = 10;
 export const CHAT_RATE_PER_SEC = 5;
 export const REACTION_RATE_PER_SEC = 3;
+/** `player:status` + `player:away` per socket: bursts of 10, 5 per second sustained (E7-S1). */
+export const PRESENCE_RATE_PER_SEC = 5;
+/** `space:join` per person: bursts of 5, then one every 2 s (5 per 10 s, E4 follow-up). */
+export const SPACE_JOIN_BURST = 5;
+export const SPACE_JOIN_WINDOW_MS = 10_000;
 
 /** How long a reaction stays over the avatar (RF-14). */
 export const REACTION_DURATION_MS = 3000;
