@@ -85,6 +85,44 @@ test.describe('multiplayer in real time (E4)', () => {
     await luis.context.close();
   });
 
+  test('three people walk in the same office and each sees the other two (Hito M2)', async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000); // three offices to draw
+    const { ana, luis, space } = await anaAndLuis(browser);
+    const eva = await person(browser, `eva-${randomUUID().slice(0, 8)}@acme.com`, 'Eva');
+    await joinByInvite(eva.context.request, space);
+    const people = [ana, luis, eva];
+    for (const someone of people) await openOffice(someone.page, space.slug);
+
+    // Everyone walks up to three tiles up, one person after the other.
+    const ends = new Map<string, { x: number; y: number }>();
+    for (const [index, walker] of people.entries()) {
+      const canvas = walker.page.getByTestId('world-canvas');
+      await canvas.focus();
+      for (let step = 1; step <= index + 1; step++) {
+        const before = await tile(walker.page);
+        await walker.page.keyboard.press('ArrowUp');
+        await expect(canvas).toHaveAttribute('data-tile-y', String(before.y - 1));
+      }
+      ends.set(walker.userId, await tile(walker.page));
+    }
+
+    for (const viewer of people) {
+      for (const other of people) {
+        if (other === viewer) continue;
+        await expect
+          .poll(async () => {
+            const seen = await remoteAvatar(viewer.page, other.userId);
+            return seen && { x: seen.tileX, y: seen.tileY, alpha: seen.alpha };
+          })
+          .toEqual({ ...ends.get(other.userId), alpha: 1 });
+      }
+    }
+
+    for (const someone of people) await someone.context.close();
+  });
+
   test('a short network cut: "Reconectando…", semi-transparent for others, back in place', async ({
     browser,
   }) => {
