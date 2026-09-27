@@ -27,6 +27,17 @@ describe('loadConfig', () => {
       apiSecret: 'secret',
     });
     expect(config.version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(config.realtime).toEqual({ maxPlayersPerSpace: null });
+  });
+
+  it('reads an optional cap of people per space (tests and load tests)', () => {
+    expect(loadConfig(testEnv({ MAX_PLAYERS_PER_SPACE: '2' })).realtime.maxPlayersPerSpace).toBe(2);
+    expect(loadConfig(testEnv({ MAX_PLAYERS_PER_SPACE: '' })).realtime.maxPlayersPerSpace).toBe(
+      null,
+    );
+    expect(configError(testEnv({ MAX_PLAYERS_PER_SPACE: '0' })).variables).toEqual([
+      'MAX_PLAYERS_PER_SPACE',
+    ]);
   });
 
   it('names every missing variable', () => {

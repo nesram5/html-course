@@ -8,7 +8,13 @@ import {
   type MapsManifest,
   type ManifestTemplate,
 } from '@plaza/maps';
-import { parseMap, type AvatarDto, type MapTemplateDto, type ThemeDto } from '@plaza/shared';
+import {
+  parseMap,
+  type AvatarDto,
+  type MapTemplateDto,
+  type ThemeDto,
+  type WorldMap,
+} from '@plaza/shared';
 
 /** Public URL prefix under which the server serves the maps package (see `app.ts`). */
 export const MAP_ASSETS_PREFIX = '/assets/maps';
@@ -33,6 +39,11 @@ export interface MapsCatalog {
   thumbnailUrl(templateId: string, themeId: string): string | null;
   /** Meeting rooms of the template map. Throws when the template or its map is invalid. */
   roomAreas(templateId: string): Promise<readonly MapRoomArea[]>;
+  /**
+   * The whole parsed map of the template (collisions, rooms, spawns, desks), parsed once and
+   * cached. Throws when the template or its map is invalid. Used by the world runtime (E4-S2).
+   */
+  worldMap(templateId: string): Promise<WorldMap>;
   listAvatars(): AvatarDto[];
   hasAvatar(avatarId: string): boolean;
 }
@@ -48,14 +59,6 @@ export interface ManifestCatalogFiles {
   readJson(relativePath: string): unknown;
 }
 
-/** What the catalog needs from a parsed map (a subset of `WorldMap`). */
-export interface ParsedMapInfo {
-  width: number;
-  height: number;
-  rooms: readonly MapRoomArea[];
-  desks: readonly unknown[];
-}
-
 interface ParsedTemplate {
   width: number;
   height: number;
@@ -67,12 +70,13 @@ interface ParsedTemplate {
 export class ManifestMapsCatalog implements MapsCatalog {
   readonly #templates: Map<string, ManifestTemplate>;
   readonly #parsed = new Map<string, ParsedTemplate>();
+  readonly #maps = new Map<string, WorldMap>();
 
   constructor(
     private readonly manifest: MapsManifest,
     private readonly files: ManifestCatalogFiles,
     /** Tiled parser, `parseMap` of `@plaza/shared` by default. */
-    private readonly parse: (tmj: unknown) => ParsedMapInfo = parseMap,
+    private readonly parse: (tmj: unknown) => WorldMap = parseMap,
   ) {
     this.#templates = new Map(manifest.templates.map((template) => [template.id, template]));
   }
@@ -94,10 +98,18 @@ export class ManifestMapsCatalog implements MapsCatalog {
     return `${MAP_ASSETS_PREFIX}/templates/${template.dir}/themes/${themeId}`;
   }
 
+  #worldMap(template: ManifestTemplate): WorldMap {
+    const cached = this.#maps.get(template.id);
+    if (cached !== undefined) return cached;
+    const map = this.parse(this.files.readJson(`templates/${template.dir}/map.tmj`));
+    this.#maps.set(template.id, map);
+    return map;
+  }
+
   #parsedTemplate(template: ManifestTemplate): ParsedTemplate {
     const cached = this.#parsed.get(template.id);
     if (cached !== undefined) return cached;
-    const map = this.parse(this.files.readJson(`templates/${template.dir}/map.tmj`));
+    const map = this.#worldMap(template);
     const parsed: ParsedTemplate = {
       width: map.width,
       height: map.height,
@@ -170,6 +182,18 @@ export class ManifestMapsCatalog implements MapsCatalog {
     }
     try {
       return Promise.resolve(this.#parsedTemplate(template).rooms);
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  worldMap(templateId: string): Promise<WorldMap> {
+    const template = this.#template(templateId);
+    if (template === undefined) {
+      return Promise.reject(new Error(`Unknown map template "${templateId}"`));
+    }
+    try {
+      return Promise.resolve(this.#worldMap(template));
     } catch (error) {
       return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }

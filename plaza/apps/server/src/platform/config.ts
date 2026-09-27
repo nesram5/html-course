@@ -43,6 +43,13 @@ const EnvSchema = z
     /** Max HTTP requests per minute and client IP (@fastify/rate-limit). */
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
 
+    /**
+     * People connected at once per space; `MAX_PLAYERS_PER_SPACE` of `@plaza/shared` (RN-06)
+     * when unset. Lowered by tests. (Not imported here: the test global setup loads this file
+     * without the workspace source condition.)
+     */
+    MAX_PLAYERS_PER_SPACE: optional(z.coerce.number().int().positive()),
+
     SENTRY_DSN: optional(z.url()),
     SENTRY_ENVIRONMENT: optional(z.string().min(1)),
   })
@@ -96,6 +103,7 @@ const ConfigSchema = EnvSchema.transform((env) => ({
   authTestLogin: env.AUTH_TEST_LOGIN,
   mapsDir: env.MAPS_DIR ?? null,
   rateLimitPerMinute: env.RATE_LIMIT_PER_MINUTE,
+  realtime: { maxPlayersPerSpace: env.MAX_PLAYERS_PER_SPACE ?? null },
   sentry:
     env.SENTRY_DSN !== undefined
       ? { dsn: env.SENTRY_DSN, environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV }

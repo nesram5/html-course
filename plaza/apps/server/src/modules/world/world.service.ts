@@ -1,0 +1,315 @@
+import { performance } from 'node:perf_hooks';
+
+import {
+  PROTOCOL_VERSION,
+  RECONNECT_GRACE_MS,
+  TICK_MS,
+  type KickReason,
+  type PlayerMove,
+  type SpaceSnapshot,
+  type WorldDelta,
+} from '@plaza/shared';
+
+import type { ErrorReporter } from '../../platform/error-reporter.js';
+import { AppError } from '../../platform/errors.js';
+import type { Logger } from '../../platform/logger.js';
+import type { MapsCatalog } from '../../platform/maps-catalog.js';
+import type { InMemoryRealtimeMetrics } from '../../platform/metrics.js';
+import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
+import type { CancelTimer, Timers } from '../../platform/timers.js';
+import type { TokenBucket } from '../../platform/token-bucket.js';
+import { socketUserId } from '../auth/index.js';
+import type { MediaService } from '../media/index.js';
+import type { SpacesService } from '../spaces/index.js';
+import { SpaceRuntime } from './space-runtime.js';
+import { InMemorySpaceStateStore, type SpaceStateStore } from './space-state-store.js';
+import type { WorldRepository } from './world.repository.js';
+
+/** Socket.IO room with every connection of a space. */
+export function spaceRoom(spaceId: string): string {
+  return `space:${spaceId}`;
+}
+
+export interface WorldServiceDeps {
+  io: PlazaIo;
+  repository: WorldRepository;
+  spaces: SpacesService;
+  maps: MapsCatalog;
+  media: MediaService;
+  metrics: InMemoryRealtimeMetrics;
+  timers: Timers;
+  logger: Logger;
+  reporter: ErrorReporter;
+  /** RN-06: `MAX_PLAYERS_PER_SPACE` (lowered by tests through the config). */
+  maxPlayersPerSpace: number;
+}
+
+/**
+ * The part of a delta a given person receives: their own steps are left out (they already know
+ * them), and so are their own arrival and the arrivals before it in the same tick (their
+ * snapshot already had them; `joined` keeps arrival order). `left` and `changed` go to everyone:
+ * `changed` includes their own `roomId`, computed by the server.
+ */
+export function deltaFor(delta: WorldDelta, userId: string): WorldDelta | null {
+  const moved = delta.moved.filter((entry) => entry.userId !== userId);
+  const ownArrival = delta.joined.findIndex((player) => player.userId === userId);
+  const joined = ownArrival === -1 ? delta.joined : delta.joined.slice(ownArrival + 1);
+  const { left, changed } = delta;
+  if (moved.length + joined.length + left.length + changed.length === 0) return null;
+  return { moved, joined, left, changed };
+}
+
+/**
+ * Realtime world use cases (E4): entering a space, movement, the tick, reconnection grace and
+ * removal of kicked people. One {@link SpaceRuntime} per space in a {@link SpaceStateStore}.
+ */
+export class WorldService {
+  readonly store: SpaceStateStore;
+  readonly #tickers = new Map<SpaceRuntime, CancelTimer>();
+  /** Pending "left" of disconnected people, by `spaceId:userId` (E4-S6). */
+  readonly #graceTimers = new Map<string, CancelTimer>();
+
+  constructor(private readonly deps: WorldServiceDeps) {
+    this.store = new InMemorySpaceStateStore({
+      timers: deps.timers,
+      load: (spaceId) => this.#load(spaceId),
+      onLoad: (runtime) => {
+        this.#tickers.set(
+          runtime,
+          deps.timers.every(TICK_MS, () => {
+            this.tick(runtime);
+          }),
+        );
+      },
+      onUnload: (runtime) => {
+        this.#tickers.get(runtime)?.();
+        this.#tickers.delete(runtime);
+        deps.metrics.setConnected(runtime.spaceId, 0);
+      },
+    });
+  }
+
+  // ── space:join (E4-S1) ──────────────────────────────────────────────────
+
+  /**
+   * Enters the space: members only (`NOT_A_MEMBER`), at most `maxPlayersPerSpace` people
+   * (`SPACE_FULL`), one avatar per person (a second tab replaces the first with
+   * `space:kicked { SESSION_REPLACED }`), and someone reconnecting within the grace period gets
+   * their avatar back where it was (E4-S6). Returns the `space:snapshot`.
+   */
+  async join(socket: PlazaSocket, spaceId: string): Promise<SpaceSnapshot> {
+    const userId = socketUserId(socket);
+    const member = await this.deps.repository.findMember(spaceId, userId);
+    if (member === null) throw new AppError('NOT_A_MEMBER', 'Space not found');
+    const space = await this.deps.spaces.spaceWithRooms(spaceId);
+    const [rooms, desks, runtime] = await Promise.all([
+      this.deps.spaces.rooms(space),
+      this.deps.repository.occupiedDesks(spaceId),
+      this.store.getOrLoad(spaceId),
+    ]);
+
+    // Synchronous from here on: no other event interleaves with the checks below.
+    if (!socket.connected) {
+      this.store.unloadIfEmpty(spaceId);
+      throw new AppError('NOT_IN_SPACE', 'The connection closed while joining');
+    }
+    if (socket.data.spaceId !== undefined && socket.data.spaceId !== spaceId) {
+      this.leave(socket);
+    }
+    const previousSocketId = runtime.socketOf(userId);
+    if (runtime.has(userId)) {
+      this.#cancelGrace(spaceId, userId);
+      runtime.reconnect(userId, socket.id);
+      if (previousSocketId !== null && previousSocketId !== socket.id) {
+        this.#replace(previousSocketId);
+      }
+    } else {
+      if (runtime.size >= this.deps.maxPlayersPerSpace) {
+        this.store.unloadIfEmpty(spaceId);
+        throw new AppError('SPACE_FULL', 'The space is full');
+      }
+      const { deskId, ...profile } = member;
+      runtime.join(
+        { ...profile, away: false, inConversation: false },
+        runtime.spawnFor(deskId),
+        socket.id,
+      );
+    }
+    socket.data.spaceId = spaceId;
+    void socket.join(spaceRoom(spaceId));
+    this.#updateConnected(runtime);
+
+    const self = runtime.get(userId);
+    if (self === undefined) throw new Error('The player vanished while joining');
+    return {
+      v: PROTOCOL_VERSION,
+      spaceId,
+      mapTemplateId: space.mapTemplateId,
+      themeId: space.themeId,
+      self,
+      players: runtime.players().filter((player) => player.userId !== userId),
+      rooms,
+      desks,
+    };
+  }
+
+  /** The socket leaves its space at once, without grace (it joined another space). */
+  leave(socket: PlazaSocket): void {
+    const { spaceId, userId } = socket.data;
+    if (spaceId === undefined || userId === undefined) return;
+    void socket.leave(spaceRoom(spaceId));
+    delete socket.data.spaceId;
+    const runtime = this.store.get(spaceId);
+    if (runtime?.socketOf(userId) !== socket.id) return;
+    this.#remove(runtime, userId);
+  }
+
+  // ── player:move (E4-S3) ─────────────────────────────────────────────────
+
+  /**
+   * One step: rate-limited (10/s) and validated against the map. Rejected steps are answered
+   * with `player:correct` (the position the server keeps); accepted ones reach the others on the
+   * next tick. Entering a meeting room mutes the hallway media server-side (E6-S3).
+   */
+  move(socket: PlazaSocket, bucket: TokenBucket, move: PlayerMove): void {
+    const { runtime, userId } = this.#joinedRuntime(socket);
+    const current = runtime.get(userId);
+    if (current === undefined) throw new AppError('NOT_IN_SPACE');
+    if (!bucket.tryTake()) {
+      socket.emit('player:correct', { x: current.x, y: current.y });
+      return;
+    }
+    const result = runtime.move(userId, move);
+    if (!result.ok) {
+      socket.emit('player:correct', { x: result.x, y: result.y });
+      return;
+    }
+    if (result.roomChanged !== undefined && result.roomChanged.roomId !== null) {
+      this.#background('mute on room entry', runtime.spaceId, () =>
+        this.deps.media.muteParticipantTracks(runtime.spaceId, userId),
+      );
+    }
+  }
+
+  // ── Disconnection and kicks (E4-S6, E2-S6) ──────────────────────────────
+
+  /**
+   * Connection lost: the avatar stays, flagged `reconnecting`, and leaves only if the person
+   * does not come back within {@link RECONNECT_GRACE_MS}. Replaced or kicked sockets are ignored.
+   */
+  disconnected(socket: PlazaSocket): void {
+    const { spaceId, userId } = socket.data;
+    if (spaceId === undefined || userId === undefined) return;
+    const runtime = this.store.get(spaceId);
+    if (runtime?.socketOf(userId) !== socket.id) return;
+    runtime.disconnect(userId);
+    this.#updateConnected(runtime);
+    this.#cancelGrace(spaceId, userId);
+    this.#graceTimers.set(
+      `${spaceId}:${userId}`,
+      this.deps.timers.after(RECONNECT_GRACE_MS, () => {
+        this.#graceTimers.delete(`${spaceId}:${userId}`);
+        if (runtime.socketOf(userId) === null) this.#remove(runtime, userId);
+      }),
+    );
+  }
+
+  /**
+   * A member was removed (listener of `SpaceNotifier.kick`, called before their sockets are
+   * disconnected): the avatar leaves at once, with no reconnection grace, and they are dropped
+   * from the media room.
+   */
+  kicked(spaceId: string, userId: string, reason: KickReason): void {
+    const runtime = this.store.get(spaceId);
+    if (runtime !== undefined) this.#remove(runtime, userId);
+    if (reason !== 'SESSION_REPLACED') {
+      this.#background('media removal on kick', spaceId, () =>
+        this.deps.media.removeParticipant(spaceId, userId),
+      );
+    }
+  }
+
+  // ── Tick (E4-S4) ────────────────────────────────────────────────────────
+
+  /**
+   * One tick of a space: when something changed, every connected person gets ONE `world:delta`
+   * (without their own steps); nothing is sent on idle ticks. The duration of working ticks feeds
+   * `GET /api/health` (E8-S1).
+   */
+  tick(runtime: SpaceRuntime): void {
+    if (!runtime.hasPendingChanges) return;
+    const started = performance.now();
+    try {
+      const delta = runtime.flush();
+      if (delta === null) return;
+      const sockets = this.deps.io.sockets.sockets;
+      for (const { userId, socketId } of runtime.connections()) {
+        const payload = deltaFor(delta, userId);
+        if (payload !== null) sockets.get(socketId)?.emit('world:delta', payload);
+      }
+    } catch (error) {
+      this.deps.logger.error({ err: error, spaceId: runtime.spaceId }, 'World tick failed');
+      this.deps.reporter.captureException(error, { spaceId: runtime.spaceId });
+    } finally {
+      this.deps.metrics.recordTick(performance.now() - started);
+    }
+  }
+
+  /** Stops every tick and timer (server shutdown). */
+  close(): void {
+    for (const cancel of this.#graceTimers.values()) cancel();
+    this.#graceTimers.clear();
+    this.store.close();
+  }
+
+  // ── Internals ───────────────────────────────────────────────────────────
+
+  async #load(spaceId: string): Promise<SpaceRuntime> {
+    const space = await this.deps.spaces.spaceWithRooms(spaceId);
+    const map = await this.deps.maps.worldMap(space.mapTemplateId);
+    return new SpaceRuntime(spaceId, space.mapTemplateId, map);
+  }
+
+  #joinedRuntime(socket: PlazaSocket): { runtime: SpaceRuntime; userId: string } {
+    const userId = socketUserId(socket);
+    const { spaceId } = socket.data;
+    const runtime = spaceId === undefined ? undefined : this.store.get(spaceId);
+    if (runtime?.socketOf(userId) !== socket.id) {
+      throw new AppError('NOT_IN_SPACE', 'Join the space first');
+    }
+    return { runtime, userId };
+  }
+
+  /** The older tab of the same person: told why, then disconnected (E4-S1). */
+  #replace(socketId: string): void {
+    const previous = this.deps.io.sockets.sockets.get(socketId);
+    if (previous === undefined) return;
+    previous.emit('space:kicked', { reason: 'SESSION_REPLACED' });
+    previous.disconnect(true);
+  }
+
+  #remove(runtime: SpaceRuntime, userId: string): void {
+    this.#cancelGrace(runtime.spaceId, userId);
+    runtime.leave(userId);
+    this.#updateConnected(runtime);
+    this.store.unloadIfEmpty(runtime.spaceId);
+  }
+
+  #cancelGrace(spaceId: string, userId: string): void {
+    const key = `${spaceId}:${userId}`;
+    this.#graceTimers.get(key)?.();
+    this.#graceTimers.delete(key);
+  }
+
+  #updateConnected(runtime: SpaceRuntime): void {
+    this.deps.metrics.setConnected(runtime.spaceId, runtime.connectedCount);
+  }
+
+  /** Media side effects never block or fail the realtime path: log and report instead. */
+  #background(what: string, spaceId: string, task: () => Promise<void>): void {
+    task().catch((error: unknown) => {
+      this.deps.logger.warn({ err: error, spaceId }, `World ${what} failed`);
+      this.deps.reporter.captureException(error, { spaceId });
+    });
+  }
+}

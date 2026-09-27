@@ -52,6 +52,18 @@ describe('ManifestMapsCatalog', () => {
     );
 
     await expect(catalog.roomAreas('broken@1')).rejects.toThrow('missing collision layer');
+    await expect(catalog.worldMap('broken@1')).rejects.toThrow('missing collision layer');
+    await expect(catalog.worldMap('nope@1')).rejects.toThrow(/Unknown map template/);
+  });
+
+  it('parses the whole world map once and caches it (E4-S2)', async () => {
+    const catalog = ManifestMapsCatalog.fromDir(mapsPackageDir());
+
+    const map = await catalog.worldMap('office-small@1');
+
+    expect(map.spawns.length).toBeGreaterThan(0);
+    expect(map.collisionGrid).toHaveLength(map.width * map.height);
+    expect(await catalog.worldMap('office-small@1')).toBe(map);
   });
 
   it('parses every generated template of @plaza/maps with parseMap', async () => {
