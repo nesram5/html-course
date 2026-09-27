@@ -6,6 +6,9 @@ import { ConfigError, loadConfig, type AppConfig } from './platform/config.js';
 import { createErrorReporter } from './platform/error-reporter.js';
 import { createLogger } from './platform/logger.js';
 
+/** Below Docker's default 10 s grace period before SIGKILL. */
+const SHUTDOWN_TIMEOUT_MS = 8000;
+
 function loadConfigOrExit(): AppConfig {
   try {
     return loadConfig(process.env);
@@ -38,6 +41,13 @@ async function main(): Promise<void> {
     if (closing) return;
     closing = true;
     logger.info({ signal }, 'Shutting down');
+    // A deploy stops the container: realtime clients see a transport close and reconnect to
+    // the new one by themselves (E4-S6). If closing hangs, exit before the orchestrator's
+    // SIGKILL so the log says why.
+    setTimeout(() => {
+      logger.error({ timeoutMs: SHUTDOWN_TIMEOUT_MS }, 'Shutdown timed out, exiting');
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS).unref();
     void app
       .close()
       .then(() => reporter.flush())

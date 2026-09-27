@@ -424,6 +424,21 @@ describe('desks and office styles (E9)', () => {
       expect(inbox(anaIn.client).corrections).toEqual([]);
     });
 
+    it('rate-limits desk:goto per person, across connections (E8-S2)', async () => {
+      await request(luis, 'PUT', deskUrl('desk-06'), {});
+      const first = await enter(luis);
+      for (let i = 0; i < 3; i++) first.client.emit('desk:goto', { v: PROTOCOL_VERSION });
+      await barrier(first.client);
+      expect(inbox(first.client).errors).toEqual([]);
+
+      // A new connection (another tab, a reconnection) does not get a fresh allowance.
+      const second = await enter(luis);
+      second.client.emit('desk:goto', { v: PROTOCOL_VERSION });
+      await barrier(second.client);
+
+      expect(inbox(second.client).errors.map((error) => error.code)).toEqual(['RATE_LIMITED']);
+    });
+
     it('frees the desk of someone removed from the space', async () => {
       const anaIn = await enter(ana);
       await request(luis, 'PUT', deskUrl('desk-03'), {});

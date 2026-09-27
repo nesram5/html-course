@@ -7,6 +7,8 @@ import {
 } from '@plaza/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { modules } from '../modules/index.js';
+import type { PlazaModule } from '../modules/types.js';
 import { buildTestApp, type TestApp } from '../test/app.js';
 import { resetDatabase } from '../test/db.js';
 import { signIn, type TestUser } from '../test/session.js';
@@ -100,7 +102,146 @@ const ENDPOINTS: Endpoint[] = [
     url: (s) => apiPath(API_PATHS.mediaToken, { spaceId: s.id }),
     expected: { anonymous: 401, outsider: 404, member: 200, owner: 200 },
   },
+  {
+    name: 'GET bans',
+    method: 'GET',
+    url: (s) => apiPath(API_PATHS.bans, { spaceId: s.id }),
+    expected: { anonymous: 401, outsider: 404, member: 403, owner: 200 },
+  },
+  {
+    // Nobody is banned: the owner is allowed and gets 404 for this person.
+    name: 'DELETE ban',
+    method: 'DELETE',
+    url: (s, ids) => apiPath(API_PATHS.ban, { spaceId: s.id, userId: ids.member }),
+    expected: { anonymous: 401, outsider: 404, member: 403, owner: 404 },
+  },
+  {
+    name: 'GET messages',
+    method: 'GET',
+    url: (s) => apiPath(API_PATHS.messages, { spaceId: s.id }),
+    expected: { anonymous: 401, outsider: 404, member: 200, owner: 200 },
+  },
+  {
+    name: 'GET desks',
+    method: 'GET',
+    url: (s) => apiPath(API_PATHS.desks, { spaceId: s.id }),
+    expected: { anonymous: 401, outsider: 404, member: 200, owner: 200 },
+  },
+  {
+    name: 'PUT desk (claim for oneself)',
+    method: 'PUT',
+    url: (s) => apiPath(API_PATHS.desk, { spaceId: s.id, deskId: 'desk-01' }),
+    payload: {},
+    expected: { anonymous: 401, outsider: 404, member: 200, owner: 200 },
+  },
+  {
+    name: 'PUT desk (assign to someone else)',
+    method: 'PUT',
+    url: (s) => apiPath(API_PATHS.desk, { spaceId: s.id, deskId: 'desk-01' }),
+    payload: { userId: 'OWNER_ID' },
+    expected: { anonymous: 401, outsider: 404, member: 403, owner: 200 },
+  },
+  {
+    name: 'DELETE desk (a free one)',
+    method: 'DELETE',
+    url: (s) => apiPath(API_PATHS.desk, { spaceId: s.id, deskId: 'desk-01' }),
+    expected: { anonymous: 401, outsider: 404, member: 204, owner: 204 },
+  },
+  {
+    name: 'PATCH desk decor (a desk that is not theirs)',
+    method: 'PATCH',
+    url: (s) => apiPath(API_PATHS.deskDecor, { spaceId: s.id, deskId: 'desk-01' }),
+    payload: { slots: ['plant'] },
+    expected: { anonymous: 401, outsider: 404, member: 403, owner: 403 },
+  },
 ];
+
+/**
+ * Routes that answer without a session. Every other route of the app must answer 401 to an
+ * anonymous request (checked over the live route table, so a new route cannot skip it).
+ */
+const PUBLIC_ROUTES = new Set([
+  'GET /api/health',
+  'GET /api/auth/google',
+  'GET /api/auth/google/callback',
+  'POST /api/auth/logout',
+  'POST /api/auth/test-login',
+  // Invitation preview (space name and member count), behind the 256-bit token.
+  'GET /api/join/:token',
+  // Static catalogs of the packaged maps and avatars (no user data).
+  'GET /api/avatars',
+  'GET /api/map-templates',
+]);
+
+/** Records every route registered after it (`onRoute`), HEAD excluded. */
+function routeRecorder(routes: string[]): PlazaModule {
+  return {
+    name: 'route-recorder',
+    register({ app }) {
+      app.addHook('onRoute', (route) => {
+        const methods = Array.isArray(route.method) ? route.method : [route.method];
+        for (const method of methods) if (method !== 'HEAD') routes.push(`${method} ${route.url}`);
+      });
+    },
+  };
+}
+
+function fillParams(url: string): string {
+  return url.replace(/:([A-Za-z]+)/g, (_match, name: string) => `unknown-${name}`);
+}
+
+describe('route inventory (E8-S2)', () => {
+  const routes: string[] = [];
+  let testApp: TestApp;
+
+  beforeAll(async () => {
+    testApp = await buildTestApp({ modules: [routeRecorder(routes), ...modules] });
+    await testApp.app.ready();
+  });
+
+  afterAll(async () => {
+    await testApp.app.close();
+  });
+
+  it('requires a session on every route except the public ones', async () => {
+    expect(routes.length).toBeGreaterThan(20);
+    const answers: Record<string, number> = {};
+    for (const route of routes.filter((r) => !PUBLIC_ROUTES.has(r))) {
+      const [method = 'GET', url = '/'] = route.split(' ');
+      const response = await testApp.app.inject({
+        method: method as Method,
+        url: fillParams(url),
+        headers: { 'x-plaza-client': 'test' },
+        ...(method !== 'GET' && method !== 'DELETE' && { payload: {} }),
+      });
+      answers[route] = response.statusCode;
+    }
+
+    const notProtected = Object.entries(answers).filter(([, status]) => status !== 401);
+    expect(notProtected).toEqual([]);
+  });
+
+  it('lists every public route that exists, and the matrix covers every space route', () => {
+    for (const route of PUBLIC_ROUTES) expect(routes).toContain(route);
+    const matrix = new Set(
+      ENDPOINTS.map((endpoint) => {
+        const template = Object.values(API_PATHS).find(
+          (path) =>
+            endpoint.url({ id: 'S', slug: 'L' } as SpaceDetailDto, { member: 'M', owner: 'O' }) ===
+            path
+              .replace(':spaceId', 'S')
+              .replace(':slug', 'L')
+              .replace(':userId', 'M')
+              .replace(':deskId', 'desk-01')
+              .replace(':areaId', 'sala-mar'),
+        );
+        return `${endpoint.method} ${template ?? '?'}`;
+      }),
+    );
+    const spaceRoutes = routes.filter((route) => route.includes('/api/spaces/:spaceId'));
+    expect(spaceRoutes.filter((route) => !matrix.has(route))).toEqual([]);
+  });
+});
 
 describe('authorization matrix of the space endpoints', () => {
   let testApp: TestApp;
@@ -108,7 +249,8 @@ describe('authorization matrix of the space endpoints', () => {
   let space: SpaceDetailDto;
 
   beforeAll(async () => {
-    testApp = await buildTestApp();
+    // Many requests from one address: the HTTP rate limit is tested elsewhere.
+    testApp = await buildTestApp({ env: { RATE_LIMIT_PER_MINUTE: '100000' } });
   });
 
   afterAll(async () => {
@@ -149,11 +291,15 @@ describe('authorization matrix of the space endpoints', () => {
     const ids = { member: users.member.user.id, owner: users.owner.user.id };
     const headers = actor === 'anonymous' ? { 'x-plaza-client': 'test' } : users[actor].headers;
 
+    const payload =
+      endpoint.payload?.userId === 'OWNER_ID'
+        ? { ...endpoint.payload, userId: ids.owner }
+        : endpoint.payload;
     const response = await testApp.app.inject({
       method: endpoint.method,
       url: endpoint.url(space, ids),
       headers,
-      ...(endpoint.payload !== undefined && { payload: endpoint.payload }),
+      ...(payload !== undefined && { payload }),
     });
 
     expect(response.statusCode, response.body).toBe(endpoint.expected[actor]);

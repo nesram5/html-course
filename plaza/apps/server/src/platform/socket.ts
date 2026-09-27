@@ -63,6 +63,14 @@ export interface Heartbeat {
  */
 export const REALTIME_HEARTBEAT: Heartbeat = { pingIntervalMs: 10_000, pingTimeoutMs: 10_000 };
 
+/**
+ * Largest realtime message accepted (E8-S2). The biggest legitimate one is a chat message of
+ * `CHAT_MAX_LEN` characters (< 4 KiB in UTF-8); Socket.IO's default of 1 MB let a client make the
+ * server buffer and parse a megabyte per message before zod could refuse it. A bigger frame
+ * closes the connection.
+ */
+export const REALTIME_MAX_MESSAGE_BYTES = 16 * 1024;
+
 /** Rate limit of new realtime connections per client IP (E8-S2). */
 export interface ConnectionLimit {
   /** Connections per minute and IP, as a burst refilled over the minute. */
@@ -104,6 +112,7 @@ export function attachSocketServer(
     serveClient: false,
     pingInterval: heartbeat.pingIntervalMs,
     pingTimeout: heartbeat.pingTimeoutMs,
+    maxHttpBufferSize: REALTIME_MAX_MESSAGE_BYTES,
     cors: { origin: options.corsOrigin, credentials: true },
     allowRequest: (request, callback) => {
       const { origin } = request.headers;

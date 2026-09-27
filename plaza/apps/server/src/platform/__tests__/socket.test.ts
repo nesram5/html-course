@@ -13,7 +13,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../test/app.js';
 import { AppError } from '../errors.js';
-import { attachSocketServer, REALTIME_HEARTBEAT, safeHandler } from '../socket.js';
+import {
+  attachSocketServer,
+  REALTIME_HEARTBEAT,
+  REALTIME_MAX_MESSAGE_BYTES,
+  safeHandler,
+} from '../socket.js';
 
 type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -118,6 +123,35 @@ describe('realtime platform', () => {
 
     const response = await client.emitWithAck('space:join', { v: PROTOCOL_VERSION, spaceId: 's' });
     expect(response.ok).toBe(true);
+  });
+});
+
+describe('realtime message size (E8-S2)', () => {
+  it('closes the connection of a client that sends an oversized message', async () => {
+    const app = Fastify();
+    attachSocketServer(app, { corsOrigin: 'http://localhost:5173' });
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = app.server.address() as AddressInfo;
+    const client: Client = connect(`http://127.0.0.1:${String(port)}`, {
+      path: REALTIME_PATH,
+      transports: ['websocket'],
+      reconnection: false,
+    });
+    try {
+      await new Promise<void>((resolve) => client.on('connect', resolve));
+      const disconnected = new Promise<string>((resolve) => client.on('disconnect', resolve));
+
+      client.emit(
+        'chat:send',
+        { v: PROTOCOL_VERSION, body: 'x'.repeat(REALTIME_MAX_MESSAGE_BYTES + 1) },
+        () => undefined,
+      );
+
+      expect(await disconnected).toMatch(/transport (close|error)/);
+    } finally {
+      client.disconnect();
+      await app.close();
+    }
   });
 });
 
