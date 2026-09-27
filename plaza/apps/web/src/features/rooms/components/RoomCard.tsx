@@ -122,7 +122,7 @@ export function RoomCard({
           )}
         </p>
       )}
-      <p id={`room-card-hint-${roomId}`} className="w-full text-xs text-slate-500">
+      <p id={`room-card-hint-${roomId}`} className="w-full text-xs text-slate-600">
         {t(meetUri !== null ? 'card.joinHint' : 'card.hallwayCut')}
       </p>
     </section>

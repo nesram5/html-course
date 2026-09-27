@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createOfficeStore,
   createWorldStore,
+  InteractionKeys,
   type OfficeStore,
   type WorldStore,
 } from '@/features/world';
@@ -62,7 +63,7 @@ function desk(deskId: string, userId: string, displayName: string): DeskState {
 let world: WorldStore;
 let office: OfficeStore;
 
-function setup(routes: Record<string, MockRoute> = {}) {
+function setup(routes: Record<string, MockRoute> = {}, keys?: InteractionKeys) {
   const api = mockApi({ 'GET /api/decor': { body: { items: CATALOG } }, ...routes });
   renderApp({
     route: '/s/acme',
@@ -70,7 +71,14 @@ function setup(routes: Record<string, MockRoute> = {}) {
       {
         path: '/s/:slug',
         element: (
-          <DeskHud spaceId="space-1" map={MAP} selfUserId="user-1" world={world} office={office} />
+          <DeskHud
+            spaceId="space-1"
+            map={MAP}
+            selfUserId="user-1"
+            world={world}
+            office={office}
+            {...(keys !== undefined && { keys })}
+          />
         ),
       },
     ],
@@ -109,6 +117,31 @@ describe('desk menu with X (E9-S2)', () => {
     expect(within(menu).getByRole('button', { name: 'Reclamar este escritorio' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('leaves X and its hint to a meeting room that outranks the desk (E6)', async () => {
+    const keys = new InteractionKeys();
+    const joinMeet = vi.fn();
+    const withdraw = keys.register({ id: 'meeting-room', priority: 20, run: joinMeet });
+    setup({}, keys);
+    const user = userEvent.setup();
+    standAt(2, 2);
+
+    const hint = screen.getByRole('button', {
+      name: 'Escritorio: reclamar, decorar o ver de quién es',
+    });
+    expect(hint).not.toHaveAttribute('aria-keyshortcuts');
+    await user.keyboard('x');
+    expect(joinMeet).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    act(() => {
+      withdraw();
+    });
+    expect(screen.getByRole('button', { name: /^Escritorio \(tecla X\)/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'x',
+    );
   });
 
   it('ignores X typed in a text field', async () => {

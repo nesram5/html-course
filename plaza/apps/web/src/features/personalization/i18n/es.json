@@ -4,7 +4,8 @@
   },
   "hint": {
     "desk": "Escritorio",
-    "deskLabel": "Escritorio (tecla X): reclamar, decorar o ver de quién es"
+    "deskLabel": "Escritorio (tecla X): reclamar, decorar o ver de quién es",
+    "deskLabelNoKey": "Escritorio: reclamar, decorar o ver de quién es"
   },
   "menu": {
     "freeTitle": "Escritorio libre",

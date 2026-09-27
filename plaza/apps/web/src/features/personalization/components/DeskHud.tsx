@@ -88,7 +88,7 @@ export function DeskHud({
         <button
           type="button"
           aria-keyshortcuts={xOpensMenu ? 'x' : undefined}
-          aria-label={t('hint.deskLabel')}
+          aria-label={xOpensMenu ? t('hint.deskLabel') : t('hint.deskLabelNoKey')}
           className="pointer-events-auto rounded-full bg-slate-900/85 px-4 py-1.5 text-sm text-white shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
           onClick={() => {
             setMenuDeskId(nearbyId);
