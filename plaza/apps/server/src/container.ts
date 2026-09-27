@@ -1,4 +1,6 @@
 import { FakeIdentityProvider, FakeMeetingProvider } from './adapters/fakes/index.js';
+import { GoogleMeetProvider } from './adapters/google-meet.js';
+import { GoogleIdentityProvider } from './adapters/google-oidc.js';
 import type { IdentityProvider } from './adapters/identity-provider.js';
 import { LiveKitMediaProvider } from './adapters/livekit.js';
 import type { MediaProvider } from './adapters/media-provider.js';
@@ -7,6 +9,7 @@ import type { AppConfig } from './platform/config.js';
 import { createPrismaClient, type Database } from './platform/db.js';
 import { noopErrorReporter, type ErrorReporter } from './platform/error-reporter.js';
 import type { Logger } from './platform/logger.js';
+import { ManifestMapsCatalog, mapsPackageDir, type MapsCatalog } from './platform/maps-catalog.js';
 import { InMemoryRealtimeMetrics } from './platform/metrics.js';
 
 /**
@@ -22,6 +25,8 @@ export interface Container {
   identity: IdentityProvider;
   meetings: MeetingProvider;
   media: MediaProvider;
+  /** Catalog of `@plaza/maps` (templates, rooms, themes, avatars). */
+  maps: MapsCatalog;
   /** Current time; replaced in tests. */
   now: () => Date;
 }
@@ -39,12 +44,15 @@ function selectAdapters(config: AppConfig): Pick<Container, 'identity' | 'meetin
   // adapter is used everywhere (locally against `livekit-server --dev` or LiveKit Cloud);
   // tests replace it with `FakeMediaProvider` through `overrides.media`.
   const media = new LiveKitMediaProvider(config.livekit);
-  if (config.isProduction) {
-    // TODO(E1-S2, E2-S7): wire GoogleIdentityProvider and GoogleMeetProvider here
-    // (fakes stay for tests and local development without credentials).
-    throw new Error(
-      'Real Google adapters are not implemented yet; refusing to use fakes in production',
-    );
+  // Google sign-in and Meet use the real adapters whenever credentials are configured
+  // (always in production, where config validation requires them); the fakes serve tests and
+  // local development without credentials.
+  if (config.google !== null) {
+    return {
+      identity: new GoogleIdentityProvider(config.google),
+      meetings: new GoogleMeetProvider(config.google),
+      media,
+    };
   }
   return { identity: new FakeIdentityProvider(), meetings: new FakeMeetingProvider(), media };
 }
@@ -76,6 +84,7 @@ export function createContainer({
     identity,
     meetings,
     media,
+    maps: overrides.maps ?? ManifestMapsCatalog.fromDir(config.mapsDir ?? mapsPackageDir()),
     now: overrides.now ?? (() => new Date()),
   };
 }

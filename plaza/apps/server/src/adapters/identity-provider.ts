@@ -1,6 +1,6 @@
 /**
  * Identity provider port (ADR-007, E1-S2). The real implementation is Google OpenID Connect
- * (`google-oidc.ts`, TODO E1-S2); tests and local development use `FakeIdentityProvider`.
+ * (`google-oidc.ts`); tests and local development without credentials use `FakeIdentityProvider`.
  *
  * The auth module owns `state` and the PKCE verifier (signed cookie) and calls this port only
  * to build the redirect URL and to exchange the code. Tokens never leave the adapter.

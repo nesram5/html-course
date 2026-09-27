@@ -37,6 +37,9 @@ const EnvSchema = z
     /** Enables POST /api/auth/test-login (CI and local only). */
     AUTH_TEST_LOGIN: booleanFlag,
 
+    /** Folder with the maps catalog (`manifest.json`); defaults to the `@plaza/maps` package. */
+    MAPS_DIR: optional(z.string().min(1)),
+
     /** Max HTTP requests per minute and client IP (@fastify/rate-limit). */
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
 
@@ -91,6 +94,7 @@ const ConfigSchema = EnvSchema.transform((env) => ({
       : null,
   livekit: { url: env.LIVEKIT_URL, apiKey: env.LIVEKIT_API_KEY, apiSecret: env.LIVEKIT_API_SECRET },
   authTestLogin: env.AUTH_TEST_LOGIN,
+  mapsDir: env.MAPS_DIR ?? null,
   rateLimitPerMinute: env.RATE_LIMIT_PER_MINUTE,
   sentry:
     env.SENTRY_DSN !== undefined

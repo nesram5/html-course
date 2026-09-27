@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
-import { dirname } from 'node:path';
 
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
@@ -13,6 +11,7 @@ import type { Container } from './container.js';
 import { modules as defaultModules } from './modules/index.js';
 import { ServiceRegistry, type PlazaModule } from './modules/types.js';
 import { AppError, registerErrorHandling } from './platform/errors.js';
+import { MAP_ASSETS_PREFIX, mapsPackageDir } from './platform/maps-catalog.js';
 import { attachSocketServer } from './platform/socket.js';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -22,11 +21,6 @@ const MAP_ASSET_FOLDERS = ['templates/', 'avatars/', 'decor/'];
 export interface BuildAppOptions {
   /** Defaults to every module of `modules/index.ts`. */
   modules?: readonly PlazaModule[];
-}
-
-function mapsPackageDir(): string {
-  const require = createRequire(import.meta.url);
-  return dirname(require.resolve('@plaza/maps/package.json'));
 }
 
 function originOf(url: string): string {
@@ -83,8 +77,8 @@ export async function buildApp(
   });
 
   await app.register(fastifyStatic, {
-    root: mapsPackageDir(),
-    prefix: '/assets/maps/',
+    root: config.mapsDir ?? mapsPackageDir(),
+    prefix: `${MAP_ASSETS_PREFIX}/`,
     allowedPath: (pathName) =>
       MAP_ASSET_FOLDERS.some((folder) => pathName.startsWith(`/${folder}`)),
     maxAge: config.isProduction ? '1h' : 0,
