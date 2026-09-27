@@ -1,8 +1,9 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMembers } from '@/features/spaces';
 import { worldEvents, type EventBus } from '@/features/world';
+import { useEscapeKey } from '@/shared/ui';
 
 import { peopleLists, type ConnectedRow } from '../lib/people';
 import { presenceStore, usePresenceStore, type PresenceStore } from '../store/presence-store';
@@ -21,7 +22,7 @@ export interface PeoplePanelProps {
 /**
  * "Personas" (E7-S2): who is connected (status and meeting room) and, below, the members who
  * are not, with a name search. "Localizar" moves the camera to the person for 3 s; "Llamar"
- * rings them (E7-S5).
+ * rings them (E7-S5). Opening it puts the focus on the search; `Escape` closes it (E8-S6).
  */
 export function PeoplePanel({
   spaceId,
@@ -33,6 +34,11 @@ export function PeoplePanel({
   const { t } = useTranslation('presence');
   const [query, setQuery] = useState('');
   const titleId = useId();
+  const panelRef = useEscapeKey<HTMLElement>(onClose);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    searchRef.current?.focus();
+  }, []);
   const people = usePresenceStore((state) => state.people, store);
   const selfId = usePresenceStore((state) => state.selfId, store);
   const members = useMembers(spaceId);
@@ -44,6 +50,7 @@ export function PeoplePanel({
 
   return (
     <section
+      ref={panelRef}
       aria-labelledby={titleId}
       className="flex h-full w-80 max-w-full flex-col rounded-lg bg-white text-slate-900 shadow-xl"
     >
@@ -54,7 +61,7 @@ export function PeoplePanel({
         <button
           type="button"
           aria-label={t('people.close')}
-          className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100"
+          className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100"
           onClick={onClose}
         >
           ✕
@@ -62,6 +69,7 @@ export function PeoplePanel({
       </header>
       <div className="px-4 py-3">
         <input
+          ref={searchRef}
           type="search"
           aria-label={t('people.search')}
           placeholder={t('people.search')}
@@ -73,7 +81,7 @@ export function PeoplePanel({
         />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
           {t('people.connected', { count: connected.length })}
         </h3>
         <ul className="mb-4 flex flex-col gap-1">
@@ -81,12 +89,12 @@ export function PeoplePanel({
             <ConnectedItem key={row.userId} row={row} roomNames={roomNames} events={events} />
           ))}
         </ul>
-        <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
           {t('people.disconnected', { count: disconnected.length })}
         </h3>
         <ul className="flex flex-col gap-1">
           {disconnected.map((member) => (
-            <li key={member.userId} className="flex items-center gap-2 py-1 text-sm text-slate-500">
+            <li key={member.userId} className="flex items-center gap-2 py-1 text-sm text-slate-600">
               <StatusDot presence="offline" />
               <span className="truncate">{member.displayName}</span>
               <span className="sr-only">{t('status.offline')}</span>
@@ -99,7 +107,7 @@ export function PeoplePanel({
           </p>
         )}
         {nobody && (
-          <p role="status" className="mt-2 text-sm text-slate-500">
+          <p role="status" className="mt-2 text-sm text-slate-600">
             {t('people.noMatch', { query: query.trim() })}
           </p>
         )}
@@ -124,9 +132,9 @@ function ConnectedItem({ row, roomNames, events }: ConnectedItemProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-sm font-medium">
           {row.displayName}{' '}
-          {row.isSelf && <span className="text-slate-500">{t('people.you')}</span>}
+          {row.isSelf && <span className="text-slate-600">{t('people.you')}</span>}
         </span>
-        <span className="truncate text-xs text-slate-500">
+        <span className="truncate text-xs text-slate-600">
           {room === undefined ? state : `${state} · ${t('people.inRoom', { name: room })}`}
         </span>
       </div>

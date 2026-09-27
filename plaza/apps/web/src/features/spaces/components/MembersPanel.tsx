@@ -41,7 +41,7 @@ export function MembersPanel({ space }: { space: SpaceDetailDto }) {
         {t('members.title')}
       </h2>
       <table className="w-full text-left text-sm">
-        <thead className="text-slate-500">
+        <thead className="text-slate-600">
           <tr>
             <th scope="col">{t('members.name')}</th>
             <th scope="col">{t('members.email')}</th>

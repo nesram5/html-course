@@ -52,7 +52,7 @@ export function CreateSpaceForm({ onCreated }: { onCreated: (space: SpaceDetailD
           {(templates.data ?? []).map((template) => (
             <label
               key={template.id}
-              className={`flex cursor-pointer flex-col gap-2 rounded-lg border-2 p-3 ${
+              className={`flex cursor-pointer flex-col gap-2 rounded-lg border-2 p-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-600 ${
                 selected === template.id ? 'border-brand-600 bg-brand-50' : 'border-slate-200'
               }`}
             >
@@ -72,7 +72,7 @@ export function CreateSpaceForm({ onCreated }: { onCreated: (space: SpaceDetailD
                 className="aspect-video w-full object-cover"
               />
               <span className="font-medium">{template.name}</span>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-slate-600">
                 {t('wizard.rooms', { count: template.roomCount })}
               </span>
             </label>

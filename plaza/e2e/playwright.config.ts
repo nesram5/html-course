@@ -51,6 +51,8 @@ export default defineConfig({
         LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET ?? 'secret',
         AUTH_TEST_LOGIN: 'true',
         RATE_LIMIT_PER_MINUTE: '10000',
+        // The metrics page (E8-S7) of `a11y.spec.ts` and `product.spec.ts`.
+        ADMIN_EMAILS: 'producto@plaza.test',
       },
     },
     {

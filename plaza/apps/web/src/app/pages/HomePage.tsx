@@ -24,7 +24,7 @@ export function HomePage() {
       >
         {t('home.cta')}
       </Link>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-600">
         <span>{t('home.serverStatus.label')}: </span>
         <span data-testid="server-status">{status}</span>
       </p>

@@ -93,4 +93,26 @@ describe('office page extensions', () => {
     await user.click(screen.getByRole('button', { name: 'Cerrar la lista de personas' }));
     expect(people).toHaveFocus();
   });
+
+  it('works from the keyboard: the panel takes the focus and Escape closes it (E8-S6)', async () => {
+    const user = userEvent.setup();
+    renderHud();
+    const bar = screen.getByRole('group', { name: 'Tus controles' });
+    const people = within(bar).getByRole('button', { name: /^Personas/ });
+    const chat = within(bar).getByRole('button', { name: 'Chat del espacio' });
+
+    people.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('searchbox', { name: 'Buscar por nombre' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', { name: 'Personas' })).toBeNull();
+    expect(people).toHaveFocus();
+
+    chat.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('textbox', { name: 'Mensaje para todo el espacio' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', { name: 'Chat del espacio' })).toBeNull();
+    expect(chat).toHaveFocus();
+  });
 });

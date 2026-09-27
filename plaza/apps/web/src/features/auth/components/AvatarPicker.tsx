@@ -13,10 +13,10 @@ export function AvatarPicker({ value, onChange }: AvatarPickerProps) {
   const { t } = useTranslation('auth');
   const avatars = useAvatars();
 
-  if (avatars.isPending) return <p className="text-slate-500">{t('loading')}</p>;
+  if (avatars.isPending) return <p className="text-slate-600">{t('loading')}</p>;
   if (avatars.isError) return <p role="alert">{t('avatarPicker.loadError')}</p>;
   if (avatars.data.length === 0) {
-    return <p className="text-slate-500">{t('avatarPicker.empty')}</p>;
+    return <p className="text-slate-600">{t('avatarPicker.empty')}</p>;
   }
 
   return (

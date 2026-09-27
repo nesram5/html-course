@@ -44,7 +44,7 @@ export function CreateSpacePage() {
       <UserMenu />
       <main className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
         <div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             {t('wizard.step', { current: spaceId === null ? 1 : 2, total: 2 })}
           </p>
           <h1 className="text-3xl font-bold">{t('wizard.title')}</h1>
