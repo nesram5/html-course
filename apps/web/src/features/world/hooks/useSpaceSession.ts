@@ -14,7 +14,7 @@ import { worldStore } from '../store/world-store';
 export interface SpaceSessionHandle {
   readonly session: SpaceSessionState;
   readonly connection: ConnectionStatus;
-  /** Reconnect and join again ("Usar Plaza aquí", "Reintentar"). */
+  /** Reconnect and join again ("Usar Bululu aquí", "Reintentar"). */
   readonly retry: () => void;
 }
 

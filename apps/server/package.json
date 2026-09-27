@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Plaza API + realtime server (Fastify, Socket.IO, Prisma).",
+  "description": "Bululu API + realtime server (Fastify, Socket.IO, Prisma).",
   "scripts": {
     "dev": "tsx watch --conditions=@bululu/source --env-file-if-exists=../../.env src/main.ts",
     "start": "node --env-file-if-exists=../../.env dist/main.js",

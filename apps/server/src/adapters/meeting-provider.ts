@@ -5,7 +5,7 @@ import type { AuthorizationRequest, CodeExchange } from './identity-provider.js'
  * (`google-meet.ts`, `POST https://meet.googleapis.com/v2/spaces`) with incremental
  * authorization of the `meetings.space.created` scope.
  *
- * The access token is obtained and discarded INSIDE `createMeetingSpaces`: Plaza never stores
+ * The access token is obtained and discarded INSIDE `createMeetingSpaces`: Bululu never stores
  * Google credentials.
  */
 export interface MeetingSpace {

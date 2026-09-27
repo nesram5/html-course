@@ -1,5 +1,5 @@
 {
-  "appName": "Plaza",
+  "appName": "Bululu",
   "docTitle": {
     "login": "Entrar",
     "spaces": "Mis espacios",
@@ -15,7 +15,7 @@
     "error": "Algo ha fallado"
   },
   "home": {
-    "title": "Plaza",
+    "title": "Bululu",
     "tagline": "La oficina virtual de tu equipo: acércate a alguien y hablad, como en la oficina.",
     "cta": "Entrar a mis espacios",
     "serverStatus": {
@@ -46,15 +46,15 @@
   },
   "privacy": {
     "back": "Volver al inicio",
-    "title": "Tus datos en Plaza",
-    "intro": "Plaza es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
+    "title": "Tus datos en Bululu",
+    "intro": "Bululu es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
     "stored": {
       "title": "Qué guardamos",
       "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil, el identificador de tu cuenta y, si es de Google Workspace, el dominio de tu empresa. También el nombre visible y el avatar que elijas.",
       "spaces": "Los espacios a los que perteneces: tu rol, el estado que elijas (Disponible u Ocupado), tu escritorio y su decoración.",
       "chat": "Los mensajes del chat de cada espacio (los últimos 100).",
       "feedback": "Los comentarios que nos envías desde la aplicación, con tu nombre y tu correo para poder responderte.",
-      "events": "Eventos de producto sin datos personales (por ejemplo, «alguien entró en la oficina» o «una conversación de pasillo duró 2 minutos») y tiempos de conexión, con un identificador seudónimo que no permite saber quién eres. Los usamos para medir si Plaza funciona bien.",
+      "events": "Eventos de producto sin datos personales (por ejemplo, «alguien entró en la oficina» o «una conversación de pasillo duró 2 minutos») y tiempos de conexión, con un identificador seudónimo que no permite saber quién eres. Los usamos para medir si Bululu funciona bien.",
       "session": "Tu sesión: una cookie que te mantiene dentro 30 días. En el servidor solo guardamos su huella, no la cookie."
     },
     "notStored": {
@@ -76,7 +76,7 @@
       "title": "Tus derechos",
       "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil» (si eres la única persona que administra un espacio con más miembros, antes pasa la administración a otra persona desde «Miembros»): se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
       "profile": "Ir a Mi perfil",
-      "feedback": "Escribir al equipo de Plaza"
+      "feedback": "Escribir al equipo de Bululu"
     }
   },
   "errors": {
@@ -101,8 +101,8 @@
     "INVALID_MEET_URI": "El enlace debe empezar por https://meet.google.com/.",
     "MEETING_PROVIDER_ERROR": "Google Meet no respondió. Puedes reintentar o pegar el enlace a mano.",
     "SPACE_FULL": "El espacio está lleno (máximo 50 personas).",
-    "PROTOCOL_MISMATCH": "Hay una versión nueva de Plaza. Recarga la página.",
-    "SESSION_REPLACED": "Has abierto Plaza en otra pestaña.",
+    "PROTOCOL_MISMATCH": "Hay una versión nueva de Bululu. Recarga la página.",
+    "SESSION_REPLACED": "Has abierto Bululu en otra pestaña.",
     "NOT_IN_SPACE": "Todavía no has entrado en el espacio.",
     "MEDIA_PROVIDER_ERROR": "No se pudo conectar el audio y el vídeo.",
     "RING_COOLDOWN": "Espera un poco antes de volver a llamar.",

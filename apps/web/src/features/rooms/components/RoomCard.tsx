@@ -45,7 +45,7 @@ function openInNewTab(url: string): void {
 /**
  * "Estás en Sala 1 · 2 personas dentro · Unirse a la reunión" (E6-S2), shown while the local
  * person stands in a meeting room. The hallway is cut meanwhile (the server stops sending
- * hallway peers, and the media feature keeps the Plaza microphone and camera off, so joining the
+ * hallway peers, and the media feature keeps the Bululu microphone and camera off, so joining the
  * Meet never duplicates the audio). "Unirse a la reunión" (or `X`) opens the room's Meet in a new
  * tab. A room without a Meet link says so and offers owners to add one.
  */
@@ -66,7 +66,7 @@ export function RoomCard({
 
   const join = useCallback(() => {
     if (meetUri === null) return;
-    // The Plaza microphone and camera are already off inside the room (`media:self-in-room`).
+    // The Bululu microphone and camera are already off inside the room (`media:self-in-room`).
     openMeet(meetUri);
     track(spaceId, { name: 'room_meet_opened', props: { areaId: roomId } }).catch(reportError);
   }, [meetUri, openMeet, track, spaceId, roomId]);

@@ -18,7 +18,7 @@ export const roomsMessages = { es } as const;
 
 /**
  * Meeting rooms in the office page (E6-S2): the room card over the map while the local person
- * is in a room, and the `media:self-in-room` signal that keeps the Plaza microphone and camera off
+ * is in a room, and the `media:self-in-room` signal that keeps the Bululu microphone and camera off
  * meanwhile. `app/` hands it to the world's `SpaceExtensionsProvider`.
  */
 export const roomsSpaceExtension: SpaceExtension = {

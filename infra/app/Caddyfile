@@ -1,4 +1,4 @@
-# Caddy of the Plaza app VM (E8-S5, architecture §11.4): HTTPS with Let's Encrypt, the web app
+# Caddy of the Bululu app VM (E8-S5, architecture §11.4): HTTPS with Let's Encrypt, the web app
 # (static files with SPA fallback) and the server behind /api, /realtime and /assets/maps.
 #
 # Environment (set in infra/app/.env, see .env.production.example):

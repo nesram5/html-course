@@ -10,7 +10,7 @@ import { RoomCard } from './RoomCard';
  * Meeting rooms over the office map (E6-S2): tells the media feature when the local person is in
  * a room, shows the room card meanwhile, and says so in a polite live region that is always
  * mounted (a region inserted together with its text is often not announced): walking in turns
- * the Plaza microphone and camera off.
+ * the Bululu microphone and camera off.
  */
 export function RoomsOverlay({ space }: SpaceSlotProps) {
   const { t } = useTranslation('rooms');

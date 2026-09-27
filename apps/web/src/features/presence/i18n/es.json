@@ -15,7 +15,7 @@
   },
   "notifications": {
     "enable": "Activar avisos de llamadas",
-    "enableHint": "Te avisamos aunque Plaza esté en otra pestaña"
+    "enableHint": "Te avisamos aunque Bululu esté en otra pestaña"
   },
   "people": {
     "button": "Personas",
@@ -42,7 +42,7 @@
     "cooldownLabel": "Podrás volver a llamar a {{name}} en {{seconds}} s",
     "sent": "Has llamado a {{name}}.",
     "incoming": "{{name}} te está llamando",
-    "notificationBody": "Vuelve a Plaza para hablar."
+    "notificationBody": "Vuelve a Bululu para hablar."
   },
   "awayCard": {
     "label": "{{name}} está ausente",

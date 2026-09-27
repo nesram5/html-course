@@ -62,7 +62,7 @@ function env(permission: NotificationPermission): RingAlertEnv & { focusWindow: 
   };
 }
 
-const TEXTS = { title: 'Sam te está llamando', body: 'Vuelve a Plaza para hablar.' };
+const TEXTS = { title: 'Sam te está llamando', body: 'Vuelve a Bululu para hablar.' };
 
 describe('showRingAlert (E7-S5)', () => {
   it('rings and shows "Sam te está llamando"; clicking it brings the tab back', () => {

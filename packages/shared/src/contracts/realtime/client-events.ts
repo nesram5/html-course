@@ -19,7 +19,7 @@ function versioned<T extends z.ZodRawShape>(shape: T) {
 /**
  * `space:join` — ack with `space:snapshot` (E4-S1). One avatar per person: a join replaces the
  * connection that holds it (`space:kicked { SESSION_REPLACED }` to the other tab) when
- * `takeover` is true or absent (the first join of a page visit, "Usar Plaza aquí"). An automatic
+ * `takeover` is true or absent (the first join of a page visit, "Usar Bululu aquí"). An automatic
  * rejoin after a reconnection sends `takeover: false`, and is refused with `SESSION_REPLACED`
  * when another live connection (of another `tabId`) holds the avatar: a tab that comes back
  * online never takes the office from the tab the person is using (E4-S6).

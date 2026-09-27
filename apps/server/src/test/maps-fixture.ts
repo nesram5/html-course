@@ -29,7 +29,7 @@ export const FIXTURE_AVATAR_IDS = Array.from(
   (_, i) => `avatar-${String(i + 1).padStart(2, '0')}`,
 );
 
-const credit = { author: 'Plaza tests', license: 'CC0-1.0' };
+const credit = { author: 'Bululu tests', license: 'CC0-1.0' };
 
 export const FIXTURE_MANIFEST = parseManifest({
   version: 1,

@@ -72,7 +72,7 @@ export interface RingAlertTexts {
 
 /**
  * Someone rang (E7-S5): a sound (unless the person is busy: `silent`) and a browser notification
- * when the permission was granted. Clicking the notification brings the Plaza tab back, which
+ * when the permission was granted. Clicking the notification brings the Bululu tab back, which
  * ends the "away" state and restores the media.
  */
 export function showRingAlert(

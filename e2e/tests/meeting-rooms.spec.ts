@@ -27,7 +27,7 @@ import {
  * E6 meeting rooms, end to end: real server, real local LiveKit and Chromium's fake camera and
  * microphone. Ana and Eva talk in the hallway; Eva walks into the meeting room: Ana stops
  * receiving her within a second, Eva gets the room card with the Meet link (the popup is
- * intercepted, the real Meet is never loaded) and her Plaza media is off; walking out restores
+ * intercepted, the real Meet is never loaded) and her Bululu media is off; walking out restores
  * the hallway conversation with the media she had.
  *
  * office-small@1: spawns (11..14, 25); columns 11 and 12 are free up to row 7; row 7 is free up to
@@ -152,7 +152,7 @@ function hearing(page: Page, userId: string): Promise<boolean> {
 }
 
 test.describe('meeting rooms with Google Meet (E6)', () => {
-  test('walking into a room cuts the hallway, offers the Meet and turns Plaza media off; walking out restores it', async ({
+  test('walking into a room cuts the hallway, offers the Meet and turns Bululu media off; walking out restores it', async ({
     browser,
   }) => {
     test.setTimeout(240_000);
@@ -231,7 +231,7 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
     expect(cutAt - steppedAt).toBeLessThan(1000);
     expect(await tile(eva.page)).toEqual({ x: 28, y: 7 });
 
-    // Eva: the room card, no hallway peers, Plaza microphone and camera off and disabled.
+    // Eva: the room card, no hallway peers, Bululu microphone and camera off and disabled.
     const card = eva.page.getByRole('region', { name: 'Sala de reuniones' });
     await expect(card).toContainText('Estás en Sala de reuniones · 1 persona dentro');
     await expect.poll(async () => (await media(eva.page))?.peers).toEqual([]);

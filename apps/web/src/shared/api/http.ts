@@ -64,7 +64,7 @@ async function toApiError(response: Response): Promise<ApiError> {
 }
 
 /**
- * Typed `fetch` for the Plaza API (same origin; Vite proxies `/api` in development).
+ * Typed `fetch` for the Bululu API (same origin; Vite proxies `/api` in development).
  * Sends the session cookie and the `X-Bululu-Client` header (CSRF defence), validates the
  * response with the given zod schema and turns `{ error: { code } }` bodies into `ApiError`.
  */

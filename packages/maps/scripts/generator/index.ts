@@ -16,7 +16,7 @@ import { TEMPLATES, type TemplateSpec } from './templates.js';
 import { TILE, TILESET_COLUMNS, pixelTileset, type Tileset } from './tileset.js';
 import { watercolorBelow, watercolorObjects } from './watercolor.js';
 
-export const GENERATED_AUTHOR = 'Plaza (procedural, packages/maps/scripts/generator)';
+export const GENERATED_AUTHOR = 'Bululu (procedural, packages/maps/scripts/generator)';
 export const GENERATED_LICENSE = 'CC0-1.0';
 const TILESET_FILE = 'tilesets/pixel-office.png';
 

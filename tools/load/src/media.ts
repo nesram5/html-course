@@ -37,9 +37,9 @@ import {
 
 const USAGE = `Usage: pnpm --filter @bululu/load media [options]
 
-Hallway media load (E8-S3): G conversations of N people in ONE LiveKit room (like a Plaza space),
+Hallway media load (E8-S3): G conversations of N people in ONE LiveKit room (like a Bululu space),
 each person publishing a synthetic camera (simulcast) and microphone and subscribing only to the
-others of their conversation (the media:peers of Plaza). Samples the LiveKit container CPU
+others of their conversation (the media:peers of Bululu). Samples the LiveKit container CPU
 (docker stats) and its traffic (Prometheus byte counters) while they talk.
 
   --livekit-url <ws url>     default ws://127.0.0.1:7880

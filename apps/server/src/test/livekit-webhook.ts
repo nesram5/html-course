@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { AccessToken } from 'livekit-server-sdk';
 
-/** A LiveKit webhook event, as JSON (only the fields Plaza reads, plus what LiveKit adds). */
+/** A LiveKit webhook event, as JSON (only the fields Bululu reads, plus what LiveKit adds). */
 export interface WebhookEventJson {
   event: 'participant_joined' | 'track_published' | 'participant_left' | 'room_started';
   room: { name: string };

@@ -4,7 +4,7 @@ test.describe('app shell (E0-S4)', () => {
   test('shows the home page and reaches the API through the Vite proxy', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Plaza' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Bululu' })).toBeVisible();
     await expect(page.getByTestId('server-status')).toHaveText(
       /Conectado \(versión \d+\.\d+\.\d+\)/,
     );

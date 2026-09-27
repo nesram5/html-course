@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Plaza web app (React UI + Phaser world).",
+  "description": "Bululu web app (React UI + Phaser world).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

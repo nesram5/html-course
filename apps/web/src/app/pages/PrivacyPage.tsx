@@ -20,7 +20,7 @@ function Section({ title, children }: { readonly title: string; readonly childre
 }
 
 /**
- * `/privacidad` (E8-S6, RNF-06): what Plaza stores (basic Google profile, chat, product events
+ * `/privacidad` (E8-S6, RNF-06): what Bululu stores (basic Google profile, chat, product events
  * without personal data) and what it never stores (audio, video, positions, Google tokens), and
  * that meeting rooms use Google Meet. Public: linked from the login page and the footer.
  */

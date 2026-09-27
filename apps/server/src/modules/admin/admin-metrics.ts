@@ -6,7 +6,7 @@ import {
 } from '@bululu/shared';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** O2: a team "uses Plaza" in a week with at least this many days of use (brief §3). */
+/** O2: a team "uses Bululu" in a week with at least this many days of use (brief §3). */
 export const O2_DAYS_PER_WEEK_TARGET = 3;
 
 /** What the metrics read of a `ProductEvent` row. */

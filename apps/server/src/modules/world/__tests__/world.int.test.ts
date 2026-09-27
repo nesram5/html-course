@@ -347,7 +347,7 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(inbox(live).kicked).toEqual([]);
       expect(runtime().socketOf(ana.user.id)).toBe(live.id);
 
-      // "Usar Plaza aquí" in the stale tab is an explicit takeover: it does replace the live one.
+      // "Usar Bululu aquí" in the stale tab is an explicit takeover: it does replace the live one.
       const takeover = await stale.emitWithAck('space:join', {
         v: PROTOCOL_VERSION,
         spaceId: space.id,

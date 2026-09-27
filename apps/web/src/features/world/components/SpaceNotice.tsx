@@ -25,7 +25,7 @@ export interface SpaceNoticeProps {
 
 /**
  * Full-page message instead of the office: the space could not be opened, the join was refused,
- * or Plaza is open in another tab. Always offers the way back to "Mis espacios".
+ * or Bululu is open in another tab. Always offers the way back to "Mis espacios".
  */
 export function SpaceNotice({ title, message, actionLabel, onAction }: SpaceNoticeProps) {
   const { t } = useTranslation('world');
@@ -67,8 +67,8 @@ export interface SessionNoticeProps {
 }
 
 /**
- * What replaces the office when the realtime session cannot go on (E4-S1): Plaza opened in
- * another tab (`SESSION_REPLACED`, with "Usar Plaza aquí"), or a refused join (the error text,
+ * What replaces the office when the realtime session cannot go on (E4-S1): Bululu opened in
+ * another tab (`SESSION_REPLACED`, with "Usar Bululu aquí"), or a refused join (the error text,
  * with "Reintentar" or "Recargar" when that can help). `null` otherwise.
  */
 export function SessionNotice({ session, onRetry }: SessionNoticeProps) {

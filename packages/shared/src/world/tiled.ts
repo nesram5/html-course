@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Minimal zod schema of the Tiled JSON map format (`.tmj`) that Plaza uses (architecture §8):
+ * Minimal zod schema of the Tiled JSON map format (`.tmj`) that Bululu uses (architecture §8):
  * a finite orthogonal map with uncompressed tile layers and object layers. Everything else in
  * the file (tilesets, editor settings, other layer types) is accepted and ignored.
  * Reference: https://doc.mapeditor.org/en/stable/reference/json-map-format/

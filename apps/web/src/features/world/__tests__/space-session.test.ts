@@ -264,7 +264,7 @@ describe('SpaceSession: reconnection (E4-S6)', () => {
     expect(session.state).toEqual({ kind: 'kicked', reason: 'SESSION_REPLACED' });
     expect(socket.active).toBe(false);
 
-    // "Usar Plaza aquí": an explicit takeover.
+    // "Usar Bululu aquí": an explicit takeover.
     session.retry();
     socket.accept();
     expect(socket.lastAck('space:join').payload).toMatchObject({ takeover: true });

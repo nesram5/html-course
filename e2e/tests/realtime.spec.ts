@@ -168,14 +168,14 @@ test.describe('multiplayer in real time (E4)', () => {
     await openOffice(second, space.slug);
 
     await expect(
-      ana.page.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
+      ana.page.getByRole('heading', { name: 'Has abierto Bululu en otra pestaña' }),
     ).toBeVisible();
-    await ana.page.getByRole('button', { name: 'Usar Plaza aquí' }).click();
+    await ana.page.getByRole('button', { name: 'Usar Bululu aquí' }).click();
     await expect(ana.page.getByTestId('world-canvas')).toHaveAttribute('data-tile-x', /^\d+$/, {
       timeout: 30_000,
     });
     await expect(
-      second.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
+      second.getByRole('heading', { name: 'Has abierto Bululu en otra pestaña' }),
     ).toBeVisible();
 
     await ana.context.close();

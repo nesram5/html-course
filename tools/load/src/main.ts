@@ -159,7 +159,7 @@ async function main(): Promise<void> {
   const run = randomUUID().slice(0, 8);
 
   print(
-    `Plaza load test ${run}: ${String(botCount)} bots, ${String(durationS)} s, ${String(stepsPerSecond)} steps/s each → ${url}`,
+    `Bululu load test ${run}: ${String(botCount)} bots, ${String(durationS)} s, ${String(stepsPerSecond)} steps/s each → ${url}`,
   );
   const sessions: BotSession[] = [];
   for (let i = 0; i < botCount; i++) {

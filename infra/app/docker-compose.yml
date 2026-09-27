@@ -1,4 +1,4 @@
-# Plaza app VM (E8-S5, architecture §11.4): Caddy + web, server, and optionally PostgreSQL with
+# Bululu app VM (E8-S5, architecture §11.4): Caddy + web, server, and optionally PostgreSQL with
 # a daily backup. The media server (LiveKit + TURN) runs on its own VM: infra/livekit/.
 #
 #   cp .env.production.example .env   # fill it in (never commit .env)

@@ -51,7 +51,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -62,7 +62,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -73,7 +73,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -84,7 +84,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -95,7 +95,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -106,7 +106,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -117,7 +117,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -128,7 +128,7 @@
       "frameWidth": 32,
       "frameHeight": 32,
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     }
@@ -139,7 +139,7 @@
       "name": "Planta",
       "file": "plant.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -148,7 +148,7 @@
       "name": "Lámpara",
       "file": "lamp.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -157,7 +157,7 @@
       "name": "Taza",
       "file": "mug.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -166,7 +166,7 @@
       "name": "Cuadro",
       "file": "frame.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -175,7 +175,7 @@
       "name": "Trofeo",
       "file": "trophy.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -184,7 +184,7 @@
       "name": "Gato",
       "file": "cat.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -193,7 +193,7 @@
       "name": "Libros",
       "file": "books.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -202,7 +202,7 @@
       "name": "Globo terráqueo",
       "file": "globe.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -211,7 +211,7 @@
       "name": "Cactus",
       "file": "cactus.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -220,7 +220,7 @@
       "name": "Radio",
       "file": "radio.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -229,7 +229,7 @@
       "name": "Reloj",
       "file": "clock.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -238,7 +238,7 @@
       "name": "Banderín",
       "file": "flag.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -247,7 +247,7 @@
       "name": "Auriculares",
       "file": "headphones.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     },
@@ -256,7 +256,7 @@
       "name": "Dónut",
       "file": "donut.png",
       "credit": {
-        "author": "Plaza (procedural, packages/maps/scripts/generator)",
+        "author": "Bululu (procedural, packages/maps/scripts/generator)",
         "license": "CC0-1.0"
       }
     }

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# Plaza API + realtime server (E8-S5). Build from the repository root:
+# Bululu API + realtime server (E8-S5). Build from the repository root:
 #   docker build -f apps/server/Dockerfile -t bululu-server .
 #
 # Behind a TLS-inspecting proxy, pass its CA as a build secret (never baked into a layer):

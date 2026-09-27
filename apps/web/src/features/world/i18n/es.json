@@ -30,9 +30,9 @@
     "reconnecting": "Reconectando…"
   },
   "session": {
-    "replacedTitle": "Has abierto Plaza en otra pestaña",
-    "replacedBody": "Solo puedes estar en la oficina desde una pestaña a la vez. Puedes seguir en la otra o usar Plaza aquí.",
-    "takeOver": "Usar Plaza aquí",
+    "replacedTitle": "Has abierto Bululu en otra pestaña",
+    "replacedBody": "Solo puedes estar en la oficina desde una pestaña a la vez. Puedes seguir en la otra o usar Bululu aquí.",
+    "takeOver": "Usar Bululu aquí",
     "removed": "Te han expulsado de este espacio.",
     "accountDeleted": "Tu cuenta se ha borrado."
   }

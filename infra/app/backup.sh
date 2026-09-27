@@ -1,5 +1,5 @@
 #!/bin/sh
-# Daily PostgreSQL backup of Plaza (E8-S5). Runs in the `backup` service of
+# Daily PostgreSQL backup of Bululu (E8-S5). Runs in the `backup` service of
 # infra/app/docker-compose.yml (postgres image, so pg_dump matches the server version).
 #
 #   BACKUP_HOUR       hour of the day (UTC, 0-23) of the daily dump; default 3

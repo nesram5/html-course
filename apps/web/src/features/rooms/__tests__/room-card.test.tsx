@@ -113,7 +113,7 @@ describe('room card over the office (E6-S2)', () => {
     standIn(worldStore, 'sala');
     expect(screen.getByTestId('rooms-announcer')).toBe(announcer);
     expect(announcer).toHaveTextContent(
-      'Has entrado en Sala. Tu micrófono y tu cámara de Plaza están apagados',
+      'Has entrado en Sala. Tu micrófono y tu cámara de Bululu están apagados',
     );
 
     standIn(worldStore, null);

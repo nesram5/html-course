@@ -69,7 +69,7 @@ test.describe('account deletion (E8-S6)', () => {
     await profile.getByRole('button', { name: 'Sí, borrar mi cuenta' }).click();
     await expect(profile).toHaveURL(/\/login$/);
     await expect(
-      profile.getByText('Tu cuenta se ha borrado. Gracias por probar Plaza.'),
+      profile.getByText('Tu cuenta se ha borrado. Gracias por probar Bululu.'),
     ).toBeVisible();
 
     // His office tab is told and leaves; Ana sees him go and his desk free at once.

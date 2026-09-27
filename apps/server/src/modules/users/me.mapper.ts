@@ -21,7 +21,7 @@ export function initialDisplayName(name: string, email: string): string {
   const trimmed = stripNameControls(name).trim().slice(0, DISPLAY_NAME_MAX_LEN).trim();
   if (trimmed !== '') return trimmed;
   const local = stripNameControls(email.split('@')[0] ?? '').slice(0, DISPLAY_NAME_MAX_LEN);
-  return local === '' ? 'Plaza' : local;
+  return local === '' ? 'Bululu' : local;
 }
 
 /** Whether an e-mail is listed in `ADMIN_EMAILS` (already lowercased by the config). */

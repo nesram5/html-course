@@ -65,12 +65,12 @@ describe('maps manifest', () => {
 
   it('validates theme.json, including color variants', () => {
     expect(
-      ThemeFileSchema.safeParse({ name: 'Pixel', author: 'Plaza', license: 'CC0-1.0' }).success,
+      ThemeFileSchema.safeParse({ name: 'Pixel', author: 'Bululu', license: 'CC0-1.0' }).success,
     ).toBe(true);
     expect(
       ThemeFileSchema.safeParse({
         name: 'Noche',
-        author: 'Plaza',
+        author: 'Bululu',
         license: 'CC0-1.0',
         baseThemeId: 'pixel',
         colorMatrix: Array.from({ length: 20 }, () => 0),

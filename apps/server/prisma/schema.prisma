@@ -1,4 +1,4 @@
-// Plaza data model — architecture §7, including E9 personalization fields.
+// Bululu data model — architecture §7, including E9 personalization fields.
 // Positions are ephemeral and never stored. No Google token is ever stored.
 
 generator client {

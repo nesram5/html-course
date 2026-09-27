@@ -321,7 +321,7 @@ describe('MediaControls inside a meeting room (E6-S2)', () => {
     expect(camera).toHaveAttribute('aria-disabled', 'true');
     expect(mic).toHaveAttribute(
       'title',
-      'En la sala tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet',
+      'En la sala tu micrófono y tu cámara de Bululu están apagados: la reunión es en Meet',
     );
     await user.click(mic);
     await user.keyboard('{Control>}d{/Control}');

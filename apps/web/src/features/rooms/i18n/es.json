@@ -5,14 +5,14 @@
     "people_one": "{{count}} persona dentro",
     "people_other": "{{count}} personas dentro",
     "join": "Unirse a la reunión",
-    "joinHint": "Google Meet se abre en una pestaña nueva. Aquí el pasillo no te oye y tu micrófono y tu cámara de Plaza siguen apagados.",
-    "hallwayCut": "Aquí el pasillo no te oye y tu micrófono y tu cámara de Plaza están apagados.",
+    "joinHint": "Google Meet se abre en una pestaña nueva. Aquí el pasillo no te oye y tu micrófono y tu cámara de Bululu siguen apagados.",
+    "hallwayCut": "Aquí el pasillo no te oye y tu micrófono y tu cámara de Bululu están apagados.",
     "noMeet": "Esta sala aún no tiene enlace de Meet.",
     "addMeet": "Añadir el enlace de Meet",
     "askOwner": "Pide a quien administra el espacio que lo añada."
   },
   "announce": {
-    "entered": "Has entrado en {{name}}. Tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet.",
+    "entered": "Has entrado en {{name}}. Tu micrófono y tu cámara de Bululu están apagados: la reunión es en Meet.",
     "left": "Has salido de {{name}}. Vuelves al pasillo con el micrófono y la cámara como los tenías."
   }
 }

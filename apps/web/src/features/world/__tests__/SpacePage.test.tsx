@@ -335,10 +335,10 @@ describe('SpacePage realtime (E4)', () => {
     });
 
     expect(
-      screen.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
+      screen.getByRole('heading', { name: 'Has abierto Bululu en otra pestaña' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('world-canvas')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Usar Plaza aquí' }));
+    await user.click(screen.getByRole('button', { name: 'Usar Bululu aquí' }));
 
     expect(socket().connectCalls).toBe(connects + 1);
     await waitFor(() => {

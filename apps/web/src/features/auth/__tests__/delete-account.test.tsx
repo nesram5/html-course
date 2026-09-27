@@ -61,7 +61,7 @@ describe('"Borrar mi cuenta" in the profile (E8-S6)', () => {
       '/api/me',
     ]);
     expect(useToastStore.getState().toasts.map((t) => t.message)).toContain(
-      'Tu cuenta se ha borrado. Gracias por probar Plaza.',
+      'Tu cuenta se ha borrado. Gracias por probar Bululu.',
     );
   });
 
@@ -112,7 +112,7 @@ describe('privacy page (E8-S6)', () => {
     await user.click(await screen.findByRole('link', { name: 'Qué datos guardamos' }));
 
     expect(router.state.location.pathname).toBe('/privacidad');
-    expect(screen.getByRole('heading', { level: 1, name: 'Tus datos en Plaza' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1, name: 'Tus datos en Bululu' })).toBeVisible();
     const stored = screen.getByRole('region', { name: 'Qué guardamos' });
     expect(stored).toHaveTextContent('perfil básico de Google');
     expect(stored).toHaveTextContent('mensajes del chat');

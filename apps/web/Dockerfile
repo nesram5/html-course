@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# Plaza web app served by Caddy (E8-S5): the Vite build as static files with SPA fallback, and
+# Bululu web app served by Caddy (E8-S5): the Vite build as static files with SPA fallback, and
 # /api, /realtime (WebSocket) and /assets/maps proxied to the server. Build from the repository
 # root:
 #   docker build -f apps/web/Dockerfile -t bululu-web \

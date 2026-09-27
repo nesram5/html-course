@@ -6,7 +6,7 @@
 export interface MediaParticipant {
   identity: string;
   group: number;
-  /** Identities of the other people of the same conversation (the `media:peers` of Plaza). */
+  /** Identities of the other people of the same conversation (the `media:peers` of Bululu). */
   peers: string[];
 }
 

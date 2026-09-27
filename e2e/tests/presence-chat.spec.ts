@@ -217,7 +217,7 @@ test.describe('presence, chat and reactions (E7)', () => {
     await expect
       .poll(() => luis.page.evaluate(() => window.__notifications))
       .toEqual([
-        { title: 'Ana te está llamando', body: 'Vuelve a Plaza para hablar.', silent: false },
+        { title: 'Ana te está llamando', body: 'Vuelve a Bululu para hablar.', silent: false },
       ]);
     await expect(
       ana.page.getByRole('button', { name: /Podrás volver a llamar a Luis en (30|29) s/ }),

@@ -74,7 +74,7 @@ function randomTabId(): string {
  *   only while joined; snapshots and deltas also keep `worldStore.players` up to date (the
  *   positions React features read, e.g. the fading of hallway videos);
  * - handles `space:kicked` (no automatic reconnection) and join errors;
- * - only the first join of the visit and "Usar Plaza aquí" / "Reintentar" may take the avatar
+ * - only the first join of the visit and "Usar Bululu aquí" / "Reintentar" may take the avatar
  *   from another tab (`takeover`); an automatic rejoin after a reconnection that finds another
  *   tab in charge ends like a `SESSION_REPLACED` kick, so a tab that comes back online never
  *   takes the office from the tab the person is using.
@@ -169,7 +169,7 @@ export class SpaceSession {
   }
 
   /**
-   * "Usar Plaza aquí" after `SESSION_REPLACED`, or "Reintentar" after an error: reconnect and
+   * "Usar Bululu aquí" after `SESSION_REPLACED`, or "Reintentar" after an error: reconnect and
    * join again (the server then replaces the other tab).
    */
   retry(): void {

@@ -1,4 +1,4 @@
-# Local services for Plaza (E0-S5).
+# Local services for Bululu (E0-S5).
 #   pnpm infra:up          → PostgreSQL 16
 #   pnpm infra:up:livekit  → PostgreSQL 16 + LiveKit server in dev mode (key "devkey", secret "secret")
 # Host ports can be changed with BULULU_PG_PORT / BULULU_LIVEKIT_PORT if they are already taken.
