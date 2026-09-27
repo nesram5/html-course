@@ -119,6 +119,21 @@ describe('chat module: space chat and reactions (E7-S3, E7-S4)', () => {
       expect(await harness.testApp.container.db.chatMessage.count()).toBe(6);
     });
 
+    it('keeps the limit per person: a new connection does not refill it', async () => {
+      const first = await harness.enter(ana, spaceId);
+      const burst = await Promise.all(
+        Array.from({ length: 5 }, (_, i) => send(first.client, `mensaje ${String(i)}`)),
+      );
+
+      // The same person joins again from a new socket (another tab, a reconnection).
+      const second = await harness.enter(ana, spaceId);
+      const again = await send(second.client, 'otra vez');
+
+      expect(burst.every((ack) => ack.ok)).toBe(true);
+      expect(again).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
+      expect(await harness.testApp.container.db.chatMessage.count()).toBe(5);
+    });
+
     it('refuses messages before space:join with NOT_IN_SPACE', async () => {
       const client = await harness.open(ana);
 

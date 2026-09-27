@@ -199,6 +199,46 @@ describe('presence module: status, away and ring (E7-S1, E7-S5)', () => {
       expect(harness.inbox(mary.client)['ring:received']).toHaveLength(2);
     });
 
+    it('limits rings per person across connections, whatever the target', async () => {
+      const first = await harness.enter(ana, spaceId);
+      await harness.enter(luis, spaceId);
+      await harness.enter(eva, spaceId);
+
+      // Three in a row are fine (the cooldown answers the repeated target)…
+      const burst = [
+        await ring(first.client, luis.user.id),
+        await ring(first.client, eva.user.id),
+        await ring(first.client, luis.user.id),
+      ];
+      // …then a reconnection does not buy more.
+      const second = await harness.enter(ana, spaceId);
+      const flood = await ring(second.client, eva.user.id);
+      timers.advance(1000);
+      const later = await ring(second.client, 'nobody');
+
+      expect(burst.map((ack) => (ack.ok ? 'ok' : ack.error.code))).toEqual([
+        'ok',
+        'ok',
+        'RING_COOLDOWN',
+      ]);
+      expect(flood).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
+      expect(later).toMatchObject({ ok: false, error: { code: 'UNKNOWN_USER' } });
+    });
+
+    it('keeps the 30 s cooldown after the caller reconnects', async () => {
+      const first = await harness.enter(ana, spaceId);
+      await harness.enter(luis, spaceId);
+      expect((await ring(first.client, luis.user.id)).ok).toBe(true);
+
+      const second = await harness.enter(ana, spaceId);
+      timers.advance(5000);
+
+      expect(await ring(second.client, luis.user.id)).toMatchObject({
+        ok: false,
+        error: { code: 'RING_COOLDOWN' },
+      });
+    });
+
     it('rings busy people silently', async () => {
       const sam = await harness.enter(ana, spaceId);
       const mary = await harness.enter(luis, spaceId);
