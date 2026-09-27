@@ -1,5 +1,2 @@
-# Runs from the git repository root. Only acts when files under plaza/ are staged,
-# so commits that touch other parts of the repository are not affected.
-if git diff --cached --name-only --diff-filter=ACMR | grep -q '^plaza/'; then
-  cd plaza && pnpm exec lint-staged
-fi
+# ESLint and Prettier on the staged files (lint-staged config in package.json).
+pnpm exec lint-staged

@@ -6,7 +6,7 @@ import { parseEnv } from 'node:util';
 
 import { defineConfig, devices } from '@playwright/test';
 
-/** `plaza/.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
+/** The root `.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
 function dotEnv(): Record<string, string | undefined> {
   const file = join(dirname(fileURLToPath(import.meta.url)), '..', '.env');
   return existsSync(file) ? parseEnv(readFileSync(file, 'utf8')) : {};

@@ -1,4 +1,7 @@
-# Build context of apps/server/Dockerfile and apps/web/Dockerfile (the plaza/ folder).
+# Build context of apps/server/Dockerfile and apps/web/Dockerfile (the repository root).
+.git
+.github
+.claude
 **/node_modules
 **/dist
 **/coverage

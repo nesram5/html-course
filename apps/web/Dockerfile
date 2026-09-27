@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7
 #
 # Plaza web app served by Caddy (E8-S5): the Vite build as static files with SPA fallback, and
-# /api, /realtime (WebSocket) and /assets/maps proxied to the server. Build from plaza/:
+# /api, /realtime (WebSocket) and /assets/maps proxied to the server. Build from the repository
+# root:
 #   docker build -f apps/web/Dockerfile -t plaza-web \
 #     --build-arg VITE_APP_VERSION=0.1.0 --build-arg VITE_SENTRY_DSN=https://… .
 #

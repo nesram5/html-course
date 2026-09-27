@@ -6,7 +6,7 @@ import { parseEnv } from 'node:util';
 
 import { loadConfig, type AppConfig } from '../platform/config.js';
 
-/** `plaza/.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
+/** The root `.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
 function dotEnv(): Record<string, string | undefined> {
   const file = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', '.env');
   return existsSync(file) ? parseEnv(readFileSync(file, 'utf8')) : {};
@@ -14,7 +14,7 @@ function dotEnv(): Record<string, string | undefined> {
 
 /**
  * Per-run test database (created and migrated by `global-setup.ts`): `TEST_DATABASE_URL` from
- * the environment, else from `plaza/.env`, else the database of `pnpm infra:up` (whose postgres
+ * the environment, else from the root `.env`, else the database of `pnpm infra:up` (whose postgres
  * user has the password `postgres`; a trust-auth server ignores it).
  */
 export const TEST_DATABASE_URL =

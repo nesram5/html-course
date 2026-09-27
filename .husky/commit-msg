@@ -1,8 +1,2 @@
-# Enforces Conventional Commits for commits that touch plaza/.
-if git diff --cached --name-only | grep -q '^plaza/'; then
-  case "$1" in
-    /*) msg_file="$1" ;;
-    *) msg_file="$(pwd)/$1" ;;
-  esac
-  cd plaza && pnpm exec commitlint --edit "$msg_file"
-fi
+# Enforces Conventional Commits (commitlint.config.js).
+pnpm exec commitlint --edit "$1"
