@@ -82,6 +82,7 @@ export class SpacesService {
     if (!maps.hasTemplate(body.mapTemplateId)) {
       throw new AppError('UNKNOWN_MAP_TEMPLATE', `Unknown map template "${body.mapTemplateId}"`);
     }
+    await this.#assertUsableTemplate(body.mapTemplateId);
     const base = slugify(body.name);
     for (let attempt = 1; ; attempt++) {
       const taken = await this.#repository.slugsStartingWith(base);
@@ -249,6 +250,20 @@ export class SpacesService {
       this.deps.logger.error({ err: error, mapTemplateId }, 'Could not read the rooms of the map');
       this.deps.reporter.captureException(error);
       return [];
+    }
+  }
+
+  /**
+   * A new space needs a map that `parseMap` accepts (walls, spawns, rooms): a template whose map
+   * cannot be parsed is refused like an unknown one, and the problem is reported.
+   */
+  async #assertUsableTemplate(mapTemplateId: string): Promise<void> {
+    try {
+      await this.deps.maps.roomAreas(mapTemplateId);
+    } catch (error) {
+      this.deps.logger.error({ err: error, mapTemplateId }, 'Map template cannot be parsed');
+      this.deps.reporter.captureException(error);
+      throw new AppError('UNKNOWN_MAP_TEMPLATE', `Map template "${mapTemplateId}" is not valid`);
     }
   }
 

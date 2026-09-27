@@ -8,7 +8,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../../test/app.js';
 import { resetDatabase } from '../../../test/db.js';
-import { FIXTURE_AVATAR_IDS } from '../../../test/maps-fixture.js';
 import { signIn, type TestUser } from '../../../test/session.js';
 
 describe('users module (E1-S4)', () => {
@@ -105,14 +104,21 @@ describe('users module (E1-S4)', () => {
     const response = await testApp.app.inject({ method: 'GET', url: API_PATHS.avatars });
 
     const { avatars } = AvatarsResponseSchema.parse(response.json());
-    expect(avatars.map((avatar) => avatar.id)).toEqual(FIXTURE_AVATAR_IDS);
     expect(avatars.length).toBeGreaterThanOrEqual(8);
     expect(avatars[0]).toEqual({
       id: 'avatar-01',
-      name: 'Avatar 01',
+      name: 'Coral',
       spriteUrl: '/assets/maps/avatars/avatar-01.png',
       frameWidth: 32,
       frameHeight: 32,
     });
+    // Every sprite sheet of the generated catalog is served: 3 frames × 4 directions.
+    for (const avatar of avatars) {
+      const sprite = await testApp.app.inject({ method: 'GET', url: avatar.spriteUrl });
+      expect(sprite.statusCode, avatar.spriteUrl).toBe(200);
+      expect(sprite.headers['content-type']).toBe('image/png');
+      expect(sprite.rawPayload.readUInt32BE(16)).toBe(avatar.frameWidth * 3);
+      expect(sprite.rawPayload.readUInt32BE(20)).toBe(avatar.frameHeight * 4);
+    }
   });
 });

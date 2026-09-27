@@ -117,14 +117,14 @@ describe('space notifications to connected sockets', () => {
 
     await testApp.app.inject({
       method: 'PUT',
-      url: apiPath(API_PATHS.room, { spaceId: space.id, areaId: 'sala-1' }),
+      url: apiPath(API_PATHS.room, { spaceId: space.id, areaId: 'sala-reuniones' }),
       headers: ana.headers,
       payload: { meetUri: 'https://meet.google.com/abc-defg-hij' },
     });
 
     expect(await updated).toEqual({
-      areaId: 'sala-1',
-      name: 'Sala 1',
+      areaId: 'sala-reuniones',
+      name: 'Sala de reuniones',
       meetUri: 'https://meet.google.com/abc-defg-hij',
       source: 'manual',
     });

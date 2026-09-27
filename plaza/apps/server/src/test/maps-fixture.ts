@@ -2,9 +2,21 @@ import { parseManifest } from '@plaza/maps';
 
 import {
   ManifestMapsCatalog,
+  mapsPackageDir,
   type MapRoomArea,
   type ParsedMapInfo,
 } from '../platform/maps-catalog.js';
+
+let packageCatalog: ManifestMapsCatalog | undefined;
+
+/**
+ * The real `@plaza/maps` catalog (generated templates parsed with `parseMap`, 8 avatars), loaded
+ * once per test file. Integration tests use it through `buildTestApp`.
+ */
+export function packageMapsCatalog(): ManifestMapsCatalog {
+  packageCatalog ??= ManifestMapsCatalog.fromDir(mapsPackageDir());
+  return packageCatalog;
+}
 
 /** Rooms of the fixture templates (areaId → name). */
 export const FIXTURE_ROOMS = {
@@ -82,8 +94,8 @@ function themeFile(name: string) {
 }
 
 /**
- * Catalog used by integration tests: the real `@plaza/maps` manifest may still be empty, and
- * `parseMap` belongs to another story, so the fixture "maps" are already-parsed objects.
+ * Small synthetic catalog for unit tests of `ManifestMapsCatalog` (a template without the night
+ * theme, eight avatars): the fixture "maps" are already-parsed objects.
  */
 export function fixtureMapsCatalog(): ManifestMapsCatalog {
   return new ManifestMapsCatalog(

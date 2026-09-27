@@ -5,6 +5,7 @@ import {
   apiPath,
   EnterSpaceResponseSchema,
   JoinResponseSchema,
+  MapParseError,
   MapTemplatesResponseSchema,
   MembersResponseSchema,
   SpaceResponseSchema,
@@ -12,8 +13,10 @@ import {
   type ErrorResponse,
   type SpaceDetailDto,
 } from '@plaza/shared';
+import { parseManifest } from '@plaza/maps';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { ManifestMapsCatalog } from '../../../platform/maps-catalog.js';
 import { buildTestApp, type TestApp } from '../../../test/app.js';
 import { resetDatabase } from '../../../test/db.js';
 import { signIn, type TestUser } from '../../../test/session.js';
@@ -89,9 +92,9 @@ describe('spaces module (E2-S2..S6)', () => {
       });
       expect(space.inviteUrl).toMatch(/^http:\/\/localhost:5173\/join\/[\w-]{43}$/);
       expect(space.rooms.map((room) => room.areaId)).toEqual([
-        'sala-norte',
-        'sala-sur',
-        'sala-grande',
+        'sala-mar',
+        'sala-bosque',
+        'sala-coral',
       ]);
       const membership = await testApp.container.db.membership.findUniqueOrThrow({
         where: { userId_spaceId: { userId: ana.user.id, spaceId: space.id } },
@@ -133,6 +136,44 @@ describe('spaces module (E2-S2..S6)', () => {
       expect(response.json<ErrorResponse>().error.code).toBe('UNKNOWN_MAP_TEMPLATE');
     });
 
+    it('refuses a template whose map parseMap rejects, and reports it', async () => {
+      const broken = new ManifestMapsCatalog(
+        parseManifest({
+          version: 1,
+          templates: [
+            {
+              id: 'broken@1',
+              dir: 'broken',
+              name: 'Rota',
+              defaultThemeId: 'pixel',
+              themes: [{ id: 'pixel', name: 'Píxel' }],
+            },
+          ],
+          avatars: [],
+          decor: [],
+        }),
+        // A Tiled map without layers: the real parseMap throws MapParseError.
+        { readJson: () => ({ type: 'map', width: 4, height: 3, layers: [] }) },
+      );
+      const brokenApp = await buildTestApp({ overrides: { maps: broken } });
+      try {
+        const owner = await signIn(brokenApp.app, 'eva@acme.com');
+        const response = await brokenApp.app.inject({
+          method: 'POST',
+          url: API_PATHS.spaces,
+          headers: owner.headers,
+          payload: { name: 'Oficina', mapTemplateId: 'broken@1' },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json<ErrorResponse>().error.code).toBe('UNKNOWN_MAP_TEMPLATE');
+        expect(brokenApp.reporter.captured[0]?.error).toBeInstanceOf(MapParseError);
+        expect(await brokenApp.container.db.space.count()).toBe(0);
+      } finally {
+        await brokenApp.app.close();
+      }
+    });
+
     it('validates the name and requires a session and the client header', async () => {
       expect(
         (await request(ana, 'POST', API_PATHS.spaces, { name: ' ', mapTemplateId: 'campus@1' }))
@@ -164,13 +205,14 @@ describe('spaces module (E2-S2..S6)', () => {
       expect(response.json<ErrorResponse>().error.code).toBe('NOT_A_MEMBER');
     });
 
-    it('lists the map templates of the catalog', async () => {
+    it('lists the generated map templates, parsed with parseMap', async () => {
       const response = await request(null, 'GET', API_PATHS.mapTemplates);
 
+      expect(response.statusCode).toBe(200);
       const { templates } = MapTemplatesResponseSchema.parse(response.json());
-      expect(templates.map((t) => [t.id, t.roomCount, t.width, t.height])).toEqual([
-        ['office-small@1', 1, 40, 30],
-        ['campus@1', 3, 80, 60],
+      expect(templates.map((t) => [t.id, t.roomCount, t.deskCount, t.width, t.height])).toEqual([
+        ['office-small@1', 1, 24, 40, 30],
+        ['campus@1', 3, 32, 80, 60],
       ]);
       expect(templates[1]?.themes[1]).toMatchObject({
         id: 'night',

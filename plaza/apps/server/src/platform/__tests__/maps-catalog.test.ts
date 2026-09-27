@@ -54,6 +54,28 @@ describe('ManifestMapsCatalog', () => {
     await expect(catalog.roomAreas('broken@1')).rejects.toThrow('missing collision layer');
   });
 
+  it('parses every generated template of @plaza/maps with parseMap', async () => {
+    const catalog = ManifestMapsCatalog.fromDir(mapsPackageDir());
+
+    const templates = await catalog.listTemplates();
+    expect(templates.map((template) => template.id)).toEqual(['office-small@1', 'campus@1']);
+    expect(await catalog.roomAreas('office-small@1')).toEqual([
+      { areaId: 'sala-reuniones', name: 'Sala de reuniones' },
+    ]);
+    expect((await catalog.roomAreas('campus@1')).map((room) => room.areaId)).toEqual([
+      'sala-mar',
+      'sala-bosque',
+      'sala-coral',
+    ]);
+    for (const template of templates) {
+      expect(template.themes.map((theme) => theme.id)).toEqual(['pixel', 'night']);
+      expect(catalog.hasTheme(template.id, 'night')).toBe(true);
+    }
+    const avatars = catalog.listAvatars();
+    expect(avatars).toHaveLength(8);
+    expect(avatars.every((avatar) => catalog.hasAvatar(avatar.id))).toBe(true);
+  });
+
   it('loads the manifest of a folder (MAPS_DIR) and of the @plaza/maps package', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'plaza-maps-'));
     writeFileSync(

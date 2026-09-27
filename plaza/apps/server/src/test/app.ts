@@ -10,7 +10,7 @@ import { buildApp } from '../app.js';
 import { createContainer, type Container } from '../container.js';
 import type { PlazaModule } from '../modules/types.js';
 import { testConfig } from './config.js';
-import { fixtureMapsCatalog } from './maps-fixture.js';
+import { packageMapsCatalog } from './maps-fixture.js';
 import { RecordingErrorReporter } from './recording-error-reporter.js';
 
 export interface TestApp {
@@ -30,8 +30,8 @@ export interface TestAppOptions {
 }
 
 /**
- * Builds the real app with fake adapters, the fixture maps catalog, a silent logger and the test
- * database.
+ * Builds the real app with fake adapters, the real `@plaza/maps` catalog, a silent logger and the
+ * test database.
  * Call `app.close()` in `afterEach`/`afterAll`.
  */
 export async function buildTestApp(options: TestAppOptions = {}): Promise<TestApp> {
@@ -48,7 +48,7 @@ export async function buildTestApp(options: TestAppOptions = {}): Promise<TestAp
       meetings,
       media,
       reporter,
-      maps: fixtureMapsCatalog(),
+      maps: packageMapsCatalog(),
       ...options.overrides,
     },
   });

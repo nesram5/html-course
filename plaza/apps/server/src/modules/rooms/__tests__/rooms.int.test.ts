@@ -101,9 +101,9 @@ describe('rooms module (E2-S7)', () => {
 
   it('lists every room of the map, without links at first', async () => {
     expect(await rooms(luis)).toEqual([
-      { areaId: 'sala-norte', name: 'Sala Norte', meetUri: null, source: null },
-      { areaId: 'sala-sur', name: 'Sala Sur', meetUri: null, source: null },
-      { areaId: 'sala-grande', name: 'Sala Grande', meetUri: null, source: null },
+      { areaId: 'sala-mar', name: 'Sala Mar', meetUri: null, source: null },
+      { areaId: 'sala-bosque', name: 'Sala Bosque', meetUri: null, source: null },
+      { areaId: 'sala-coral', name: 'Sala Coral', meetUri: null, source: null },
     ]);
   });
 
@@ -161,14 +161,14 @@ describe('rooms module (E2-S7)', () => {
   });
 
   it('only creates the rooms that are still missing', async () => {
-    await putRoom(ana, 'sala-sur', 'https://meet.google.com/abc-defg-hij');
+    await putRoom(ana, 'sala-bosque', 'https://meet.google.com/abc-defg-hij');
     const { state, cookie } = await authorize();
 
     await callback(cookie, { code: 'meet-code', state });
 
     expect(testApp.meetings.calls[0]?.count).toBe(2);
     const list = await rooms();
-    expect(list.find((room) => room.areaId === 'sala-sur')).toMatchObject({
+    expect(list.find((room) => room.areaId === 'sala-bosque')).toMatchObject({
       meetUri: 'https://meet.google.com/abc-defg-hij',
       source: 'manual',
     });
@@ -224,12 +224,12 @@ describe('rooms module (E2-S7)', () => {
 
   describe('manual links', () => {
     it('replaces a link by hand with source "manual"', async () => {
-      const response = await putRoom(ana, 'sala-norte', 'https://meet.google.com/xyz-abcd-efg');
+      const response = await putRoom(ana, 'sala-mar', 'https://meet.google.com/xyz-abcd-efg');
 
       expect(response.statusCode).toBe(200);
       expect(RoomResponseSchema.parse(response.json()).room).toEqual({
-        areaId: 'sala-norte',
-        name: 'Sala Norte',
+        areaId: 'sala-mar',
+        name: 'Sala Mar',
         meetUri: 'https://meet.google.com/xyz-abcd-efg',
         source: 'manual',
       });
@@ -242,7 +242,7 @@ describe('rooms module (E2-S7)', () => {
         'meet.google.com/abc',
         'https://meet.google.com.evil.com/abc',
       ]) {
-        const response = await putRoom(ana, 'sala-norte', meetUri);
+        const response = await putRoom(ana, 'sala-mar', meetUri);
         expect(response.statusCode, meetUri).toBe(400);
         expect(response.json<ErrorResponse>().error.code).toBe('INVALID_MEET_URI');
       }
@@ -250,7 +250,7 @@ describe('rooms module (E2-S7)', () => {
 
     it('rejects unknown rooms (404) and members (403)', async () => {
       const unknown = await putRoom(ana, 'sala-fantasma', 'https://meet.google.com/abc');
-      const member = await putRoom(luis, 'sala-norte', 'https://meet.google.com/abc');
+      const member = await putRoom(luis, 'sala-mar', 'https://meet.google.com/abc');
 
       expect(unknown.json<ErrorResponse>().error.code).toBe('UNKNOWN_ROOM');
       expect(member.statusCode).toBe(403);
@@ -259,7 +259,7 @@ describe('rooms module (E2-S7)', () => {
     it('requires the client header', async () => {
       const response = await testApp.app.inject({
         method: 'PUT',
-        url: apiPath(API_PATHS.room, { spaceId: space.id, areaId: 'sala-norte' }),
+        url: apiPath(API_PATHS.room, { spaceId: space.id, areaId: 'sala-mar' }),
         headers: { cookie: ana.cookie },
         payload: { meetUri: 'https://meet.google.com/abc' },
       });
