@@ -239,6 +239,20 @@ describe('MediaController: subscriptions follow media:peers (E5-S5)', () => {
     expect(eva.camera.quality).toBe(VideoQuality.HIGH);
   });
 
+  it('drops the enlarged video when that person is no longer a peer', async () => {
+    const lk = await started();
+    lk.addParticipant('user-2');
+    const eva = lk.addParticipant('user-3');
+    realtime.peers('user-2', 'user-3');
+    controller.focus('user-2');
+    expect(eva.camera.quality).toBe(VideoQuality.LOW);
+
+    realtime.peers('user-3');
+
+    expect(store.getState().focused).toBeNull();
+    expect(eva.camera.quality).toBe(VideoQuality.HIGH);
+  });
+
   it('records the time from media:peers to the first frame of each new peer', async () => {
     const lk = await started();
     lk.addParticipant('user-2');

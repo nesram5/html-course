@@ -583,8 +583,16 @@ export class MediaController {
       if (!next.has(userId)) this.#pendingFrames.delete(userId);
     }
     this.#peers = next;
-    this.#deps.store.getState().patch({ peers: [...next].sort() });
+    const { focused } = this.#deps.store.getState();
+    // An enlarged video whose person is no longer a peer has no tile to click any more: without
+    // this every other video would stay capped at the low layer.
+    const lostFocus = focused !== null && !next.has(focused);
+    this.#deps.store.getState().patch({
+      peers: [...next].sort(),
+      ...(lostFocus && { focused: null }),
+    });
     this.#applySubscriptions();
+    if (lostFocus) this.#applyVideoQuality();
   }
 
   /** Subscribes to every track of the peers and to nothing else (`autoSubscribe: false`). */
