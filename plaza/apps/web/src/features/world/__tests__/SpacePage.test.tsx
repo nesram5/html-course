@@ -202,6 +202,20 @@ describe('SpacePage (/s/:slug)', () => {
     expect(games).toHaveLength(0);
   });
 
+  it('explains a ban (removed by an owner) without offering a useless retry', async () => {
+    mockServer({
+      '/api/spaces/by-slug/acme/enter': () =>
+        json({ error: { code: 'BANNED_FROM_SPACE', message: 'removed' } }, 403),
+    });
+
+    renderApp({ route: '/s/acme' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/.+/);
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toBeInTheDocument();
+    expect(games).toHaveLength(0);
+  });
+
   it('sends people without a session to the login page and back to the space', async () => {
     mockServer({
       '/api/me': () => json({ error: { code: 'UNAUTHORIZED', message: 'no' } }, 401),
