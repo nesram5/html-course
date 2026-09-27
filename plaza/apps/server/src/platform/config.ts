@@ -50,6 +50,12 @@ const EnvSchema = z
      */
     MAX_PLAYERS_PER_SPACE: optional(z.coerce.number().int().positive()),
 
+    /**
+     * Comma-separated e-mails of the people who may open the product metrics (`/admin/metricas`,
+     * E8-S7). Nobody when unset.
+     */
+    ADMIN_EMAILS: optional(z.string()),
+
     SENTRY_DSN: optional(z.url()),
     SENTRY_ENVIRONMENT: optional(z.string().min(1)),
   })
@@ -76,6 +82,15 @@ const EnvSchema = z
       });
     }
   });
+
+/** `"Ana@acme.com, luis@acme.com"` → `["ana@acme.com", "luis@acme.com"]`. */
+function parseEmailList(value: string | undefined): readonly string[] {
+  if (value === undefined) return [];
+  return value
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email !== '');
+}
 
 function readPackageVersion(): string {
   // Same relative location from src/platform (tsx) and dist/platform (node).
@@ -104,6 +119,7 @@ const ConfigSchema = EnvSchema.transform((env) => ({
   mapsDir: env.MAPS_DIR ?? null,
   rateLimitPerMinute: env.RATE_LIMIT_PER_MINUTE,
   realtime: { maxPlayersPerSpace: env.MAX_PLAYERS_PER_SPACE ?? null },
+  adminEmails: parseEmailList(env.ADMIN_EMAILS),
   sentry:
     env.SENTRY_DSN !== undefined
       ? { dsn: env.SENTRY_DSN, environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV }

@@ -12,6 +12,8 @@ import type { PlazaModule } from '../types.js';
 import { UsersRepository } from './users.repository.js';
 import { UsersService } from './users.service.js';
 
+export { isAdminEmail } from './me.mapper.js';
+
 /** Users module (E1-S4): `GET|PATCH /api/me` and the avatar catalog `GET /api/avatars`. */
 export const usersModule: PlazaModule = {
   name: 'users',
@@ -20,6 +22,7 @@ export const usersModule: PlazaModule = {
       new UsersRepository(container.db),
       container.maps,
       container.now,
+      container.config.adminEmails,
     );
     const { requireUser } = services.get('auth');
 

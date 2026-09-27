@@ -11,6 +11,8 @@ export const API_PATHS = {
   authTestLogin: '/api/auth/test-login',
   authLogout: '/api/auth/logout',
   me: '/api/me',
+  /** E8-S6 · What deleting my account would do (spaces deleted with it, spaces blocking it). */
+  meDeletion: '/api/me/deletion',
   avatars: '/api/avatars',
 
   // E2 · Spaces, access and Meet rooms
@@ -44,8 +46,10 @@ export const API_PATHS = {
   // E6-S2 / E8-S7 · Product events (no personal data)
   events: '/api/spaces/:spaceId/events',
 
-  // E8-S7 · In-app feedback form
+  // E8-S7 · In-app feedback form, client telemetry and the admin metrics (O1–O6)
   feedback: '/api/feedback',
+  telemetry: '/api/telemetry',
+  adminMetrics: '/api/admin/metrics',
 } as const;
 
 export type ApiPathTemplate = (typeof API_PATHS)[keyof typeof API_PATHS];

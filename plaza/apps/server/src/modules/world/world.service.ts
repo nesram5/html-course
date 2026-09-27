@@ -23,6 +23,7 @@ import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
 import type { CancelTimer, Timers } from '../../platform/timers.js';
 import type { TokenBucket } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
+import type { EventsService } from '../events/index.js';
 import type { MediaService } from '../media/index.js';
 import type { SpacesService } from '../spaces/index.js';
 import { HallwayPeers } from './hallway-peers.js';
@@ -58,6 +59,8 @@ export interface WorldServiceDeps {
   spaces: SpacesService;
   maps: MapsCatalog;
   media: MediaService;
+  /** Product events (E8-S7): entering the map and hallway conversations. */
+  events: Pick<EventsService, 'record'>;
   metrics: InMemoryRealtimeMetrics;
   timers: Timers;
   logger: Logger;
@@ -193,6 +196,8 @@ export class WorldService {
         runtime.spawnFor(deskId),
         socket.id,
       );
+      // A new visit of the map (not a reconnection nor a second tab): O2 days of use, O1 people.
+      this.deps.events.record('space_joined', { spaceId, userId });
     }
     if (previousSocketId !== socket.id) this.#hallway(runtime).resend(userId);
     socket.data.spaceId = spaceId;
@@ -389,7 +394,23 @@ export class WorldService {
   #hallway(runtime: SpaceRuntime): HallwayPeers {
     let hallway = this.#hallways.get(runtime);
     if (hallway === undefined) {
-      hallway = new HallwayPeers();
+      const { spaceId } = runtime;
+      const { events } = this.deps;
+      hallway = new HallwayPeers(
+        {
+          started: (userId) => {
+            events.record('conversation_started', { spaceId, userId });
+          },
+          ended: (userId, durationMs, maxPeers) => {
+            events.record('conversation_ended', {
+              spaceId,
+              userId,
+              props: { durationMs, maxPeers },
+            });
+          },
+        },
+        () => this.deps.timers.now(),
+      );
       this.#hallways.set(runtime, hallway);
     }
     return hallway;

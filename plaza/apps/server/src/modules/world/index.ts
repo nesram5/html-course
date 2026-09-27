@@ -43,6 +43,7 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
         spaces: spaces.service,
         maps: container.maps,
         media: services.get('media'),
+        events: services.get('events'),
         metrics: container.metrics,
         timers,
         logger: container.logger,

@@ -18,6 +18,7 @@ import {
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 
 import { createChatModule } from '../modules/chat/index.js';
+import type { EventsService } from '../modules/events/index.js';
 import { modules } from '../modules/index.js';
 import { createPresenceModule } from '../modules/presence/index.js';
 import type { PlazaModule } from '../modules/types.js';
@@ -63,6 +64,8 @@ export interface RealtimeHarnessOptions {
 export class RealtimeHarness {
   testApp!: TestApp;
   world!: WorldService;
+  /** Product events (E8-S7); `await events.flush()` before reading `ProductEvent`. */
+  events!: EventsService;
   url = '';
   readonly #clients: TestClient[] = [];
   readonly #inboxes = new Map<TestClient, Received>();
@@ -84,6 +87,7 @@ export class RealtimeHarness {
           name: 'capture-world',
           register: ({ services }) => {
             this.world = services.get('world');
+            this.events = services.get('events');
           },
         },
       ],

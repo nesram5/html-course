@@ -40,6 +40,14 @@ describe('loadConfig', () => {
     ]);
   });
 
+  it('reads the admin e-mails of the metrics page, normalised (E8-S7)', () => {
+    expect(loadConfig(testEnv()).adminEmails).toEqual([]);
+    expect(loadConfig(testEnv({ ADMIN_EMAILS: '' })).adminEmails).toEqual([]);
+    expect(
+      loadConfig(testEnv({ ADMIN_EMAILS: ' Ana@Acme.com, ,luis@acme.com ' })).adminEmails,
+    ).toEqual(['ana@acme.com', 'luis@acme.com']);
+  });
+
   it('names every missing variable', () => {
     const error = configError(testEnv({ DATABASE_URL: undefined, LIVEKIT_API_KEY: undefined }));
     expect(error.variables).toEqual(expect.arrayContaining(['DATABASE_URL', 'LIVEKIT_API_KEY']));

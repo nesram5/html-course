@@ -3,6 +3,7 @@ import type { FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'f
 
 import { AppError } from '../../platform/errors.js';
 import type { AuthContext, AuthService } from './auth.service.js';
+import { hashToken } from './tokens.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -50,4 +51,13 @@ export function createRequireUser(auth: AuthService): preHandlerAsyncHookHandler
 export function currentUser(request: FastifyRequest): AuthContext {
   if (request.auth === null) throw new AppError('UNAUTHORIZED');
   return request.auth;
+}
+
+/**
+ * Key of per-person route rate limits (`config.rateLimit.keyGenerator`): the session, hashed, so
+ * people behind one office NAT do not share a budget; the IP without a session.
+ */
+export function sessionRateLimitKey(request: FastifyRequest): string {
+  const token = sessionTokenOf(request);
+  return token === undefined ? `ip:${request.ip}` : `sid:${hashToken(token)}`;
 }

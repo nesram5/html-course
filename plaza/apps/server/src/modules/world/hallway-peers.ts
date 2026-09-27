@@ -3,6 +3,21 @@ import { changedPeers, computePeers, type PeerMap, type PeersChange } from '@pla
 import type { SpaceRuntime } from './space-runtime.js';
 
 /**
+ * Hallway conversations of each person, for the product events (E8-S7, O1): a conversation
+ * starts when someone goes from no peers to at least one, and ends when they have none again
+ * (walked away, entered a room, went busy or left). Group size changes in between do not split it.
+ */
+export interface ConversationListener {
+  started(userId: string): void;
+  ended(userId: string, durationMs: number, maxPeers: number): void;
+}
+
+interface OpenConversation {
+  readonly since: number;
+  maxPeers: number;
+}
+
+/**
  * Hallway conversations of one space (E5-S2, architecture §10.1). Keeps the last
  * `computePeers` result (the hysteresis needs it) and, on each working tick:
  * 1. recomputes the peers of everyone in the runtime (people in a meeting room or busy have none);
@@ -16,6 +31,13 @@ import type { SpaceRuntime } from './space-runtime.js';
 export class HallwayPeers {
   #peers: PeerMap = new Map();
   readonly #resend = new Set<string>();
+  readonly #conversations = new Map<string, OpenConversation>();
+
+  /** `now` is in milliseconds (the world timers' clock). */
+  constructor(
+    private readonly listener: ConversationListener | null = null,
+    private readonly now: () => number = () => 0,
+  ) {}
 
   /** `true` when someone is waiting for their list: the next tick must run even if idle. */
   get pending(): boolean {
@@ -36,11 +58,32 @@ export class HallwayPeers {
   update(runtime: SpaceRuntime): PeersChange[] {
     const next = computePeers(runtime.players(), this.#peers);
     const changes = changedPeers(this.#peers, next, this.#resend);
+    this.#trackConversations(next);
     this.#peers = next;
     this.#resend.clear();
     for (const { userId, peers } of changes) {
       runtime.update(userId, { inConversation: peers.length > 0 });
     }
     return changes;
+  }
+
+  #trackConversations(next: PeerMap): void {
+    if (this.listener === null) return;
+    const at = this.now();
+    for (const [userId, peers] of next) {
+      if (peers.size === 0) continue;
+      const open = this.#conversations.get(userId);
+      if (open === undefined) {
+        this.#conversations.set(userId, { since: at, maxPeers: peers.size });
+        this.listener.started(userId);
+      } else {
+        open.maxPeers = Math.max(open.maxPeers, peers.size);
+      }
+    }
+    for (const [userId, open] of this.#conversations) {
+      if ((next.get(userId)?.size ?? 0) > 0) continue;
+      this.#conversations.delete(userId);
+      this.listener.ended(userId, Math.max(0, at - open.since), open.maxPeers);
+    }
   }
 }
