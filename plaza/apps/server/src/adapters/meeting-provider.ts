@@ -2,7 +2,7 @@ import type { AuthorizationRequest, CodeExchange } from './identity-provider.js'
 
 /**
  * Meeting provider port (ADR-010, E2-S7). The real implementation is the Google Meet REST API
- * (`google-meet.ts`, `POST https://meet.googleapis.com/v2/spaces`, TODO E2-S7) with incremental
+ * (`google-meet.ts`, `POST https://meet.googleapis.com/v2/spaces`) with incremental
  * authorization of the `meetings.space.created` scope.
  *
  * The access token is obtained and discarded INSIDE `createMeetingSpaces`: Plaza never stores
