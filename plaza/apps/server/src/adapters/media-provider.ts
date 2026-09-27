@@ -9,6 +9,11 @@ export interface MediaTokenRequest {
   identity: string;
   displayName: string;
   ttlSeconds: number;
+  /**
+   * May publish media (default `true`). `false` for someone who is in a meeting room when they
+   * connect (E6-S3): they may listen to nobody's hallway and must not be heard either.
+   */
+  canPublish?: boolean;
 }
 
 export interface MediaProvider {
@@ -22,6 +27,14 @@ export interface MediaProvider {
    * rejects with `AppError('MEDIA_PROVIDER_ERROR')` when the media server fails.
    */
   mutePublishedTracks(input: { roomName: string; identity: string }): Promise<void>;
+  /**
+   * Grants or revokes the participant's permission to publish media (E6-S3). Revoking it
+   * unpublishes every track they have and refuses new ones, so even a modified client cannot be
+   * heard; granting it back only allows publishing (the client republishes by itself, the server
+   * never unmutes anyone). Resolves without doing anything when the person is not connected;
+   * rejects with `AppError('MEDIA_PROVIDER_ERROR')` when the media server fails.
+   */
+  setCanPublish(input: { roomName: string; identity: string; canPublish: boolean }): Promise<void>;
   /**
    * Disconnects the participant from the media room (a member removed from the space, E2-S6):
    * they stop hearing and seeing the hallway at once, even with a misbehaving client. Resolves

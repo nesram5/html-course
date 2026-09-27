@@ -377,6 +377,76 @@ describe('MediaController: away and leaving', () => {
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, awayMuted: false });
   });
 
+  it('turns microphone and camera off inside a meeting room and restores exactly what was on (E6-S2)', async () => {
+    const lk = await started({ ...DEFAULT_MEDIA_CHOICES, videoEnabled: false });
+
+    events.emit('media:self-in-room', { inRoom: true });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: true });
+    expect(lk.localParticipant.calls.slice(-2)).toEqual(['mic:false', 'camera:false']);
+
+    // The bottom bar and the shortcuts do nothing inside the room.
+    await controller.toggleMic();
+    await controller.setCameraEnabled(true);
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false });
+
+    events.emit('media:self-in-room', { inRoom: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, roomMuted: false });
+    expect(lk.localParticipant.calls.slice(-2)).toEqual(['mic:true', 'camera:false']);
+  });
+
+  it('restores only when the person is neither away nor in a room, in either order', async () => {
+    await started();
+
+    events.emit('media:self-in-room', { inRoom: true });
+    events.emit('presence:self-away', { away: true });
+    events.emit('media:self-in-room', { inRoom: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
+    events.emit('presence:self-away', { away: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
+
+    events.emit('presence:self-away', { away: true });
+    events.emit('media:self-in-room', { inRoom: true });
+    events.emit('presence:self-away', { away: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: true });
+    // A manual toggle neither turns anything on inside the room nor forgets what to restore.
+    await controller.toggleCamera();
+    events.emit('media:self-in-room', { inRoom: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, roomMuted: false });
+    expect(controller.holds).toEqual({ away: false, room: false });
+  });
+
+  it('waits until LiveKit lets the person publish again before restoring (E6-S3)', async () => {
+    const lk = await started();
+    events.emit('media:self-in-room', { inRoom: true });
+    await settle();
+    // Inside the room the server revoked the permission to publish.
+    lk.localParticipant.permissions = { canPublish: false };
+    lk.emit(RoomEvent.ParticipantPermissionsChanged, undefined, lk.localParticipant);
+    const before = lk.localParticipant.calls.length;
+
+    events.emit('media:self-in-room', { inRoom: false });
+    await settle();
+    expect(lk.localParticipant.calls.slice(before)).toEqual([]);
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: false });
+
+    // Someone else's permissions do not matter.
+    lk.localParticipant.permissions = { canPublish: true };
+    lk.emit(RoomEvent.ParticipantPermissionsChanged, undefined, lk.addParticipant('user-2'));
+    await settle();
+    expect(lk.localParticipant.calls.slice(before)).toEqual([]);
+
+    lk.emit(RoomEvent.ParticipantPermissionsChanged, undefined, lk.localParticipant);
+    await settle();
+    expect(lk.localParticipant.calls.slice(before)).toEqual(['mic:true', 'camera:true']);
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true });
+  });
+
   it('releases everything on stop and ignores late events', async () => {
     const lk = await started();
     const luis = lk.addParticipant('user-2');

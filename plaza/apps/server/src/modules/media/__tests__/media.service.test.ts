@@ -19,7 +19,61 @@ describe('MediaService', () => {
       expiresInSeconds: 600,
     });
     expect(media.tokens).toEqual([
-      { roomName: 'space_space-1', identity: 'user-ana', displayName: 'Ana', ttlSeconds: 600 },
+      {
+        roomName: 'space_space-1',
+        identity: 'user-ana',
+        displayName: 'Ana',
+        ttlSeconds: 600,
+        canPublish: true,
+      },
+    ]);
+  });
+
+  it('issues a token that may not publish to someone inside a meeting room (E6-S3)', async () => {
+    const media = new FakeMediaProvider();
+    const service = new MediaService({ members, media });
+    let inRoom = true;
+    service.trackMeetingRooms((spaceId, userId) => {
+      expect([spaceId, userId]).toEqual(['space-1', 'user-ana']);
+      return inRoom;
+    });
+
+    await service.issueToken('space-1', 'user-ana');
+    inRoom = false;
+    await service.issueToken('space-1', 'user-ana');
+
+    expect(media.tokens.map((token) => token.canPublish)).toEqual([false, true]);
+  });
+
+  it('entering a meeting room mutes the tracks and revokes publishing; leaving grants it back', async () => {
+    const media = new FakeMediaProvider();
+    const service = new MediaService({ members, media });
+
+    await service.enterMeetingRoom('space-1', 'user-luis');
+    expect(media.mutes).toEqual([{ roomName: 'space_space-1', identity: 'user-luis' }]);
+    expect(media.permissions).toEqual([
+      { roomName: 'space_space-1', identity: 'user-luis', canPublish: false },
+    ]);
+
+    await service.leaveMeetingRoom('space-1', 'user-luis');
+    expect(media.permissions.at(-1)).toEqual({
+      roomName: 'space_space-1',
+      identity: 'user-luis',
+      canPublish: true,
+    });
+    // Leaving never unmutes remotely.
+    expect(media.mutes).toHaveLength(1);
+  });
+
+  it('revokes publishing even when the mute fails, then reports the failure', async () => {
+    const media = new FakeMediaProvider();
+    const failure = new Error('mute failed');
+    media.mutePublishedTracks = () => Promise.reject(failure);
+    const service = new MediaService({ members, media });
+
+    await expect(service.enterMeetingRoom('space-1', 'user-luis')).rejects.toBe(failure);
+    expect(media.permissions).toEqual([
+      { roomName: 'space_space-1', identity: 'user-luis', canPublish: false },
     ]);
   });
 

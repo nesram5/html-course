@@ -46,7 +46,7 @@ export async function gotoDesk(
   if (tile === null) throw new AppError('UNKNOWN_DESK', 'Your desk cannot be reached');
   // The person may have left (or reconnected on another socket) while the desk was read.
   if (joined() !== runtime) return;
-  runtime.place(userId, tile, facingDesk(tile, desk));
+  world.roomChanged(runtime, userId, runtime.place(userId, tile, facingDesk(tile, desk)));
   socket.emit('player:correct', { x: tile.x, y: tile.y });
 }
 

@@ -17,6 +17,8 @@ export interface AvatarProbe {
   reaction: string | null;
   /** The 💬 of a hallway conversation is drawn next to the name (E5-S2). */
   inConversation: boolean;
+  /** The 📹 of a meeting room is drawn next to the name (E6-S4). */
+  inMeeting: boolean;
 }
 
 declare global {
@@ -38,6 +40,8 @@ declare global {
         styleTextures: string[];
         desks: { deskId: string; label: string; items: string[] }[];
       } | null;
+      /** Meeting rooms and whether they are drawn as occupied (E6-S4). */
+      rooms(): { areaId: string; occupied: boolean; people: number }[];
     };
   }
 }

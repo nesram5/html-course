@@ -111,6 +111,8 @@ export class FakeLocalParticipant {
   isSpeaking = false;
   micError: Error | null = null;
   cameraError: Error | null = null;
+  /** LiveKit permissions (E6-S3); `undefined` like before the first join response. */
+  permissions: { canPublish: boolean } | undefined = undefined;
   readonly calls: string[] = [];
   readonly camera = new FakePublication('local-cam', Track.Source.Camera);
 

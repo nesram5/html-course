@@ -19,7 +19,8 @@ export function RoomsSettings({ space }: { space: SpaceDetailDto }) {
   const created = space.rooms.some((room) => room.source === 'api');
 
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-3">
+    // `#salas`: the room card of the office links here when a room has no Meet link (E6-S2).
+    <section id="salas" aria-labelledby={titleId} className="flex flex-col gap-3 scroll-mt-4">
       <h2 id={titleId} className="text-lg font-semibold">
         {t('rooms.title')}
       </h2>

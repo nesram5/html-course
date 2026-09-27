@@ -16,6 +16,7 @@ import type { DisconnectReason } from 'socket.io';
 
 import type { ErrorReporter } from '../../platform/error-reporter.js';
 import { AppError } from '../../platform/errors.js';
+import { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { Logger } from '../../platform/logger.js';
 import type { MapsCatalog } from '../../platform/maps-catalog.js';
 import type { InMemoryRealtimeMetrics } from '../../platform/metrics.js';
@@ -23,10 +24,11 @@ import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
 import type { CancelTimer, Timers } from '../../platform/timers.js';
 import type { TokenBucket } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
+import type { EventsService } from '../events/index.js';
 import type { MediaService } from '../media/index.js';
 import type { SpacesService } from '../spaces/index.js';
 import { HallwayPeers } from './hallway-peers.js';
-import { SpaceRuntime } from './space-runtime.js';
+import { SpaceRuntime, type MoveResult } from './space-runtime.js';
 import { InMemorySpaceStateStore, type SpaceStateStore } from './space-state-store.js';
 import type { WorldRepository } from './world.repository.js';
 
@@ -58,6 +60,8 @@ export interface WorldServiceDeps {
   spaces: SpacesService;
   maps: MapsCatalog;
   media: MediaService;
+  /** Product events (`room_entered`, metric O6). */
+  events: Pick<EventsService, 'record'>;
   metrics: InMemoryRealtimeMetrics;
   timers: Timers;
   logger: Logger;
@@ -103,6 +107,10 @@ export class WorldService {
   readonly #pendingJoins = new Set<PendingJoin>();
   /** Hallway conversations of each loaded space (E5-S2). */
   readonly #hallways = new WeakMap<SpaceRuntime, HallwayPeers>();
+  /** Media-server permission changes, one at a time per `spaceId:userId` (E6-S3). */
+  readonly #publishing = new KeyedSerial();
+  /** `spaceId:userId` of the people whose permission to publish is revoked right now. */
+  readonly #revoked = new Set<string>();
 
   constructor(private readonly deps: WorldServiceDeps) {
     this.store = new InMemorySpaceStateStore({
@@ -272,7 +280,7 @@ export class WorldService {
   /**
    * One step: rate-limited (10/s) and validated against the map. Rejected steps are answered
    * with `player:correct` (the position the server keeps); accepted ones reach the others on the
-   * next tick. Entering a meeting room mutes the hallway media server-side (E6-S3).
+   * next tick. Entering or leaving a meeting room is handled by {@link roomChanged}.
    */
   move(socket: PlazaSocket, bucket: TokenBucket, move: PlayerMove): void {
     const { runtime, userId } = this.joinedRuntime(socket);
@@ -287,11 +295,63 @@ export class WorldService {
       socket.emit('player:correct', { x: result.x, y: result.y });
       return;
     }
-    if (result.roomChanged !== undefined && result.roomChanged.roomId !== null) {
-      this.#background('mute on room entry', runtime.spaceId, () =>
-        this.deps.media.muteParticipantTracks(runtime.spaceId, userId),
+    this.roomChanged(runtime, userId, result);
+  }
+
+  // ── Meeting rooms (E6) ──────────────────────────────────────────────────
+
+  /** `true` when the person is in the space and standing in a meeting room. */
+  inMeetingRoom(spaceId: string, userId: string): boolean {
+    return (this.store.get(spaceId)?.get(userId)?.roomId ?? null) !== null;
+  }
+
+  /**
+   * After a step or a server placement (`desk:goto`): when the meeting room changed (the new
+   * `roomId` already travels in the next `world:delta`, E6-S1), `room_entered` is recorded on
+   * entry (metric O6) and the media server follows (E6-S3): inside a room the person's tracks
+   * are muted and they may not publish; back in the hallway they may publish again.
+   */
+  roomChanged(runtime: SpaceRuntime, userId: string, result: MoveResult): void {
+    if (!result.ok || result.roomChanged === undefined) return;
+    const { spaceId } = runtime;
+    const { roomId } = result.roomChanged;
+    if (roomId !== null) {
+      this.#background('room_entered event', spaceId, () =>
+        this.deps.events.record({
+          name: 'room_entered',
+          spaceId,
+          actorId: userId,
+          props: { areaId: roomId },
+        }),
       );
     }
+    this.#syncPublishing(spaceId, userId);
+  }
+
+  /**
+   * Brings the media-server permission of a person in line with where they are NOW (not where
+   * they were when the change was queued), one change at a time: walking in and out quickly
+   * never leaves someone in the hallway unable to publish, nor someone in a room able to.
+   */
+  #syncPublishing(spaceId: string, userId: string): void {
+    const key = `${spaceId}:${userId}`;
+    void this.#publishing.run(key, async () => {
+      const inRoom = this.inMeetingRoom(spaceId, userId);
+      if (inRoom === this.#revoked.has(key)) return;
+      if (inRoom) this.#revoked.add(key);
+      else this.#revoked.delete(key);
+      try {
+        await (inRoom
+          ? this.deps.media.enterMeetingRoom(spaceId, userId)
+          : this.deps.media.leaveMeetingRoom(spaceId, userId));
+      } catch (error) {
+        this.deps.logger.warn(
+          { err: error, spaceId },
+          `World ${inRoom ? 'media isolation on room entry' : 'media release on room exit'} failed`,
+        );
+        this.deps.reporter.captureException(error, { spaceId });
+      }
+    });
   }
 
   // ── Disconnection and kicks (E4-S6, E2-S6) ──────────────────────────────
@@ -431,6 +491,10 @@ export class WorldService {
   #remove(runtime: SpaceRuntime, userId: string): void {
     this.#cancelGrace(runtime.spaceId, userId);
     runtime.leave(userId);
+    // Left from inside a meeting room: publishing is allowed again for their next visit.
+    if (this.#revoked.has(`${runtime.spaceId}:${userId}`)) {
+      this.#syncPublishing(runtime.spaceId, userId);
+    }
     this.#updateConnected(runtime);
     this.store.unloadIfEmpty(runtime.spaceId);
   }

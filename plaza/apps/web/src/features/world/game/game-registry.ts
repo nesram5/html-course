@@ -1,4 +1,5 @@
 import type { OfficeProbe } from './office/attach-office';
+import type { RoomProbe } from './rooms/RoomLayer';
 
 /**
  * Counts the Phaser games alive, without importing Phaser, so React code and tests can check
@@ -40,6 +41,8 @@ export interface AvatarProbe {
   readonly reaction: string | null;
   /** Whether the 💬 of a hallway conversation is drawn over the avatar (E5-S2). */
   readonly inConversation: boolean;
+  /** Whether the 📹 of a meeting room is drawn next to the name (E6-S4). */
+  readonly inMeeting: boolean;
 }
 
 /** Read-only view of the running world scene, for E2E tests and the stress mode. */
@@ -51,6 +54,8 @@ export interface WorldProbe {
   cameraTarget(): string | null;
   /** Office style and drawn desks (E9). */
   office?(): OfficeProbe;
+  /** Meeting rooms and whether they are drawn as occupied (E6-S4). */
+  rooms?(): RoomProbe[];
 }
 
 let probe: WorldProbe | null = null;

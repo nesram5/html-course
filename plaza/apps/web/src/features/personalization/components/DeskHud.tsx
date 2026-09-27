@@ -1,14 +1,16 @@
 import { deskNear, type WorldMap } from '@plaza/shared';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   deskOfUser,
-  isTypingTarget,
+  interactionKeys,
   officeStore,
+  useInteraction,
   useOfficeStore,
   useWorldStore,
   worldStore,
+  type InteractionKeys,
   type OfficeStore,
   type WorldStore,
 } from '@/features/world';
@@ -25,19 +27,12 @@ export interface DeskHudProps {
   readonly selfUserId: string;
   readonly world?: WorldStore;
   readonly office?: OfficeStore;
+  /** The interaction key dispatcher (`X`); the app-wide one by default. */
+  readonly keys?: InteractionKeys;
 }
 
-/** `X` without modifiers: the interaction key of the office (E9-S2). */
-function isInteractKey(event: KeyboardEvent): boolean {
-  return (
-    (event.key === 'x' || event.key === 'X') &&
-    !event.repeat &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.altKey &&
-    !isTypingTarget(event.target)
-  );
-}
+/** Priority of the desk menu on the interaction key: a meeting room (20) wins over it. */
+const DESK_INTERACTION_PRIORITY = 10;
 
 /**
  * Desks in the office (E9-S2, E9-S3): next to a desk, a hint says `X` opens its menu (claim,
@@ -50,6 +45,7 @@ export function DeskHud({
   selfUserId,
   world = worldStore,
   office = officeStore,
+  keys = interactionKeys,
 }: DeskHudProps) {
   const { t } = useTranslation('personalization');
   const tile = useWorldStore((state) => state.localPlayer, world);
@@ -70,18 +66,17 @@ export function DeskHud({
   // Walking away from the desk closes its menu.
   if (menuDeskId !== null && menuDeskId !== nearbyId) setMenuDeskId(null);
 
-  useEffect(() => {
-    if (nearbyId === null || panelOpen) return undefined;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!isInteractKey(event)) return;
-      event.preventDefault();
-      setMenuDeskId(nearbyId);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [nearbyId, panelOpen]);
+  // `X` opens the menu of the desk next to the person, through the single office dispatcher.
+  const xOpensMenu = useInteraction(
+    'desk',
+    DESK_INTERACTION_PRIORITY,
+    nearbyId === null || panelOpen
+      ? null
+      : () => {
+          setMenuDeskId(nearbyId);
+        },
+    keys,
+  );
 
   const closeMenu = () => {
     setMenuDeskId(null);
@@ -92,14 +87,14 @@ export function DeskHud({
       {nearbyId !== null && !panelOpen && (
         <button
           type="button"
-          aria-keyshortcuts="x"
+          aria-keyshortcuts={xOpensMenu ? 'x' : undefined}
           aria-label={t('hint.deskLabel')}
           className="pointer-events-auto rounded-full bg-slate-900/85 px-4 py-1.5 text-sm text-white shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
           onClick={() => {
             setMenuDeskId(nearbyId);
           }}
         >
-          <kbd className="mr-2 rounded bg-white/20 px-1.5 font-mono">X</kbd>
+          {xOpensMenu && <kbd className="mr-2 rounded bg-white/20 px-1.5 font-mono">X</kbd>}
           {t('hint.desk')}
         </button>
       )}

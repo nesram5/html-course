@@ -27,8 +27,8 @@ export interface WorldModuleOptions {
 /**
  * World module (E4): live state of each space (`SpaceRuntime` in a `SpaceStateStore`),
  * `space:join`, movement validation, the 15 Hz tick, reconnection grace and kicks.
- * Needs `auth` (socket handshake), `spaces` (membership, rooms, kicks) and `media` (server-side
- * mute and removal) registered before it.
+ * Needs `auth` (socket handshake), `spaces` (membership, rooms, kicks), `media` (server-side
+ * mute, publish permission and removal) and `events` (`room_entered`) registered before it.
  */
 export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule {
   return {
@@ -37,12 +37,14 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
       const spaces = services.get('spaces');
       const timers = options.timers ?? systemTimers;
       const repository = new WorldRepository(container.db);
+      const media = services.get('media');
       const world = new WorldService({
         io,
         repository,
         spaces: spaces.service,
         maps: container.maps,
-        media: services.get('media'),
+        media,
+        events: services.get('events'),
         metrics: container.metrics,
         timers,
         logger: container.logger,
@@ -52,6 +54,8 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
           MAX_PLAYERS_PER_SPACE,
         ),
       });
+      // Media tokens issued inside a meeting room do not allow publishing (E6-S3).
+      media.trackMeetingRooms((spaceId, userId) => world.inMeetingRoom(spaceId, userId));
       registerWorldSocket(io, socketDeps, world, () => timers.now(), options.joinLimit);
       registerDeskGoto(io, socketDeps, world, repository, () => timers.now());
       spaces.notifier.onKick((spaceId, userId, reason) => {

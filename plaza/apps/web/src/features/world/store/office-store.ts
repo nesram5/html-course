@@ -1,4 +1,4 @@
-import type { DeskDecor, DeskState } from '@plaza/shared';
+import type { DeskDecor, DeskState, MeetingRoomDto } from '@plaza/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
@@ -9,10 +9,10 @@ export interface DecorPreview {
 }
 
 /**
- * Personalization of the office as the server tells it (E9): the current style and the held
- * desks with their owner and decoration. Written by the realtime session (`space:snapshot`,
- * `space:theme`, `desk:updated`); read by the scene (style, desk labels and objects) and the
- * desk panels.
+ * The office as the server tells it: the current style and the held desks with their owner and
+ * decoration (E9), and the meeting rooms with their Meet link (E6). Written by the realtime
+ * session (`space:snapshot`, `space:theme`, `desk:updated`, `room:updated`); read by the scene
+ * (style, desk labels and objects), the desk panels and the room card.
  */
 export interface OfficeState {
   /** Style of the space, `null` until the first snapshot (the page loaded its own). */
@@ -20,7 +20,13 @@ export interface OfficeState {
   /** Held desks by `deskId`; free desks are absent. */
   readonly desks: Readonly<Record<string, DeskState>>;
   readonly preview: DecorPreview | null;
+  /** Meeting rooms by `areaId`, with their Meet link (`null` until one is set, E2-S7). */
+  readonly rooms: Readonly<Record<string, MeetingRoomDto>>;
   applySnapshot(themeId: string, desks: readonly DeskState[]): void;
+  /** Rooms of a `space:snapshot`. */
+  setRooms(rooms: readonly MeetingRoomDto[]): void;
+  /** `room:updated`: a room got or changed its Meet link. */
+  applyRoom(room: MeetingRoomDto): void;
   setTheme(themeId: string): void;
   /** `desk:updated`: a desk with `userId: null` is free again. */
   applyDesk(desk: DeskState): void;
@@ -35,6 +41,7 @@ export function createOfficeStore(): OfficeStore {
     themeId: null,
     desks: {},
     preview: null,
+    rooms: {},
     applySnapshot: (themeId, desks) => {
       set({
         themeId,
@@ -42,6 +49,12 @@ export function createOfficeStore(): OfficeStore {
           desks.filter((desk) => desk.userId !== null).map((desk) => [desk.deskId, desk]),
         ),
       });
+    },
+    setRooms: (rooms) => {
+      set({ rooms: Object.fromEntries(rooms.map((room) => [room.areaId, room])) });
+    },
+    applyRoom: (room) => {
+      set((state) => ({ rooms: { ...state.rooms, [room.areaId]: room } }));
     },
     setTheme: (themeId) => {
       set({ themeId });
@@ -56,7 +69,7 @@ export function createOfficeStore(): OfficeStore {
       set({ preview });
     },
     reset: () => {
-      set({ themeId: null, desks: {}, preview: null });
+      set({ themeId: null, desks: {}, preview: null, rooms: {} });
     },
   }));
 }

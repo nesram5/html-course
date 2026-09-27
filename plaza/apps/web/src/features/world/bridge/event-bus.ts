@@ -16,7 +16,8 @@ export interface LocalStep {
 /**
  * Typed events between React, the realtime session and Phaser (architecture §6). Commands flow
  * towards the scene (`camera:*`, `world:*`, `player:correct`, `avatar:*`); facts flow from the
- * scene to the rest of the app (`local:step`) and between features (`presence:self-away`).
+ * scene to the rest of the app (`local:step`) and between features (`presence:self-away`,
+ * `media:self-in-room`).
  */
 export interface WorldEvents {
   /** The local controller moved or turned the avatar. Sent to the server as `player:move`. */
@@ -42,6 +43,13 @@ export interface WorldEvents {
    * and restores exactly that when `away` is `false` again.
    */
   'presence:self-away': { readonly away: boolean };
+  /**
+   * The local person walked into a meeting room or back out to the hallway (E6-S2). Emitted by
+   * the rooms feature; the media feature turns microphone and camera off while inside (the room
+   * meets in Google Meet, and the server does not let them publish there, E6-S3) and restores
+   * exactly what was on when they walk out, unless they are still away (`presence:self-away`).
+   */
+  'media:self-in-room': { readonly inRoom: boolean };
   /**
    * Show a desk (E9-S2 "Ir a su escritorio"): the camera leaves the local avatar and centers on
    * the desk; "Centrar en mí" follows the avatar again.

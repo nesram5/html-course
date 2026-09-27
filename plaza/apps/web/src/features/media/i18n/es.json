@@ -28,6 +28,7 @@
     "shortcutMic": "Ctrl+D",
     "shortcutCamera": "Ctrl+E",
     "awayMuted": "Te silenciamos mientras estás ausente",
+    "roomMuted": "En la sala tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet",
     "deviceDenied": "Sin permiso para la cámara o el micrófono"
   },
   "strip": {

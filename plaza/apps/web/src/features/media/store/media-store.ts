@@ -39,6 +39,11 @@ export interface MediaData {
   readonly localSpeaking: boolean;
   /** Muted because the person went away (E7); restored when they come back. */
   readonly awayMuted: boolean;
+  /**
+   * Off because the person is in a meeting room (E6-S2): the meeting is in Google Meet; restored
+   * when they walk out. The controls are disabled meanwhile.
+   */
+  readonly roomMuted: boolean;
   readonly deviceProblem: DeviceProblem | null;
   /** The browser blocks audio playback until the person interacts with the page. */
   readonly audioBlocked: boolean;
@@ -73,6 +78,7 @@ const INITIAL: Omit<MediaData, 'choices'> = {
   localVideoTrackSid: null,
   localSpeaking: false,
   awayMuted: false,
+  roomMuted: false,
   deviceProblem: null,
   audioBlocked: false,
   peers: [],

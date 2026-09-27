@@ -8,6 +8,8 @@ export interface SpaceInfo {
   /** The local person. */
   readonly userId: string;
   readonly displayName: string;
+  /** The local person owns the space (settings such as the Meet links of the rooms). */
+  readonly isOwner: boolean;
   /** Meeting room names by area id of the office map ("En Sala X"). */
   readonly roomNames: Readonly<Record<string, string>>;
   /** The office map (desks, rooms, collisions). */

@@ -18,6 +18,7 @@ const config = { url: 'wss://lk.example.com', apiKey: 'key-1', apiSecret: 'secre
 class FakeRoomService implements LiveKitRoomService {
   readonly muted: { room: string; identity: string; trackSid: string; muted: boolean }[] = [];
   readonly removed: { room: string; identity: string }[] = [];
+  readonly updated: { room: string; identity: string; options: unknown }[] = [];
   failWith: Error | null = null;
 
   constructor(private readonly tracks: TrackInfo[]) {}
@@ -36,6 +37,12 @@ class FakeRoomService implements LiveKitRoomService {
     this.muted.push({ room, identity, trackSid, muted });
     return Promise.resolve(new TrackInfo({ sid: trackSid, muted }));
   };
+
+  updateParticipant = ((room: string, identity: string, options: unknown) => {
+    if (this.failWith !== null) return Promise.reject(this.failWith);
+    this.updated.push({ room, identity, options });
+    return Promise.resolve(new ParticipantInfo({ identity }));
+  }) as RoomServiceClient['updateParticipant'];
 
   removeParticipant: RoomServiceClient['removeParticipant'] = (room, identity) => {
     if (this.failWith !== null) return Promise.reject(this.failWith);
@@ -90,6 +97,13 @@ describe('LiveKitMediaProvider.createToken (E5-S3)', () => {
     expect(claims.sip).toBeUndefined();
     expect(claims.video?.ingressAdmin).toBeUndefined();
     expect(claims.video?.agent).toBeUndefined();
+  });
+
+  it('issues a token that may not publish for someone who is in a meeting room (E6-S3)', async () => {
+    const token = await provider.createToken({ ...request, canPublish: false });
+    const claims = await new TokenVerifier(config.apiKey, config.apiSecret).verify(token);
+
+    expect(claims.video).toMatchObject({ canPublish: false, canSubscribe: true, roomJoin: true });
   });
 
   it('signs with the configured secret', async () => {
@@ -176,6 +190,50 @@ describe('LiveKitMediaProvider.removeParticipant (E2-S6 kick)', () => {
 
     await expect(
       provider.removeParticipant({ roomName: 'space_abc', identity: 'user-1' }),
+    ).rejects.toMatchObject({ code: 'MEDIA_PROVIDER_ERROR', httpStatus: 502 });
+  });
+});
+
+describe('LiveKitMediaProvider.setCanPublish (E6-S3)', () => {
+  it('revokes and grants back publishing, keeping the rest of the token permission', async () => {
+    const rooms = new FakeRoomService([]);
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await provider.setCanPublish({ roomName: 'space_abc', identity: 'user-1', canPublish: false });
+    await provider.setCanPublish({ roomName: 'space_abc', identity: 'user-1', canPublish: true });
+
+    const permission = (canPublish: boolean) => ({
+      permission: {
+        canPublish,
+        canSubscribe: true,
+        canPublishData: false,
+        canUpdateMetadata: false,
+        hidden: false,
+      },
+    });
+    expect(rooms.updated).toEqual([
+      { room: 'space_abc', identity: 'user-1', options: permission(false) },
+      { room: 'space_abc', identity: 'user-1', options: permission(true) },
+    ]);
+  });
+
+  it('does nothing when the participant is not connected to the media server', async () => {
+    const rooms = new FakeRoomService([]);
+    rooms.failWith = new ServerError('ServerError', 'participant not found', 404, 'not_found');
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await expect(
+      provider.setCanPublish({ roomName: 'space_abc', identity: 'user-1', canPublish: false }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('reports other media server failures as MEDIA_PROVIDER_ERROR', async () => {
+    const rooms = new FakeRoomService([]);
+    rooms.failWith = new Error('connect ECONNREFUSED');
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await expect(
+      provider.setCanPublish({ roomName: 'space_abc', identity: 'user-1', canPublish: false }),
     ).rejects.toMatchObject({ code: 'MEDIA_PROVIDER_ERROR', httpStatus: 502 });
   });
 });
