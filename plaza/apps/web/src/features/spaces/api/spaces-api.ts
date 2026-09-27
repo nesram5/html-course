@@ -2,6 +2,7 @@ import {
   API_PATHS,
   apiPath,
   AuthorizeRoomsResponseSchema,
+  EnterSpaceResponseSchema,
   InviteLinkResponseSchema,
   JoinPreviewResponseSchema,
   JoinResponseSchema,
@@ -24,6 +25,7 @@ export const spacesKeys = {
   members: (spaceId: string) => ['spaces', 'members', spaceId] as const,
   templates: ['spaces', 'map-templates'] as const,
   invite: (token: string) => ['spaces', 'invite', token] as const,
+  enter: (slug: string) => ['spaces', 'enter', slug] as const,
 };
 
 type Signal = { signal?: AbortSignal };
@@ -35,6 +37,12 @@ export async function fetchSpaces(o: Signal = {}) {
 
 export async function fetchSpace(spaceId: string, o: Signal = {}) {
   return (await http(apiPath(API_PATHS.space, { spaceId }), SpaceResponseSchema, opts(o))).space;
+}
+
+/** `/s/:slug`: the space for members, joining first when the e-mail domain is allowed. */
+export function enterSpace(slug: string) {
+  const path = apiPath(API_PATHS.spaceEnterBySlug, { slug });
+  return http(path, EnterSpaceResponseSchema, { method: 'POST' });
 }
 
 export async function createSpace(body: CreateSpaceBody) {

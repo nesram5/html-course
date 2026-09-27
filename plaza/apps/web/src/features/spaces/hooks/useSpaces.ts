@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   authorizeRooms,
   createSpace,
+  enterSpace,
   fetchJoinPreview,
   fetchMapTemplates,
   fetchMembers,
@@ -47,6 +48,18 @@ export function useJoinPreview(token: string) {
   return useQuery({
     queryKey: spacesKeys.invite(token),
     queryFn: ({ signal }) => fetchJoinPreview(token, { signal }),
+  });
+}
+
+/**
+ * Space of `/s/:slug` (for the world feature): members get it; people whose verified e-mail
+ * matches the allowed domain join first (E2-S4). Non-members get a 404 `NOT_A_MEMBER` error.
+ */
+export function useEnterSpace(slug: string) {
+  return useQuery({
+    queryKey: spacesKeys.enter(slug),
+    queryFn: () => enterSpace(slug),
+    staleTime: Infinity,
   });
 }
 

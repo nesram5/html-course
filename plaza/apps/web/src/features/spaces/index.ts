@@ -34,3 +34,4 @@ export const spacesRoutes: RouteObject[] = [
 export const spacesMessages = { es } as const;
 
 export { spacesKeys } from './api/spaces-api';
+export { useEnterSpace } from './hooks/useSpaces';
