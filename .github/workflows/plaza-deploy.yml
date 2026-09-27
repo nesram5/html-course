@@ -112,6 +112,8 @@ jobs:
           context: plaza
           file: plaza/apps/server/Dockerfile
           push: true
+          build-args: |
+            PLAZA_VERSION=${{ steps.meta.outputs.tag }}
           # The floating `beta` tag moves in the deploy job, once the deploy succeeded.
           tags: |
             ${{ steps.meta.outputs.server }}:${{ steps.meta.outputs.tag }}
@@ -128,6 +130,7 @@ jobs:
           build-args: |
             VITE_APP_VERSION=${{ steps.meta.outputs.tag }}
             VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN }}
+            VITE_SENTRY_ENVIRONMENT=${{ github.event_name == 'push' && 'beta' || 'staging' }}
           tags: |
             ${{ steps.meta.outputs.web }}:${{ steps.meta.outputs.tag }}
             ${{ github.event_name != 'push' && format('{0}:main', steps.meta.outputs.web) || '' }}

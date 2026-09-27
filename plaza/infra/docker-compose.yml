@@ -2,7 +2,9 @@
 #   pnpm infra:up          → PostgreSQL 16
 #   pnpm infra:up:livekit  → PostgreSQL 16 + LiveKit server in dev mode (key "devkey", secret "secret")
 # Host ports can be changed with PLAZA_PG_PORT / PLAZA_LIVEKIT_PORT if they are already taken.
-name: plaza
+# Its own project name: the app stack of infra/app is `plaza`, and sharing it on one Docker host
+# would mix containers and the Postgres volume of both.
+name: plaza-dev
 
 services:
   postgres:

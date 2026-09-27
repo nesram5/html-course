@@ -62,9 +62,12 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 FROM ${NODE_IMAGE} AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
+# The image tag (set by the deploy workflow): /api/health and the Sentry release report it.
+ARG PLAZA_VERSION=
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=3000
+    PORT=3000 \
+    PLAZA_VERSION=${PLAZA_VERSION}
 WORKDIR /app
 COPY --from=prod-deps --chown=node:node /app /app
 COPY --from=build --chown=node:node /app/packages/shared/dist packages/shared/dist

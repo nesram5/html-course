@@ -85,6 +85,12 @@ const EnvSchema = z
 
     SENTRY_DSN: optional(z.url()),
     SENTRY_ENVIRONMENT: optional(z.string().min(1)),
+    /**
+     * Version of the running build (the image tag, set by the deploy workflow at build time):
+     * `/api/health` and the Sentry release. Defaults to `package.json`, which releases do not
+     * bump.
+     */
+    PLAZA_VERSION: optional(z.string().min(1).max(64)),
   })
   .superRefine((env, ctx) => {
     if (env.AUTH_TEST_LOGIN && env.NODE_ENV === 'production') {
@@ -133,7 +139,7 @@ const ConfigSchema = EnvSchema.transform((env) => ({
   host: env.HOST,
   port: env.PORT,
   logLevel: env.LOG_LEVEL,
-  version: readPackageVersion(),
+  version: env.PLAZA_VERSION ?? readPackageVersion(),
   databaseUrl: env.DATABASE_URL,
   sessionSecret: env.SESSION_SECRET,
   publicUrl: env.PUBLIC_URL.replace(/\/+$/, ''),

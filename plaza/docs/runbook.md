@@ -282,7 +282,7 @@ cumple esto, hacer una copia manual justo antes (ver [Copias](#copias-y-restaura
 **Comprobar tras desplegar:**
 
 ```bash
-curl -s https://<dominio>/api/health                      # {"status":"ok","version":"<la nueva>"}
+curl -s https://<dominio>/api/health                      # {"status":"ok","version":"<la etiqueta desplegada, p. ej. v0.3.0>"}
 curl -s -H "X-Health-Token: $HEALTH_TOKEN" https://<dominio>/api/health   # figuras de tiempo real
 docker compose ps                                          # server healthy, migrate Exited (0)
 docker compose logs --since 10m server | grep -i error
