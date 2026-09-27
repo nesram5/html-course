@@ -399,6 +399,24 @@ describe('SpacePage personalization (E9)', () => {
     });
   });
 
+  it('draws decoration sprites from the catalog without recreating the game', async () => {
+    mockServer({
+      '/api/decor': () =>
+        json({ items: [{ id: 'plant', name: 'Planta', spriteUrl: '/assets/maps/decor/p.png' }] }),
+    });
+    renderApp({ route: '/s/acme' });
+    await waitFor(() => {
+      expect(games).toHaveLength(1);
+    });
+
+    await waitFor(() => {
+      expect(games[0]?.decorUrlOf?.('plant')).toBe('/assets/maps/decor/p.png');
+    });
+    // Objects outside the catalog answer (or before it arrives) use the conventional path.
+    expect(games[0]?.decorUrlOf?.('cat')).toBe('/assets/maps/decor/cat.png');
+    expect(games).toHaveLength(1);
+  });
+
   it('offers "Mi escritorio" once I have a desk and sends desk:goto', async () => {
     const user = userEvent.setup();
     await openOffice();

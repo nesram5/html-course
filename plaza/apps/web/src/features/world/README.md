@@ -4,10 +4,11 @@ The only feature that imports Phaser, and home of the `RealtimeClient` (the only
 client). React owns the page and the DOM; Phaser owns one `<canvas>`. They talk through two
 objects only (architecture §6):
 
-| Bridge       | File                   | Direction                  | Used for                                                                                             |
-| ------------ | ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room                                            |
-| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center`, `world:snapshot`, `world:delta`, `player:correct` (→ scene), `local:step` (scene →) |
+| Bridge        | File                    | Direction                        | Used for                                                                                                            |
+| ------------- | ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `worldStore`  | `store/world-store.ts`  | both (state)                     | loading progress/errors, zoom, local player tile and room                                                           |
+| `EventBus`    | `bridge/event-bus.ts`   | commands and one-off facts       | `camera:center`, `camera:desk`, `world:snapshot`, `world:delta`, `player:correct` (→ scene), `local:step` (scene →) |
+| `officeStore` | `store/office-store.ts` | server → React and scene (state) | office style, held desks with name and decoration, decoration preview (E9)                                          |
 
 ```text
 SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
@@ -22,6 +23,12 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   │         ├─ RemotePlayersSystem     AvatarSprites of the others; logic in the pure RemotePlayersModel
   │         ├─ AvatarTextures          remote sprite sheets loaded on demand, once per avatar
   │         └─ KeyboardInput           window listeners: arrows/WASD, +/-, ignores text fields
+  │    └─ attachOffice (game/office/, E9)
+  │         ├─ ThemeLoader         pure: live style change, latest request wins; PhaserThemeBackend
+  │         │                      loads the new images (recolors color variants), cross-fades
+  │         │                      them in 600 ms and removes the old textures
+  │         └─ DeskLayer           names over held desks and decoration objects (deskDrawings, pure)
+  ├─ DeskHud / MyDeskButton (personalization) ── X desk menu, "Decorar", "Mi escritorio" (desk:goto)
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
   ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   └─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
@@ -48,6 +55,19 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   nothing per frame (dense array, objects mutated in place; `remote-players.perf.test.ts` checks
   the heap). `AvatarSprite` setters are no-ops when nothing changes, and depth changes by whole rows,
   so walking does not re-sort the scene every frame.
+
+## Office personalization (E9)
+
+- **Styles** (ADR-011): the page draws the office with the style it was opened with and never
+  reloads it; `space:snapshot.themeId` and `space:theme` go to `officeStore.themeId`, and the scene's
+  `ThemeLoader` swaps the two images with a fade, without touching avatars or geometry. Old style
+  textures are freed (`window.__plazaWorld.office().styleTextures`).
+- **Desks**: `SpaceSession` keeps `officeStore.desks` in step (`space:snapshot.desks`,
+  `desk:updated`, through `realtime/office-sync.ts`); `DeskLayer` draws the owner's name (over the
+  `above` art, under avatar names) and the objects in the 3 slots of `DeskArea.decorSlots`, from the
+  catalog sprites (neutral, same in every style). While "Decorar" is open, `officeStore.preview`
+  replaces the saved decoration of that desk. `camera:desk` pans to a desk ("Ir a su escritorio",
+  `/s/:slug?desk=<deskId>`).
 
 ## Rules of the pattern
 

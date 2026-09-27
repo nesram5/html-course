@@ -28,8 +28,8 @@ export interface WorldGameOptions {
   readonly office: OfficeStore;
   /** Resolves another style of this map for live changes (E9-S1). */
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
-  /** Sprites of the decoration catalog by id; missing ids use the default path (E9-S3). */
-  readonly decorUrls?: Readonly<Record<string, string>>;
+  /** Sprite URL of a decoration object; the conventional `decor/<id>.png` by default (E9-S3). */
+  readonly decorUrlOf?: (itemId: string) => string;
 }
 
 /** Handle of a running world: the only thing React keeps. */
@@ -68,7 +68,7 @@ export function createWorldGame(options: WorldGameOptions): WorldGame {
         store,
         office: options.office,
         resolveTheme: options.resolveTheme,
-        decorUrlOf: (itemId) => options.decorUrls?.[itemId] ?? conventionalDecorUrl(itemId),
+        decorUrlOf: options.decorUrlOf ?? conventionalDecorUrl,
       }),
     ],
   });

@@ -1,6 +1,6 @@
 import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -10,7 +10,7 @@ import { useEnterSpace } from '@/features/spaces';
 import { errorMessageKey, isApiError } from '@/shared/api';
 import { toast } from '@/shared/ui';
 
-import { avatarUrl, loadTheme, loadWorldAssets } from '../api/assets';
+import { avatarUrl, decorUrl, loadTheme, loadWorldAssets } from '../api/assets';
 import { worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
 import { useSpaceSession } from '../hooks/useSpaceSession';
@@ -53,10 +53,16 @@ export function SpacePage() {
     (nextThemeId: string) => loadTheme(mapTemplateId, nextThemeId),
     [mapTemplateId],
   );
+  // Decoration sprites are looked up when drawn, so the catalog arriving later does not
+  // recreate the game; until it does, the conventional path is used.
   const decor = useDecorCatalog();
-  const decorUrls = useMemo(
-    () => Object.fromEntries((decor.data ?? []).map((item) => [item.id, item.spriteUrl])),
-    [decor.data],
+  const decorUrls = useRef<ReadonlyMap<string, string>>(new Map());
+  useEffect(() => {
+    decorUrls.current = new Map((decor.data ?? []).map((item) => [item.id, item.spriteUrl]));
+  }, [decor.data]);
+  const decorUrlOf = useCallback(
+    (itemId: string) => decorUrls.current.get(itemId) ?? decorUrl(itemId),
+    [],
   );
   const { session, connection, retry } = useSpaceSession(detail?.id);
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
@@ -140,7 +146,7 @@ export function SpacePage() {
           avatarUrl={sprite}
           avatarUrls={avatarUrls}
           resolveTheme={resolveTheme}
-          decorUrls={decorUrls}
+          decorUrlOf={decorUrlOf}
           label={t('canvas.label', { space: detail.name })}
         />
         <ConnectionBanner connection={connection} session={session} />

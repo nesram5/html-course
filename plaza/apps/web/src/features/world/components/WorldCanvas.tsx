@@ -17,8 +17,8 @@ export interface WorldCanvasProps {
   readonly avatarUrls?: Readonly<Record<string, string>>;
   /** Resolves another style of the map for live style changes (E9-S1). Keep it stable. */
   readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
-  /** Sprites of the desk decoration catalog by id (E9-S3). */
-  readonly decorUrls?: Readonly<Record<string, string>>;
+  /** Sprite URL of a desk decoration object (E9-S3). Keep it stable. */
+  readonly decorUrlOf?: (itemId: string) => string;
   /** Accessible name of the canvas region. */
   readonly label: string;
   readonly events?: EventBus;
@@ -38,7 +38,7 @@ export function WorldCanvas({
   avatarUrl,
   avatarUrls,
   resolveTheme,
-  decorUrls,
+  decorUrlOf,
   label,
   events = worldEvents,
   store = worldStore,
@@ -66,7 +66,7 @@ export function WorldCanvas({
           displayName,
           avatarUrl,
           ...(avatarUrls !== undefined && { avatarUrls }),
-          ...(decorUrls !== undefined && { decorUrls }),
+          ...(decorUrlOf !== undefined && { decorUrlOf }),
           resolveTheme,
           events,
           store,
@@ -88,7 +88,7 @@ export function WorldCanvas({
     avatarUrl,
     avatarUrls,
     resolveTheme,
-    decorUrls,
+    decorUrlOf,
     events,
     store,
     office,

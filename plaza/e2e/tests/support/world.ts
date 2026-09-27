@@ -24,6 +24,13 @@ declare global {
       realtime(): { connection: string; session: string };
       stress(count: number): void;
       dropConnection(): void;
+      /** Office style and drawn desks (E9), `null` without a running scene. */
+      office(): {
+        themeId: string;
+        swaps: number;
+        styleTextures: string[];
+        desks: { deskId: string; label: string; items: string[] }[];
+      } | null;
     };
   }
 }
