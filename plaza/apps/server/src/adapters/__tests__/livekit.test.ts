@@ -17,6 +17,7 @@ const config = { url: 'wss://lk.example.com', apiKey: 'key-1', apiSecret: 'secre
 /** In-memory RoomService: one participant with the given tracks; records mute calls. */
 class FakeRoomService implements LiveKitRoomService {
   readonly muted: { room: string; identity: string; trackSid: string; muted: boolean }[] = [];
+  readonly removed: { room: string; identity: string }[] = [];
   failWith: Error | null = null;
 
   constructor(private readonly tracks: TrackInfo[]) {}
@@ -34,6 +35,12 @@ class FakeRoomService implements LiveKitRoomService {
   ) => {
     this.muted.push({ room, identity, trackSid, muted });
     return Promise.resolve(new TrackInfo({ sid: trackSid, muted }));
+  };
+
+  removeParticipant: RoomServiceClient['removeParticipant'] = (room, identity) => {
+    if (this.failWith !== null) return Promise.reject(this.failWith);
+    this.removed.push({ room, identity });
+    return Promise.resolve();
   };
 }
 
@@ -138,5 +145,36 @@ describe('LiveKitMediaProvider.mutePublishedTracks (E6-S3)', () => {
 
   it('builds its own RoomServiceClient from the configuration', () => {
     expect(new LiveKitMediaProvider(config).url).toBe(config.url);
+  });
+});
+
+describe('LiveKitMediaProvider.removeParticipant (E2-S6 kick)', () => {
+  it('removes the participant from the room', async () => {
+    const rooms = new FakeRoomService([]);
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await provider.removeParticipant({ roomName: 'space_abc', identity: 'user-1' });
+
+    expect(rooms.removed).toEqual([{ room: 'space_abc', identity: 'user-1' }]);
+  });
+
+  it('does nothing when the participant is not connected to the media server', async () => {
+    const rooms = new FakeRoomService([]);
+    rooms.failWith = new ServerError('ServerError', 'participant not found', 404, 'not_found');
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await expect(
+      provider.removeParticipant({ roomName: 'space_abc', identity: 'user-1' }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('reports other media server failures as MEDIA_PROVIDER_ERROR', async () => {
+    const rooms = new FakeRoomService([]);
+    rooms.failWith = new Error('connect ECONNREFUSED');
+    const provider = new LiveKitMediaProvider(config, { roomService: rooms });
+
+    await expect(
+      provider.removeParticipant({ roomName: 'space_abc', identity: 'user-1' }),
+    ).rejects.toMatchObject({ code: 'MEDIA_PROVIDER_ERROR', httpStatus: 502 });
   });
 });

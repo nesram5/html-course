@@ -63,7 +63,7 @@ describe('FakeMeetingProvider', () => {
 });
 
 describe('FakeMediaProvider', () => {
-  it('issues tokens and records server-side mutes', async () => {
+  it('issues tokens and records server-side mutes and removals', async () => {
     const provider = new FakeMediaProvider('ws://lk');
     const token = await provider.createToken({
       roomName: 'space_1',
@@ -72,9 +72,11 @@ describe('FakeMediaProvider', () => {
       ttlSeconds: 3600,
     });
     await provider.mutePublishedTracks({ roomName: 'space_1', identity: 'u1' });
+    await provider.removeParticipant({ roomName: 'space_1', identity: 'u2' });
 
     expect(provider.url).toBe('ws://lk');
     expect(token).toBe('fake-token:space_1:u1');
     expect(provider.mutes).toEqual([{ roomName: 'space_1', identity: 'u1' }]);
+    expect(provider.removals).toEqual([{ roomName: 'space_1', identity: 'u2' }]);
   });
 });

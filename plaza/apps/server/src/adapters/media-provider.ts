@@ -22,4 +22,11 @@ export interface MediaProvider {
    * rejects with `AppError('MEDIA_PROVIDER_ERROR')` when the media server fails.
    */
   mutePublishedTracks(input: { roomName: string; identity: string }): Promise<void>;
+  /**
+   * Disconnects the participant from the media room (a member removed from the space, E2-S6):
+   * they stop hearing and seeing the hallway at once, even with a misbehaving client. Resolves
+   * without doing anything when the person is not connected; rejects with
+   * `AppError('MEDIA_PROVIDER_ERROR')` when the media server fails.
+   */
+  removeParticipant(input: { roomName: string; identity: string }): Promise<void>;
 }

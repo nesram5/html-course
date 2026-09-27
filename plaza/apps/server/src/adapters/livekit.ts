@@ -17,7 +17,10 @@ export interface LiveKitConfig {
 }
 
 /** The part of LiveKit's `RoomServiceClient` this adapter uses (replaceable in unit tests). */
-export type LiveKitRoomService = Pick<RoomServiceClient, 'getParticipant' | 'mutePublishedTrack'>;
+export type LiveKitRoomService = Pick<
+  RoomServiceClient,
+  'getParticipant' | 'mutePublishedTrack' | 'removeParticipant'
+>;
 
 /** Media tracks muted when entering a meeting room (camera, microphone and screen share). */
 const MUTED_TRACK_TYPES: ReadonlySet<TrackType> = new Set([TrackType.AUDIO, TrackType.VIDEO]);
@@ -95,6 +98,22 @@ export class LiveKitMediaProvider implements MediaProvider {
     } catch (error) {
       if (isNotFound(error)) return;
       throw new AppError('MEDIA_PROVIDER_ERROR', 'Could not mute the participant tracks', {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * Removes the participant from the room (a member kicked out of the space, E2-S6). The token
+   * they hold is still valid for its remaining lifetime, but the media-token endpoint refuses
+   * non-members, so they cannot get a new one. No-op when the person is not connected.
+   */
+  async removeParticipant(input: { roomName: string; identity: string }): Promise<void> {
+    try {
+      await this.#rooms.removeParticipant(input.roomName, input.identity);
+    } catch (error) {
+      if (isNotFound(error)) return;
+      throw new AppError('MEDIA_PROVIDER_ERROR', 'Could not remove the participant', {
         cause: error,
       });
     }
