@@ -23,7 +23,7 @@ import { createPresenceModule } from '../modules/presence/index.js';
 import type { PlazaModule } from '../modules/types.js';
 import { createWorldModule, type WorldService } from '../modules/world/index.js';
 import type { JoinRateLimit } from '../modules/world/world.socket.js';
-import { buildTestApp, type TestApp } from './app.js';
+import { buildTestApp, type TestApp, type TestAppOptions } from './app.js';
 import type { ManualTimers } from './manual-timers.js';
 import { signIn, type TestUser } from './session.js';
 
@@ -53,6 +53,8 @@ export interface RealtimeHarnessOptions {
   timers: ManualTimers;
   /** Defaults to no join rate limit (the harness re-joins as a round trip, see `barrier`). */
   joinLimit?: JoinRateLimit;
+  /** Real adapters instead of the fakes (e.g. the LiveKit media provider). */
+  overrides?: TestAppOptions['overrides'];
 }
 
 /**
@@ -78,6 +80,7 @@ export class RealtimeHarness {
       chat: createChatModule({ timers }),
     };
     this.testApp = await buildTestApp({
+      ...(this.options.overrides !== undefined && { overrides: this.options.overrides }),
       modules: [
         ...modules.map((module) => replaced[module.name] ?? module),
         {

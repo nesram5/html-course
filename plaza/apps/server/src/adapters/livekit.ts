@@ -19,7 +19,7 @@ export interface LiveKitConfig {
 /** The part of LiveKit's `RoomServiceClient` this adapter uses (replaceable in unit tests). */
 export type LiveKitRoomService = Pick<
   RoomServiceClient,
-  'getParticipant' | 'mutePublishedTrack' | 'removeParticipant'
+  'getParticipant' | 'mutePublishedTrack' | 'removeParticipant' | 'updateParticipant'
 >;
 
 /** Media tracks muted when entering a meeting room (camera, microphone and screen share). */
@@ -67,7 +67,7 @@ export class LiveKitMediaProvider implements MediaProvider {
     const grant: VideoGrant = {
       room: request.roomName,
       roomJoin: true,
-      canPublish: true,
+      canPublish: request.canPublish ?? true,
       canSubscribe: true,
       canPublishData: false,
       canUpdateOwnMetadata: false,
@@ -98,6 +98,35 @@ export class LiveKitMediaProvider implements MediaProvider {
     } catch (error) {
       if (isNotFound(error)) return;
       throw new AppError('MEDIA_PROVIDER_ERROR', 'Could not mute the participant tracks', {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * Grants or revokes publishing (E6-S3). LiveKit unpublishes every track of a participant who
+   * loses `canPublish` and ignores their new publications until it is granted back. The rest of
+   * the permission is the one of {@link createToken} (the update replaces it whole). No-op when
+   * the person is not connected.
+   */
+  async setCanPublish(input: {
+    roomName: string;
+    identity: string;
+    canPublish: boolean;
+  }): Promise<void> {
+    try {
+      await this.#rooms.updateParticipant(input.roomName, input.identity, {
+        permission: {
+          canPublish: input.canPublish,
+          canSubscribe: true,
+          canPublishData: false,
+          canUpdateMetadata: false,
+          hidden: false,
+        },
+      });
+    } catch (error) {
+      if (isNotFound(error)) return;
+      throw new AppError('MEDIA_PROVIDER_ERROR', 'Could not change the publish permission', {
         cause: error,
       });
     }

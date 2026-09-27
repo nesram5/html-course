@@ -73,7 +73,14 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
     const body = MediaTokenResponseSchema.parse(response.json());
     expect(body.url).toBe('ws://localhost:7880');
     expect(t.media.tokens).toEqual([
-      { roomName: `space_${spaceId}`, identity: memberId, displayName: 'Ana', ttlSeconds: 600 },
+      {
+        roomName: `space_${spaceId}`,
+        identity: memberId,
+        displayName: 'Ana',
+        ttlSeconds: 600,
+        // Not in a meeting room (E6-S3).
+        canPublish: true,
+      },
     ]);
     expect(body.token).toBe(`fake-token:space_${spaceId}:${memberId}`);
     // The client refreshes the token before it expires (security follow-up of E4).

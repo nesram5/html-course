@@ -94,6 +94,7 @@ describe('world module: realtime multiplayer (E4)', () => {
     await resetDatabase(testApp.container.db);
     testApp.media.mutes.length = 0;
     testApp.media.removals.length = 0;
+    testApp.media.permissions.length = 0;
     ana = await signIn(testApp.app, 'ana@acme.com', { displayName: 'Ana' });
     luis = await signIn(testApp.app, 'luis@acme.com', { displayName: 'Luis' });
     eva = await signIn(testApp.app, 'eva@acme.com', { displayName: 'Eva' });
@@ -397,7 +398,7 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(runtime().get(ana.user.id)).toMatchObject({ x: 12, y: 25 });
     });
 
-    it('recomputes roomId on entering a meeting room and mutes the hallway media (E6-S3)', async () => {
+    it('recomputes roomId on entering a meeting room, isolates the media and records room_entered (E6-S1, E6-S3)', async () => {
       const mover = await enter(ana);
       const watcher = await enter(luis);
       runtime().place(ana.user.id, { x: 27, y: 6 });
@@ -406,9 +407,10 @@ describe('world module: realtime multiplayer (E4)', () => {
 
       move(mover.client, 28, 6, 'right');
       await barrier(mover.client);
-      await tick(watcher.client);
+      await tick(watcher.client, mover.client);
 
       expect(runtime().get(ana.user.id)?.roomId).toBe('sala-reuniones');
+      expect(world.inMeetingRoom(space.id, ana.user.id)).toBe(true);
       expect(inbox(watcher.client).deltas).toEqual([
         {
           moved: [{ userId: ana.user.id, x: 28, y: 6, dir: 'right' }],
@@ -417,10 +419,125 @@ describe('world module: realtime multiplayer (E4)', () => {
           changed: [{ userId: ana.user.id, roomId: 'sala-reuniones' }],
         },
       ]);
+      // The mover gets her own roomId too (the server computes it).
+      expect(inbox(mover.client).deltas.at(-1)?.changed).toEqual([
+        { userId: ana.user.id, roomId: 'sala-reuniones' },
+      ]);
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
       await vi.waitFor(() => {
-        expect(testApp.media.mutes).toEqual([
-          { roomName: `space_${space.id}`, identity: ana.user.id },
+        expect(testApp.media.mutes).toEqual([target]);
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
+      });
+      const events = await testApp.container.db.productEvent.findMany();
+      expect(events).toMatchObject([
+        {
+          name: 'room_entered',
+          spaceId: space.id,
+          actorId: ana.user.id,
+          props: { areaId: 'sala-reuniones' },
+        },
+      ]);
+    });
+
+    it('sets roomId back to null on leaving the room and lets the person publish again (E6-S1, E6-S3)', async () => {
+      const mover = await enter(ana);
+      const watcher = await enter(luis);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+      await tick(watcher.client);
+      inbox(watcher.client).deltas.length = 0;
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
+      });
+
+      move(mover.client, 27, 6, 'left');
+      await barrier(mover.client);
+      await tick(watcher.client);
+
+      expect(runtime().get(ana.user.id)?.roomId).toBeNull();
+      expect(inbox(watcher.client).deltas).toEqual([
+        {
+          moved: [{ userId: ana.user.id, x: 27, y: 6, dir: 'left' }],
+          joined: [],
+          left: [],
+          changed: [{ userId: ana.user.id, roomId: null }],
+        },
+      ]);
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([
+          { ...target, canPublish: false },
+          { ...target, canPublish: true },
         ]);
+      });
+      // Leaving is a permission, not a remote unmute; and only entries are counted.
+      expect(testApp.media.mutes).toEqual([target]);
+      expect(await testApp.container.db.productEvent.count()).toBe(1);
+    });
+
+    it('walking in and out quickly ends with the permission of where the person is', async () => {
+      const mover = await enter(ana);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      move(mover.client, 27, 6, 'left');
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions.at(-1)?.canPublish).toBe(false);
+      });
+
+      move(mover.client, 27, 6, 'left');
+      move(mover.client, 28, 6, 'right');
+      move(mover.client, 27, 6, 'left');
+      await barrier(mover.client);
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions.at(-1)?.canPublish).toBe(true);
+      });
+
+      // Changes are applied one at a time and only when needed: revoke, grant, revoke, grant…
+      const flags = testApp.media.permissions.map((p) => p.canPublish);
+      flags.forEach((canPublish, i) => {
+        expect(canPublish).toBe(i % 2 === 1);
+      });
+    });
+
+    it('leaving the space from inside a room grants publishing back', async () => {
+      const mover = await enter(ana);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
+      });
+
+      mover.client.disconnect(); // "Salir": leaves at once, without grace
+
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([
+          { ...target, canPublish: false },
+          { ...target, canPublish: true },
+        ]);
+      });
+    });
+
+    it('issues media tokens that may not publish while the person is in a room (E6-S3)', async () => {
+      const mover = await enter(ana);
+      runtime().place(ana.user.id, { x: 27, y: 6 });
+      move(mover.client, 28, 6, 'right');
+      await barrier(mover.client);
+
+      const token = await testApp.app.inject({
+        method: 'POST',
+        url: apiPath(API_PATHS.mediaToken, { spaceId: space.id }),
+        headers: ana.headers,
+      });
+
+      expect(token.statusCode).toBe(200);
+      expect(testApp.media.tokens.at(-1)).toMatchObject({
+        identity: ana.user.id,
+        canPublish: false,
       });
     });
   });
