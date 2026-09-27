@@ -1,7 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from '@playwright/test';
 
+import { expectAccessible } from './support/a11y';
 import {
   CLIENT,
   createSpace,
@@ -9,6 +17,8 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  step,
+  tapKey,
   tile,
 } from './support/world';
 
@@ -25,6 +35,20 @@ import {
 
 const MEET_URI = 'https://meet.google.com/abc-defg-hij';
 const ROOM_ID = 'sala-reuniones';
+/** The admin of the metrics page (`ADMIN_EMAILS` of the E2E server). */
+const ADMIN = 'producto@plaza.test';
+
+/** O6 of the admin metrics page (E8-S7): room entries and Meet openings. */
+async function o6(
+  request: APIRequestContext,
+): Promise<{ roomEntries: number; meetOpened: number }> {
+  const response = await request.get('/api/admin/metrics?days=7');
+  expect(response.status()).toBe(200);
+  const { o6: figures } = (await response.json()) as {
+    o6: { roomEntries: number; meetOpened: number };
+  };
+  return { roomEntries: figures.roomEntries, meetOpened: figures.meetOpened };
+}
 
 interface Person {
   context: BrowserContext;
@@ -40,20 +64,6 @@ async function person(browser: Browser, email: string, name: string): Promise<Pe
 
 function media(page: Page) {
   return page.evaluate(() => window.__plazaMedia?.state());
-}
-
-/** One arrow-key step; waits until the avatar is on the next tile. */
-async function step(page: Page, key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') {
-  const canvas = page.getByTestId('world-canvas');
-  const before = await tile(page);
-  await page.keyboard.press(key);
-  await expect
-    .poll(async () => {
-      const now = await tile(page);
-      return now.x !== before.x || now.y !== before.y;
-    })
-    .toBe(true);
-  await expect(canvas).toHaveAttribute('data-tile-x', /^\d+$/);
 }
 
 /** Walks up (or down) to row `y`, then along the row to column `x`. */
@@ -94,6 +104,9 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
     const eva = await person(browser, `eva-${run}@acme.com`, 'Eva');
     const space = await createSpace(ana.context.request, `Salas ${run}`);
     await joinByInvite(eva.context.request, space);
+    const admin = await browser.newContext();
+    await signIn(admin.request, ADMIN, 'Producto');
+    const before = await o6(admin.request);
     const linked = await ana.context.request.put(`/api/spaces/${space.id}/rooms/${ROOM_ID}`, {
       headers: CLIENT,
       data: { meetUri: MEET_URI },
@@ -148,7 +161,7 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
       );
     });
     await eva.page.getByTestId('world-canvas').focus();
-    await eva.page.keyboard.press('ArrowRight');
+    await tapKey(eva.page, 'ArrowRight');
     await expect
       .poll(() => ana.page.evaluate(() => (window as unknown as { __cutAt: number }).__cutAt), {
         timeout: 5000,
@@ -173,6 +186,7 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
       .toEqual([false, false]);
     await expect(eva.page.getByRole('button', { name: 'Activar micrófono' })).toBeDisabled();
     await expect(eva.page.getByRole('button', { name: 'Encender cámara' })).toBeDisabled();
+    await expectAccessible(eva.page, 'the office inside a meeting room');
 
     // Ana sees the room tinted as occupied and the 📹 next to Eva; "Personas" says where she is.
     await expect
@@ -210,6 +224,11 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
       props: { areaId: ROOM_ID },
     });
     expect(await media(eva.page)).toMatchObject({ micOn: false, cameraOn: false });
+    // Both halves of O6 reach the admin metrics page: the entry (recorded by the server) and the
+    // Meet opened (reported by the client).
+    await expect
+      .poll(() => o6(admin.request), { timeout: 10_000 })
+      .toEqual({ roomEntries: before.roomEntries + 1, meetOpened: before.meetOpened + 1 });
     // Still nothing reaches the hallway.
     expect(await hearing(ana.page, eva.userId)).toBe(false);
 
@@ -234,6 +253,6 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
       .toEqual([{ areaId: ROOM_ID, occupied: false, people: 0 }]);
     await expect(eva.page.getByRole('button', { name: 'Silenciar micrófono' })).toBeEnabled();
 
-    for (const someone of [ana, eva]) await someone.context.close();
+    await Promise.all([ana.context.close(), eva.context.close(), admin.close()]);
   });
 });
