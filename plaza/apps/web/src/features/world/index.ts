@@ -31,6 +31,15 @@ export const worldMessages = { es } as const;
 
 export { EventBus, worldEvents, type LocalStep, type WorldEvents } from './bridge/event-bus';
 export {
+  SpaceExtensionsProvider,
+  useSpaceExtensions,
+  type SpaceExtension,
+  type SpaceGateProps,
+  type SpaceInfo,
+  type SpaceSlotProps,
+} from './extensions';
+export { sidePanelStore, useSidePanel, type SidePanelState } from './store/side-panel-store';
+export {
   useWorldStore,
   worldStore,
   type LocalPlayerState,

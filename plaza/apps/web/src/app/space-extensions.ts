@@ -1,0 +1,15 @@
+import { chatSpaceExtension } from '@/features/chat';
+import { mediaSpaceExtension } from '@/features/media';
+import { presenceSpaceExtension } from '@/features/presence';
+import type { SpaceExtension } from '@/features/world';
+
+/**
+ * Features that add UI to the office page (`/s/:slug`), in order: their gates run one after the
+ * other before entering, their overlays, bottom-bar controls and side panels are drawn in this
+ * order (bar: name · microphone · camera · status · "Personas" · reactions · chat).
+ */
+export const spaceExtensions: readonly SpaceExtension[] = [
+  mediaSpaceExtension,
+  presenceSpaceExtension,
+  chatSpaceExtension,
+];

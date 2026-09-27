@@ -1,1 +1,49 @@
-{}
+{
+  "prejoin": {
+    "title": "Antes de entrar",
+    "subtitle": "Revisa tu cámara y tu micrófono. Podrás cambiarlos en cualquier momento desde la barra inferior.",
+    "previewLabel": "Vista previa de tu cámara",
+    "cameraOff": "Cámara apagada",
+    "cameraOpening": "Abriendo la cámara…",
+    "levelLabel": "Nivel del micrófono",
+    "camera": "Cámara",
+    "microphone": "Micrófono",
+    "speaker": "Altavoz",
+    "defaultDevice": "Predeterminado del sistema",
+    "cameraOn": "Cámara activada",
+    "micOn": "Micrófono activado",
+    "enter": "Entrar",
+    "enterWithoutMedia": "Entrar sin cámara ni micrófono",
+    "deniedTitle": "No tenemos permiso para usar tu cámara o tu micrófono",
+    "deniedHelp": "Puedes entrar igualmente y los demás no te verán ni te oirán. Para activarlos, pulsa el icono del candado junto a la dirección de la página, permite la cámara y el micrófono y pulsa «Probar de nuevo».",
+    "unavailable": "No encontramos ese dispositivo o lo está usando otra aplicación.",
+    "retry": "Probar de nuevo",
+    "remembered": "Recordaremos tu elección en este navegador."
+  },
+  "controls": {
+    "micOn": "Silenciar micrófono",
+    "micOff": "Activar micrófono",
+    "cameraOn": "Apagar cámara",
+    "cameraOff": "Encender cámara",
+    "shortcutMic": "Ctrl+D",
+    "shortcutCamera": "Ctrl+E",
+    "awayMuted": "Te silenciamos mientras estás ausente",
+    "deviceDenied": "Sin permiso para la cámara o el micrófono"
+  },
+  "strip": {
+    "label": "Personas con las que hablas",
+    "you": "Tú",
+    "micMuted": "Micrófono silenciado",
+    "speaking": "Hablando",
+    "enlarge": "Ampliar el vídeo de {{name}}",
+    "shrink": "Reducir el vídeo de {{name}}",
+    "noVideo": "Sin vídeo",
+    "enableAudio": "Activar el sonido",
+    "reconnecting": "Reconectando el audio y el vídeo…",
+    "disconnected": "Audio y vídeo desconectados"
+  },
+  "notice": {
+    "hallway": "Las charlas de pasillo no son privadas; para hablar en privado, entra en una sala",
+    "dismiss": "Entendido"
+  }
+}

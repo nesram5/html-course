@@ -21,17 +21,23 @@ describe('GET /api/health', () => {
     const body = HealthResponseSchema.parse(response.json());
     expect(body.status).toBe('ok');
     expect(body.version).toBe(testApp.container.config.version);
-    expect(body.realtime).toEqual({ connectedBySpace: {}, avgTickMs: null });
+    expect(body.realtime).toEqual({
+      connectedBySpace: {},
+      avgTickMs: null,
+      avgMediaPeersPerTick: null,
+    });
   });
 
-  it('reports connected people per space and the tick duration', async () => {
+  it('reports connected people per space, the tick duration and media:peers per tick', async () => {
     testApp.container.metrics.setConnected('space-1', 2);
     testApp.container.metrics.recordTick(1.5);
+    testApp.container.metrics.recordMediaPeers(2);
+    testApp.container.metrics.recordMediaPeers(0);
 
     const response = await testApp.app.inject({ method: 'GET', url: '/api/health' });
 
     expect(response.json()).toMatchObject({
-      realtime: { connectedBySpace: { 'space-1': 2 }, avgTickMs: 1.5 },
+      realtime: { connectedBySpace: { 'space-1': 2 }, avgTickMs: 1.5, avgMediaPeersPerTick: 1 },
     });
   });
 

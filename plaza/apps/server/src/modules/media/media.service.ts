@@ -23,8 +23,10 @@ export class MediaService {
   }
 
   /**
-   * E5-S3: join token for the space's media room, valid 1 h, without admin grants.
-   * Non-members get `NOT_A_MEMBER` (404, the space's existence is not leaked).
+   * E5-S3: join token for the space's media room, valid {@link MEDIA_TOKEN_TTL_SECONDS} (10 min),
+   * without admin grants; the client asks for a new one before it expires. Short-lived so that a
+   * member removed from the space (disconnected from the room on the kick) cannot rejoin with a
+   * token they kept. Non-members get `NOT_A_MEMBER` (404, the space's existence is not leaked).
    */
   async issueToken(spaceId: string, userId: string): Promise<MediaTokenResponse> {
     const displayName = await this.#members.findMemberDisplayName(spaceId, userId);
@@ -35,7 +37,7 @@ export class MediaService {
       displayName,
       ttlSeconds: MEDIA_TOKEN_TTL_SECONDS,
     });
-    return { url: this.#media.url, token };
+    return { url: this.#media.url, token, expiresInSeconds: MEDIA_TOKEN_TTL_SECONDS };
   }
 
   /**

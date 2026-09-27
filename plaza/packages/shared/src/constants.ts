@@ -63,8 +63,13 @@ export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Header required on state-changing requests (CSRF defence, architecture §11.1). */
 export const CLIENT_HEADER = 'x-plaza-client';
 
-/** LiveKit token lifetime in seconds (E5-S3). */
-export const MEDIA_TOKEN_TTL_SECONDS = 3600;
+/**
+ * LiveKit token lifetime in seconds (E5-S3). Short on purpose: a member removed from the space is
+ * disconnected from the media room, and whatever token they kept stops working within 10 min.
+ */
+export const MEDIA_TOKEN_TTL_SECONDS = 600;
+/** The web client asks for a fresh media token this long before the current one expires. */
+export const MEDIA_TOKEN_REFRESH_MARGIN_SECONDS = 120;
 
 /** Maximum width/height in pixels of a theme image (architecture §8.1). */
 export const MAX_THEME_IMAGE_PX = 4096;

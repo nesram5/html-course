@@ -61,7 +61,7 @@ export class WorldScene extends Phaser.Scene {
   private remote: RemotePlayersSystem | null = null;
   private avatarTextures: AvatarTextures | null = null;
   private stress: StressRun | null = null;
-  /** The local person, known from the first snapshot. */
+  /** userId of the local person (from the snapshot), to find their own `changed` entries. */
   private selfId: string | null = null;
   private selfPresence: { status: PresenceStatus; away: boolean } = {
     status: 'available',
@@ -184,12 +184,14 @@ export class WorldScene extends Phaser.Scene {
     this.selfId = self.userId;
     if (this.controller === null) this.spawnLocal(self, self.dir);
     else this.controller.teleport(self, self.dir);
+    this.avatar?.setInConversation(self.inConversation);
     this.publishLocal(self, self.dir);
     this.selfPresence = { status: self.status, away: self.away };
     this.avatar?.setPresence(effectivePresence(this.selfPresence));
     this.remote?.reset(snapshot.players, this.game.loop.time, self.userId);
   }
 
+  /** Server-side changes of the local person: the 💬 of a hallway conversation (E5-S2). */
   /** Rejected step (E4-S3): back to the server tile, no reconciliation (architecture §9.3). */
   private correct(tile: PlayerCorrect): void {
     const controller = this.controller;
@@ -232,6 +234,9 @@ export class WorldScene extends Phaser.Scene {
   private applySelfChanges(delta: WorldDelta): void {
     for (const changed of delta.changed) {
       if (changed.userId !== this.selfId) continue;
+      if (changed.inConversation !== undefined) {
+        this.avatar?.setInConversation(changed.inConversation);
+      }
       this.selfPresence = {
         status: changed.status ?? this.selfPresence.status,
         away: changed.away ?? this.selfPresence.away,
@@ -319,6 +324,7 @@ export class WorldScene extends Phaser.Scene {
         labelAboveArt: this.avatar.nameLabel.depth > ABOVE_DEPTH,
         presence: this.avatar.presenceState,
         reaction: this.avatar.currentReaction,
+        inConversation: this.avatar.inConversation,
       });
     }
     for (const system of [this.remote, this.stress?.system]) {
@@ -334,6 +340,7 @@ export class WorldScene extends Phaser.Scene {
           labelAboveArt: (system?.labelDepth(player.userId) ?? 0) > ABOVE_DEPTH,
           presence: effectivePresence(player.state),
           reaction: system?.spriteOf(player.userId)?.currentReaction ?? null,
+          inConversation: system?.inConversation(player.userId) ?? false,
         });
       }
     }

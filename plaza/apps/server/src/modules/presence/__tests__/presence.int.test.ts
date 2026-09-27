@@ -71,13 +71,16 @@ describe('presence module: status, away and ring (E7-S1, E7-S5)', () => {
       await statusApplied(ana.user.id, 'busy');
       await harness.tick(spaceId, me.client, other.client);
 
+      // Both spawn within 3 tiles: being busy also ends their hallway conversation (E5-S2).
+      const changed = [
+        { userId: ana.user.id, status: 'busy', inConversation: false },
+        { userId: luis.user.id, inConversation: false },
+      ];
       expect(harness.inbox(other.client)['world:delta']).toEqual([
-        { moved: [], joined: [], left: [], changed: [{ userId: ana.user.id, status: 'busy' }] },
+        { moved: [], joined: [], left: [], changed },
       ]);
       // The person gets their own change too (the dot over their avatar).
-      expect(harness.inbox(me.client)['world:delta'].at(-1)?.changed).toEqual([
-        { userId: ana.user.id, status: 'busy' },
-      ]);
+      expect(harness.inbox(me.client)['world:delta'].at(-1)?.changed).toEqual(changed);
       expect(await storedStatus(ana.user.id)).toBe('busy');
     });
 

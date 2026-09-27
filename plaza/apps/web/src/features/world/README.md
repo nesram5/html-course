@@ -25,10 +25,15 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
   ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
-  └─ SpaceHud (E7) ── bottom bar: name · StatusMenu · Personas · reactions · Chat, and the side
-       panel (PeoplePanel of `presence`, ChatPanel of `chat`); starts usePresenceSession and
-       useChatSession. `presence` and `chat` import this feature and this feature imports them:
-       none of them may use the other at module load time.
+  ├─ SpaceBottomBar ── "Tus controles": avatar · name · the `BarItems` of every extension
+  └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, presence, chat)
+       Gate     before joining (media pre-join); the map loads behind it
+       Overlay  over the map (video strip, first-use notice)
+       BarItems in the bottom bar (mic/camera · status/"Personas" · reactions/chat); they also
+                start the presence and chat sessions
+       Panel    side panels after the map controls ("Personas", chat); one open at a time
+                through `sidePanelStore`
+       This feature never imports the features that extend it (no import cycles).
 ```
 
 ## Presence, chat and reactions (E7)

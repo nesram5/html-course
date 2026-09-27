@@ -15,15 +15,15 @@
     "loadError": "No se pudieron cargar las imágenes de la oficina.",
     "retry": "Reintentar"
   },
-  "hud": {
-    "label": "Barra inferior"
-  },
   "toolbar": {
     "label": "Controles del mapa",
     "center": "Centrar en mí",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
     "zoom": "{{zoom}}×"
+  },
+  "bottomBar": {
+    "label": "Tus controles"
   },
   "connection": {
     "connecting": "Conectando…",

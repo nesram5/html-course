@@ -64,14 +64,15 @@ describe('LiveKitMediaProvider.createToken (E5-S3)', () => {
     expect(provider.url).toBe('wss://lk.example.com');
   });
 
-  it('issues a token for the space room, identity = userId, valid 1 h, without admin grants', async () => {
+  it('issues a token for the space room, identity = userId, valid 10 min, without admin grants', async () => {
     const token = await provider.createToken(request);
     const claims = await new TokenVerifier(config.apiKey, config.apiSecret).verify(token);
 
     expect(claims.sub).toBe('user-1');
     expect(claims.name).toBe('Ana');
     expect(claims.iss).toBe(config.apiKey);
-    expect(claims.exp! - claims.nbf!).toBe(3600);
+    expect(claims.exp! - claims.nbf!).toBe(MEDIA_TOKEN_TTL_SECONDS);
+    expect(MEDIA_TOKEN_TTL_SECONDS).toBe(600);
     expect(claims.video).toEqual({
       room: 'space_abc',
       roomJoin: true,

@@ -1,6 +1,6 @@
 import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -12,18 +12,23 @@ import { toast } from '@/shared/ui';
 import { avatarUrl, loadWorldAssets } from '../api/assets';
 import { worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
+import { useSpaceExtensions, type SpaceInfo } from '../extensions';
 import { useSpaceSession } from '../hooks/useSpaceSession';
+import { sidePanelStore } from '../store/side-panel-store';
 import { useWorldStore } from '../store/world-store';
 import { ConnectionBanner } from './ConnectionBanner';
-import { SpaceHud } from './SpaceHud';
 import { SessionNotice, SpaceNotice, isFinalError } from './SpaceNotice';
+import { SpaceBottomBar } from './SpaceBottomBar';
 import { WorldCanvas } from './WorldCanvas';
 import { WorldToolbar } from './WorldToolbar';
 
 /**
  * `/s/:slug`: the office of a space (E3, E4). Mounted inside `RequireAuth` + `RequireAvatar`, so
  * the session is there and the avatar is chosen. Entering by slug joins by allowed domain
- * (E2-S4); then the realtime session joins the space once the map is drawn.
+ * (E2-S4); the map loads while the gates of the extensions are shown (the media pre-join,
+ * E5-S4), and the realtime session joins the space once they are done and the map is drawn.
+ * Extensions also add overlays over the map, controls to the bottom bar and side panels
+ * (presence and chat, E7).
  */
 export function SpacePage() {
   const { t } = useTranslation('world');
@@ -42,13 +47,34 @@ export function SpacePage() {
     enabled: detail !== undefined,
     staleTime: Number.POSITIVE_INFINITY,
   });
-  const { session, connection, retry } = useSpaceSession(detail?.id);
+  const extensions = useSpaceExtensions();
+  const gates = useMemo(() => extensions.flatMap(({ Gate }) => (Gate ? [Gate] : [])), [extensions]);
+  // Gates passed on this visit (a new slug starts over).
+  const [passed, setPassed] = useState({ slug, count: 0 });
+  const gatesPassed = passed.slug === slug ? passed.count : 0;
+  const entered = gatesPassed >= gates.length;
+  const { session, connection, retry } = useSpaceSession(entered ? detail?.id : undefined);
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
   const avatarUrls = useMemo(
     () => Object.fromEntries((avatars.data ?? []).map((avatar) => [avatar.id, avatar.spriteUrl])),
     [avatars.data],
   );
   useEffect(installWorldDebug, []);
+  // A side panel left open does not come back on the next visit.
+  useEffect(
+    () => () => {
+      sidePanelStore.getState().close();
+    },
+    [],
+  );
+
+  // Leaving the last gate (a dialog) puts the keyboard focus on the map, not on the page body.
+  const mapArea = useRef<HTMLDivElement>(null);
+  const hadGates = gates.length > 0;
+  useEffect(() => {
+    if (!entered || !hadGates) return;
+    mapArea.current?.querySelector<HTMLElement>('[role="application"]')?.focus();
+  }, [entered, hadGates]);
 
   const removed = session.kind === 'kicked' && session.reason !== 'SESSION_REPLACED';
   useEffect(() => {
@@ -100,6 +126,15 @@ export function SpacePage() {
   const roomName = map.rooms.find((room) => room.areaId === roomId)?.name;
   const roomNames = Object.fromEntries(map.rooms.map((room) => [room.areaId, room.name]));
   const sprite = avatarUrls[user.avatarId] ?? avatarUrl(user.avatarId);
+  const info: SpaceInfo = {
+    spaceId: detail.id,
+    spaceName: detail.name,
+    userId: user.id,
+    displayName: user.displayName,
+    roomNames,
+  };
+  const Gate = gates[gatesPassed];
+  const avatar = avatars.data?.find((entry) => entry.id === user.avatarId);
 
   return (
     <main className="flex h-screen flex-col bg-slate-900">
@@ -117,7 +152,7 @@ export function SpacePage() {
           {t('page.leave')}
         </Link>
       </header>
-      <div className="relative min-h-0 flex-1">
+      <div ref={mapArea} className="relative min-h-0 flex-1">
         <WorldCanvas
           map={map}
           theme={theme}
@@ -126,12 +161,33 @@ export function SpacePage() {
           avatarUrls={avatarUrls}
           label={t('canvas.label', { space: detail.name })}
         />
-        <ConnectionBanner connection={connection} session={session} />
-        <div className="absolute right-3 bottom-3">
-          <WorldToolbar />
-        </div>
-        {/* After the map controls: Tab goes canvas → map controls → bottom bar → panel. */}
-        <SpaceHud spaceId={detail.id} displayName={user.displayName} roomNames={roomNames} />
+        {Gate !== undefined ? (
+          <Gate
+            space={info}
+            onDone={() => {
+              setPassed({ slug, count: gatesPassed + 1 });
+            }}
+          />
+        ) : (
+          <>
+            <ConnectionBanner connection={connection} session={session} />
+            {extensions.map(({ id, Overlay }) =>
+              Overlay === undefined ? null : <Overlay key={id} space={info} />,
+            )}
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-3">
+              <div className="pointer-events-auto">
+                <SpaceBottomBar space={info} avatar={avatar} extensions={extensions} />
+              </div>
+              <div className="pointer-events-auto">
+                <WorldToolbar />
+              </div>
+            </div>
+            {/* Last, so Tab goes canvas → overlays → bottom bar → map controls → side panel. */}
+            {extensions.map(({ id, Panel }) =>
+              Panel === undefined ? null : <Panel key={id} space={info} />,
+            )}
+          </>
+        )}
       </div>
     </main>
   );

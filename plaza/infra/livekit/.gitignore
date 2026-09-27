@@ -1,0 +1,3 @@
+# Per-environment files of the media VM: keys and rendered config.
+.env
+caddy.yaml

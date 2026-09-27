@@ -162,6 +162,44 @@ describe('SpaceSession: movement (E4-S3, E4-S5)', () => {
     expect(corrections).toHaveBeenCalledWith({ x: 1, y: 1 });
   });
 
+  it('keeps the people of the space in the world store (tiles and inConversation)', async () => {
+    await joined();
+    expect(world.getState().selfId).toBe('user-1');
+    expect([...world.getState().players.keys()]).toEqual(['user-2']);
+
+    socket.serverEmit(
+      'world:delta',
+      testDelta({
+        joined: [testPlayer({ userId: 'user-3', displayName: 'Eva', x: 4, y: 3 })],
+        moved: [{ userId: 'user-2', x: 2, y: 3, dir: 'right' }],
+        changed: [
+          { userId: 'user-2', inConversation: true },
+          { userId: 'user-1', inConversation: true },
+        ],
+      }),
+    );
+    expect(world.getState().players.get('user-2')).toMatchObject({
+      x: 2,
+      y: 3,
+      dir: 'right',
+      inConversation: true,
+    });
+    expect(world.getState().players.get('user-3')).toMatchObject({ x: 4, y: 3 });
+    // The local person is not one of "the others".
+    expect(world.getState().players.has('user-1')).toBe(false);
+
+    const before = world.getState().players;
+    socket.serverEmit('world:delta', testDelta());
+    expect(world.getState().players).toBe(before);
+
+    socket.serverEmit('world:delta', testDelta({ left: ['user-2'] }));
+    expect([...world.getState().players.keys()]).toEqual(['user-3']);
+
+    world.getState().reset();
+    expect(world.getState().players.size).toBe(0);
+    expect(world.getState().selfId).toBeNull();
+  });
+
   it('applies snapshots pushed by the server for this space only', async () => {
     await joined();
 

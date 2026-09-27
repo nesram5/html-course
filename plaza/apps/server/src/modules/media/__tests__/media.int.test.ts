@@ -66,16 +66,18 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
     });
   }
 
-  it('gives a member a token for space_<spaceId> with identity = userId, valid 1 h', async () => {
+  it('gives a member a token for space_<spaceId> with identity = userId, valid 10 min', async () => {
     const response = await requestToken(t.app, { spaceId, cookie: memberCookie });
 
     expect(response.statusCode).toBe(200);
     const body = MediaTokenResponseSchema.parse(response.json());
     expect(body.url).toBe('ws://localhost:7880');
     expect(t.media.tokens).toEqual([
-      { roomName: `space_${spaceId}`, identity: memberId, displayName: 'Ana', ttlSeconds: 3600 },
+      { roomName: `space_${spaceId}`, identity: memberId, displayName: 'Ana', ttlSeconds: 600 },
     ]);
     expect(body.token).toBe(`fake-token:space_${spaceId}:${memberId}`);
+    // The client refreshes the token before it expires (security follow-up of E4).
+    expect(body.expiresInSeconds).toBe(600);
   });
 
   it('answers 404 to someone who is not a member of the space', async () => {
@@ -129,7 +131,7 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
       const claims = await new TokenVerifier(livekit.apiKey, livekit.apiSecret).verify(token);
       expect(claims.sub).toBe(memberId);
       expect(claims.name).toBe('Ana');
-      expect(claims.exp! - claims.nbf!).toBe(3600);
+      expect(claims.exp! - claims.nbf!).toBe(600);
       expect(claims.video).toMatchObject({
         room: `space_${spaceId}`,
         roomJoin: true,

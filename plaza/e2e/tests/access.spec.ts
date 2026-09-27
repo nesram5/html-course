@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test, type APIRequestContext, type Browser } from '@playwright/test';
 
+import { enterOffice } from './support/world';
+
 const CLIENT = { 'x-plaza-client': 'e2e' };
 
 interface CreatedSpace {
@@ -76,6 +78,7 @@ test.describe('access to a space (E1-S3, E2-S4, E2-S6)', () => {
     expect((await page.request.post(`/api/join/${token}`, { headers: CLIENT })).status()).toBe(200);
 
     await page.goto(`/s/${owner.space.slug}`);
+    await enterOffice(page);
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
     // In the office (joined in real time): the avatar has a tile.

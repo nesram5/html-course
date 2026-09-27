@@ -69,7 +69,7 @@ async function anaAndLuis(browser: Browser) {
 }
 
 function bottomBar(page: Page) {
-  return page.getByRole('navigation', { name: 'Barra inferior' });
+  return page.getByRole('group', { name: 'Tus controles' });
 }
 
 /** Makes the page believe its tab was hidden (or shown again). */

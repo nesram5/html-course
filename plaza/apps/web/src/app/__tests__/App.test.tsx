@@ -29,7 +29,7 @@ describe('App shell', () => {
       jsonResponse({
         status: 'ok',
         version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null },
+        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
       }),
     );
 
@@ -61,7 +61,7 @@ describe('App shell', () => {
       jsonResponse({
         status: 'ok',
         version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null },
+        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
       }),
     );
     const user = userEvent.setup();

@@ -105,3 +105,36 @@ export function computePeers(
   }
   return result;
 }
+
+function sameSet(a: ReadonlySet<string> | undefined, b: ReadonlySet<string>): boolean {
+  if ((a?.size ?? 0) !== b.size) return false;
+  for (const id of b) if (a?.has(id) !== true) return false;
+  return true;
+}
+
+/** A person whose hallway peers must be sent (`media:peers`). */
+export interface PeersChange {
+  readonly userId: string;
+  /** Sorted userIds. */
+  readonly peers: string[];
+}
+
+/**
+ * Who must be told about their hallway peers after a new {@link computePeers} result (E5-S2,
+ * architecture §10.1 step 4): the people of `next` whose set differs from `prev` (a missing
+ * entry counts as "no peers"), plus the ones in `force` (just joined or reconnected: they need
+ * their current list even when it did not change). People only in `prev` left the space and
+ * are not listed. Keeps the iteration order of `next`.
+ */
+export function changedPeers(
+  prev: ReadonlyMap<string, ReadonlySet<string>>,
+  next: ReadonlyMap<string, ReadonlySet<string>>,
+  force: ReadonlySet<string> = new Set(),
+): PeersChange[] {
+  const changes: PeersChange[] = [];
+  for (const [userId, peers] of next) {
+    if (!force.has(userId) && sameSet(prev.get(userId), peers)) continue;
+    changes.push({ userId, peers: [...peers].sort() });
+  }
+  return changes;
+}

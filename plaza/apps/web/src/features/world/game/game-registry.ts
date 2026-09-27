@@ -36,6 +36,8 @@ export interface AvatarProbe {
   readonly presence: 'available' | 'busy' | 'away';
   /** Emoji shown over the avatar right now (E7-S4), `null` when none. */
   readonly reaction: string | null;
+  /** Whether the 💬 of a hallway conversation is drawn over the avatar (E5-S2). */
+  readonly inConversation: boolean;
 }
 
 /** Read-only view of the running world scene, for E2E tests and the stress mode. */
