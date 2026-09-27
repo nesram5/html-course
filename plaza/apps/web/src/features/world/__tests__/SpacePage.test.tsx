@@ -432,6 +432,8 @@ describe('SpacePage extensions (gates, overlays, bottom bar)', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // The keyboard focus lands on the map, not on the page body.
+    expect(screen.getByRole('application', { name: /Mapa de Acme/ })).toHaveFocus();
     expect(screen.getByText('Capa de Ana')).toBeInTheDocument();
     const bar = screen.getByRole('toolbar', { name: 'Tus controles' });
     expect(bar).toHaveTextContent('Ana');

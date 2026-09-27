@@ -1,6 +1,6 @@
 import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -58,6 +58,14 @@ export function SpacePage() {
     [avatars.data],
   );
   useEffect(installWorldDebug, []);
+
+  // Leaving the last gate (a dialog) puts the keyboard focus on the map, not on the page body.
+  const mapArea = useRef<HTMLDivElement>(null);
+  const hadGates = gates.length > 0;
+  useEffect(() => {
+    if (!entered || !hadGates) return;
+    mapArea.current?.querySelector<HTMLElement>('[role="application"]')?.focus();
+  }, [entered, hadGates]);
 
   const removed = session.kind === 'kicked' && session.reason !== 'SESSION_REPLACED';
   useEffect(() => {
@@ -133,7 +141,7 @@ export function SpacePage() {
           {t('page.leave')}
         </Link>
       </header>
-      <div className="relative min-h-0 flex-1">
+      <div ref={mapArea} className="relative min-h-0 flex-1">
         <WorldCanvas
           map={map}
           theme={theme}

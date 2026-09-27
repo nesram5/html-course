@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { tile } from './support/world';
+import { enterOffice, tile } from './support/world';
 
 /**
  * E3 smoke test: open `/s/:slug`, see the office drawn by Phaser and walk with the keyboard.
@@ -53,6 +53,7 @@ test.describe('2D map engine (E3)', () => {
   test('renders the office and walks with the keyboard, colliding with walls', async ({ page }) => {
     const space = await createSpace(page);
     await page.goto(`/s/${space.slug}`);
+    await enterOffice(page);
 
     await expect(page.getByRole('heading', { name: space.name })).toBeVisible();
     const canvas = page.getByTestId('world-canvas');
@@ -98,8 +99,14 @@ test.describe('2D map engine (E3)', () => {
     await expect(toolbar.locator('output')).toHaveText('1×');
     await toolbar.getByRole('button', { name: 'Centrar en mí' }).click();
 
-    // Tab leaves the canvas for the UI.
+    // Tab leaves the canvas for the UI over the map: the first-use hallway notice (E5-S6), the
+    // bottom bar (microphone, camera) and then the map controls.
     await canvas.focus();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Entendido' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Activar micrófono' })).toBeFocused();
+    await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await expect(toolbar.getByRole('button', { name: 'Centrar en mí' })).toBeFocused();
 
@@ -111,6 +118,7 @@ test.describe('2D map engine (E3)', () => {
   }) => {
     const space = await createSpace(page, { mapTemplateId: 'campus@1', themeId: 'night' });
     await page.goto(`/s/${space.slug}`);
+    await enterOffice(page);
 
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
@@ -129,6 +137,7 @@ test.describe('2D map engine (E3)', () => {
     const space = await createSpace(page);
     await page.route('**/themes/pixel/below.png', (route) => route.abort());
     await page.goto(`/s/${space.slug}`);
+    await enterOffice(page);
 
     await expect(page.getByRole('alert')).toContainText(
       'No se pudieron cargar las imágenes de la oficina.',

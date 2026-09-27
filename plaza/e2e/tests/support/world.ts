@@ -83,9 +83,36 @@ export async function tile(page: Page): Promise<{ x: number; y: number }> {
   };
 }
 
-/** Opens `/s/:slug` and waits for the office drawn AND joined (the avatar has a tile). */
-export async function openOffice(page: Page, slug: string): Promise<{ x: number; y: number }> {
+export interface EnterOptions {
+  /** Enter with camera and microphone (fake devices); without media by default. */
+  media?: boolean;
+}
+
+/**
+ * Passes the media pre-join (E5-S4) shown before entering the office. Without `media`, camera
+ * and microphone are switched off first, so tests that do not need them stay light.
+ */
+export async function enterOffice(page: Page, options: EnterOptions = {}): Promise<void> {
+  const prejoin = page.getByTestId('prejoin');
+  await expect(prejoin).toBeVisible({ timeout: 30_000 });
+  for (const name of ['Cámara activada', 'Micrófono activado']) {
+    await prejoin.getByRole('checkbox', { name }).setChecked(options.media === true);
+  }
+  await prejoin.getByRole('button', { name: /^Entrar/ }).click();
+  await expect(prejoin).toHaveCount(0);
+}
+
+/**
+ * Opens `/s/:slug`, passes the pre-join and waits for the office drawn AND joined (the avatar
+ * has a tile).
+ */
+export async function openOffice(
+  page: Page,
+  slug: string,
+  options: EnterOptions = {},
+): Promise<{ x: number; y: number }> {
   await page.goto(`/s/${slug}`);
+  await enterOffice(page, options);
   const canvas = page.getByTestId('world-canvas');
   await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(canvas).toHaveAttribute('data-tile-x', /^\d+$/, { timeout: 15_000 });
