@@ -12,7 +12,10 @@ import { ApiError } from '@/shared/api';
 import {
   FIRST_FRAME_TIMING,
   MediaController,
+  PUBLISH_ATTEMPTS,
+  PUBLISH_RETRY_MS,
   RECONNECT_DELAYS_MS,
+  ROOM_EXIT_SETTLE_MS,
   TOKEN_FRESH_MS,
 } from '../controller/media-controller';
 import { DEFAULT_MEDIA_CHOICES, type MediaChoices } from '../lib/media-prefs';
@@ -392,6 +395,9 @@ describe('MediaController: away and leaving', () => {
 
     events.emit('media:self-in-room', { inRoom: false });
     await settle();
+    // Back once the person has stayed out a moment (not at every step along the border).
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: false });
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, roomMuted: false });
     expect(lk.localParticipant.calls.slice(-2)).toEqual(['mic:true', 'camera:false']);
   });
@@ -405,7 +411,7 @@ describe('MediaController: away and leaving', () => {
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
     events.emit('presence:self-away', { away: false });
-    await settle();
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
 
     events.emit('presence:self-away', { away: true });
@@ -416,7 +422,7 @@ describe('MediaController: away and leaving', () => {
     // A manual toggle neither turns anything on inside the room nor forgets what to restore.
     await controller.toggleCamera();
     events.emit('media:self-in-room', { inRoom: false });
-    await settle();
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, roomMuted: false });
     expect(controller.holds).toEqual({ away: false, room: false });
   });
@@ -431,7 +437,7 @@ describe('MediaController: away and leaving', () => {
     const before = lk.localParticipant.calls.length;
 
     events.emit('media:self-in-room', { inRoom: false });
-    await settle();
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(lk.localParticipant.calls.slice(before)).toEqual([]);
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: false });
 
@@ -458,7 +464,7 @@ describe('MediaController: away and leaving', () => {
     });
     lk.localParticipant.micError = lk.localParticipant.cameraError;
     events.emit('media:self-in-room', { inRoom: false });
-    await settle();
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, deviceProblem: null });
 
     // Back in the hallway for good: LiveKit grants publishing and both come back.
@@ -493,6 +499,66 @@ describe('MediaController: away and leaving', () => {
     expect(maxInFlight).toBe(1);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, roomMuted: false });
     expect(local.calls.at(-1)).toBe('camera:true');
+  });
+
+  it('publishes the camera again when the revoke of a quick step back in cut its publication (E6-S3)', async () => {
+    const lk = await started({ ...DEFAULT_MEDIA_CHOICES, audioEnabled: false });
+    const local = lk.localParticipant;
+    events.emit('media:self-in-room', { inRoom: true });
+    await settle();
+    events.emit('media:self-in-room', { inRoom: false });
+    // The revoke of the next step into the room arrived while the camera was being published:
+    // LiveKit never answers, and after its 10 s the SDK fails with a connection error. Out of the
+    // room for good by then: it is not a device problem, the camera is still wanted.
+    local.cameraError = Object.assign(
+      new Error('publication of local track timed out, no response from server'),
+      { name: 'ConnectionError' },
+    );
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
+    expect(local.calls.at(-1)).toBe('camera:true');
+    expect(store.getState()).toMatchObject({ cameraOn: false, deviceProblem: null });
+
+    local.cameraError = null;
+    await vi.advanceTimersByTimeAsync(PUBLISH_RETRY_MS);
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: true, deviceProblem: null });
+  });
+
+  it('gives up on a device LiveKit keeps failing to publish, and says so', async () => {
+    const lk = await started({ ...DEFAULT_MEDIA_CHOICES, audioEnabled: false });
+    const local = lk.localParticipant;
+    await controller.setCameraEnabled(false);
+    local.cameraError = Object.assign(new Error('negotiation failed'), {
+      name: 'NegotiationError',
+    });
+    const before = local.calls.length;
+
+    await controller.setCameraEnabled(true);
+    await vi.advanceTimersByTimeAsync(PUBLISH_RETRY_MS * PUBLISH_ATTEMPTS * 2);
+
+    expect(local.calls.slice(before)).toEqual(Array(PUBLISH_ATTEMPTS).fill('camera:true'));
+    expect(store.getState()).toMatchObject({ cameraOn: false, deviceProblem: 'unavailable' });
+  });
+
+  it('does not turn devices on at each step along the border of a room, only once out (E6-S3)', async () => {
+    const lk = await started();
+    const local = lk.localParticipant;
+    events.emit('media:self-in-room', { inRoom: true });
+    await settle();
+    const before = local.calls.length;
+
+    // Out and in again every 150 ms (a step takes 120 ms): nothing is published meanwhile.
+    for (let i = 0; i < 3; i++) {
+      events.emit('media:self-in-room', { inRoom: false });
+      await vi.advanceTimersByTimeAsync(150);
+      events.emit('media:self-in-room', { inRoom: true });
+      await vi.advanceTimersByTimeAsync(150);
+    }
+    expect(local.calls.slice(before).filter((call) => call.endsWith(':true'))).toEqual([]);
+
+    events.emit('media:self-in-room', { inRoom: false });
+    await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
+    expect(local.calls.slice(-2)).toEqual(['mic:true', 'camera:true']);
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, roomMuted: false });
   });
 
   it('releases everything on stop and ignores late events', async () => {

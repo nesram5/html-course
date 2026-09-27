@@ -28,6 +28,17 @@ export const TOKEN_RETRY_MS = 30_000;
 export const TOKEN_FRESH_MS = 60_000;
 /** Name of the timing sent to Sentry (E5-S5, p95 < 1.5 s). */
 export const FIRST_FRAME_TIMING = 'media.peers_to_first_frame';
+/**
+ * After walking out of a meeting room, the microphone and camera come back only once the person
+ * has stayed out this long (ms). Walking along the border would otherwise start publications
+ * that the revoke of the next step into the room cuts short: LiveKit never answers them and the
+ * SDK waits 10 s before failing, holding every later change of that device meanwhile (E6-S3).
+ */
+export const ROOM_EXIT_SETTLE_MS = 400;
+/** Delay before publishing a device again after LiveKit failed to publish it (ms). */
+export const PUBLISH_RETRY_MS = 1000;
+/** Publish failures in a row of one device before giving up on it and saying so. */
+export const PUBLISH_ATTEMPTS = 3;
 
 /** Disconnections after which reconnecting makes no sense. */
 const FINAL_DISCONNECTS: ReadonlySet<DisconnectReason> = new Set([
@@ -84,14 +95,29 @@ function problemOf(error: unknown): DeviceProblem {
   return error instanceof Error && error.name === 'NotAllowedError' ? 'denied' : 'unavailable';
 }
 
+/** Errors of the browser opening a device (`getUserMedia`) and of LiveKit refusing the device. */
+const DEVICE_ERRORS: ReadonlySet<string> = new Set([
+  'NotAllowedError',
+  'NotFoundError',
+  'NotReadableError',
+  'OverconstrainedError',
+  'AbortError',
+  'SecurityError',
+  'DeviceUnsupportedError',
+]);
+
 /**
- * LiveKit refused the publication because the permission to publish was revoked while the device
- * was opening (walking in and out of a meeting room quickly, E6-S3). Not a device problem: what
- * the person wants is kept and applied when LiveKit lets them publish again.
+ * `true` when the device itself failed. Anything else went wrong while LiveKit published it: a
+ * refusal because the permission to publish was revoked meanwhile, or a publication that the
+ * revoke of a quick step back into a meeting room cut short, which LiveKit never answers
+ * ("publication of local track timed out", E6-S3). Not a device problem: what the person wants
+ * is kept and published again.
  */
-function isPublishRefusal(error: unknown): boolean {
-  return error instanceof Error && error.name === 'PublishTrackError';
+function isDeviceError(error: unknown): boolean {
+  return error instanceof Error && DEVICE_ERRORS.has(error.name);
 }
+
+type Device = 'mic' | 'camera';
 
 /** The run was stopped (or restarted) while an async step was in flight. */
 class StaleRun extends Error {}
@@ -111,7 +137,8 @@ class StaleRun extends Error {}
  * - `presence:self-away` and `media:self-in-room` turn the microphone and camera off and, once
  *   the person is neither away nor in a meeting room, restore exactly what was on. Inside a room
  *   the server revokes the permission to publish (E6-S3): the restore waits until LiveKit grants
- *   it back.
+ *   it back and the person has stayed out of the room for {@link ROOM_EXIT_SETTLE_MS}; a
+ *   publication LiveKit fails is published again, never taken for a device problem.
  * - Records the time from `media:peers` to the first video frame of a new peer.
  * - `stop()` disconnects and releases every track and element.
  */
@@ -144,6 +171,14 @@ export class MediaController {
   /** Tails of the per-device queues of {@link #applyMic} / {@link #applyCamera} (never reject). */
   #micChanges: Promise<void> = Promise.resolve();
   #cameraChanges: Promise<void> = Promise.resolve();
+  /** Running while the person has just walked out of a meeting room ({@link ROOM_EXIT_SETTLE_MS}). */
+  #settleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Publish failures in a row of each device, and the timers that try again. */
+  #publishFailures: Record<Device, number> = { mic: 0, camera: 0 };
+  #publishRetries: Record<Device, ReturnType<typeof setTimeout> | null> = {
+    mic: null,
+    camera: null,
+  };
 
   constructor(deps: MediaControllerDeps) {
     this.#deps = deps;
@@ -204,6 +239,7 @@ export class MediaController {
     this.#spaceId = null;
     this.#holds = { away: false, room: false };
     this.#restore = null;
+    this.#publishFailures = { mic: 0, camera: 0 };
     this.#reconnectAttempt = 0;
     this.#reconnecting = false;
     this.#deps.store.getState().reset();
@@ -423,6 +459,12 @@ export class MediaController {
     if (this.#reconnectTimer !== null) clearTimeout(this.#reconnectTimer);
     this.#refreshTimer = null;
     this.#reconnectTimer = null;
+    this.#cancelSettle();
+    for (const device of ['mic', 'camera'] as const) {
+      const retry = this.#publishRetries[device];
+      if (retry !== null) clearTimeout(retry);
+      this.#publishRetries[device] = null;
+    }
   }
 
   #assertCurrent(run: number): void {
@@ -595,45 +637,83 @@ export class MediaController {
     return this.#cameraChanges;
   }
 
-  async #applyMicNow(): Promise<void> {
+  #applyMicNow(): Promise<void> {
+    return this.#applyDevice('mic', (room, enabled) =>
+      room.localParticipant.setMicrophoneEnabled(enabled),
+    );
+  }
+
+  #applyCameraNow(): Promise<void> {
+    return this.#applyDevice('camera', (room, enabled) =>
+      room.localParticipant.setCameraEnabled(enabled),
+    );
+  }
+
+  /**
+   * Turns a device on or off as wanted right now. Turning it on waits while LiveKit does not let
+   * the person publish and while they have just walked out of a meeting room. When LiveKit fails
+   * to publish it (not the device), what is wanted is kept and published again, at once when
+   * LiveKit grants publishing or after {@link PUBLISH_RETRY_MS} when it already does; after
+   * {@link PUBLISH_ATTEMPTS} failures in a row it gives up and says the device is unavailable.
+   */
+  async #applyDevice(
+    device: Device,
+    setEnabled: (room: Room, enabled: boolean) => Promise<unknown>,
+  ): Promise<void> {
     const room = this.#room;
-    if (room?.state !== ConnectionState.Connected || (this.#wantMic && !this.#canPublish(room))) {
-      this.#sync();
+    const wanted = device === 'mic' ? this.#wantMic : this.#wantCamera;
+    if (
+      room?.state !== ConnectionState.Connected ||
+      (wanted && (!this.#canPublish(room) || this.#settleTimer !== null))
+    ) {
+      this.#sync(); // applied on `ParticipantPermissionsChanged` or when the settle ends
       return;
     }
     try {
-      await room.localParticipant.setMicrophoneEnabled(this.#wantMic);
+      await setEnabled(room, wanted);
+      this.#publishFailures[device] = 0;
     } catch (error) {
-      if (isPublishRefusal(error) || !this.#canPublish(room)) {
-        this.#sync(); // retried on `ParticipantPermissionsChanged`
-        return;
-      }
-      this.#wantMic = false;
-      this.#deps.store.getState().patch({ deviceProblem: problemOf(error) });
+      if (isDeviceError(error)) {
+        this.#giveUp(device, error);
+      } else if (++this.#publishFailures[device] >= PUBLISH_ATTEMPTS) {
+        reportError(error);
+        this.#giveUp(device, error);
+      } else if (this.#canPublish(room) && room === this.#room) {
+        this.#retryPublish(device);
+      } // else: retried on `ParticipantPermissionsChanged`
     }
     this.#sync();
   }
 
-  async #applyCameraNow(): Promise<void> {
-    const room = this.#room;
-    if (
-      room?.state !== ConnectionState.Connected ||
-      (this.#wantCamera && !this.#canPublish(room))
-    ) {
-      this.#sync();
-      return;
-    }
-    try {
-      await room.localParticipant.setCameraEnabled(this.#wantCamera);
-    } catch (error) {
-      if (isPublishRefusal(error) || !this.#canPublish(room)) {
-        this.#sync(); // retried on `ParticipantPermissionsChanged`
-        return;
-      }
-      this.#wantCamera = false;
-      this.#deps.store.getState().patch({ deviceProblem: problemOf(error) });
-    }
-    this.#sync();
+  /** The device cannot be used: it stays off until the person turns it on again. */
+  #giveUp(device: Device, error: unknown): void {
+    this.#publishFailures[device] = 0;
+    if (device === 'mic') this.#wantMic = false;
+    else this.#wantCamera = false;
+    this.#deps.store.getState().patch({ deviceProblem: problemOf(error) });
+  }
+
+  #retryPublish(device: Device): void {
+    if (this.#publishRetries[device] !== null) return;
+    this.#publishRetries[device] = setTimeout(() => {
+      this.#publishRetries[device] = null;
+      void (device === 'mic' ? this.#applyMic() : this.#applyCamera());
+    }, PUBLISH_RETRY_MS);
+  }
+
+  /** Walked out of a meeting room: devices come back once the person has stayed out a moment. */
+  #startSettle(): void {
+    this.#cancelSettle();
+    this.#settleTimer = setTimeout(() => {
+      this.#settleTimer = null;
+      void this.#applyMic();
+      void this.#applyCamera();
+    }, ROOM_EXIT_SETTLE_MS);
+  }
+
+  #cancelSettle(): void {
+    if (this.#settleTimer !== null) clearTimeout(this.#settleTimer);
+    this.#settleTimer = null;
   }
 
   // ── Internals: away (E7) and meeting rooms (E6-S2) ───────────────────────
@@ -650,6 +730,10 @@ export class MediaController {
     if (this.#holds[reason] === on) return;
     const wasHeld = this.#held();
     this.#holds = { ...this.#holds, [reason]: on };
+    if (reason === 'room') {
+      if (on) this.#cancelSettle();
+      else this.#startSettle();
+    }
     if (!wasHeld) {
       this.#restore = { mic: this.#wantMic, camera: this.#wantCamera };
       this.#wantMic = false;
