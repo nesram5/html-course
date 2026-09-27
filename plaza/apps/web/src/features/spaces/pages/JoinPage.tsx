@@ -8,6 +8,7 @@ import { errorMessageKey, isApiError } from '@/shared/api';
 import { markInviteOpened } from '@/shared/lib/join-timing';
 
 import { useJoinPreview, useJoinSpace } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 function InvalidInvite() {
   const { t } = useTranslation('spaces');
@@ -69,6 +70,11 @@ export function JoinPage() {
   const { token = '' } = useParams();
   const session = useSession();
   const preview = useJoinPreview(token);
+  useDocumentTitle(
+    preview.data === undefined
+      ? tc('docTitle.invite')
+      : tc('docTitle.join', { name: preview.data.name }),
+  );
   // O5 (E8-S7): the time to enter counts from here, through the sign-in, to the map.
   useEffect(() => {
     markInviteOpened();

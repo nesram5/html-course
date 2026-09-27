@@ -7,10 +7,13 @@ import { PageLoading } from '../components/RequireAuth';
 import { ProfileForm } from '../components/ProfileForm';
 import { UserMenu } from '../components/UserMenu';
 import { useSession } from '../hooks/useSession';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 /** `/profile`: display name and avatar (E1-S4), "Borrar mi cuenta" (E8-S6). Inside `RequireAuth`. */
 export function ProfilePage() {
   const { t } = useTranslation('auth');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.profile'));
   const session = useSession();
 
   return (

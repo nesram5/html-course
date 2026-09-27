@@ -6,10 +6,13 @@ import { safeNext } from '../api/auth-api';
 import { LoginButtons } from '../components/LoginButtons';
 import { PageLoading } from '../components/RequireAuth';
 import { useSession } from '../hooks/useSession';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 /** `/login?next=…&error=cancelled|failed` (E1-S3). */
 export function LoginPage() {
   const { t } = useTranslation('auth');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.login'));
   const [params] = useSearchParams();
   const session = useSession();
   const next = safeNext(params.get('next'));

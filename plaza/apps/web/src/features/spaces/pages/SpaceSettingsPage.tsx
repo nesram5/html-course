@@ -13,6 +13,7 @@ import { MembersPanel } from '../components/MembersPanel';
 import { RoomsSettings } from '../components/RoomsSettings';
 import { ThemeSettings } from '../components/ThemeSettings';
 import { useSpace } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const RESULT_TONE = {
   created: 'border-green-300 bg-green-50',
@@ -30,6 +31,9 @@ export function SpaceSettingsPage() {
   const { spaceId = '' } = useParams();
   const [params] = useSearchParams();
   const space = useSpace(spaceId);
+  useDocumentTitle(
+    space.data === undefined ? null : tc('docTitle.settings', { name: space.data.name }),
+  );
   const roomsResult = RoomsSetupResultSchema.safeParse(params.get('rooms'));
   const { hash } = useLocation();
   const loaded = space.isSuccess;

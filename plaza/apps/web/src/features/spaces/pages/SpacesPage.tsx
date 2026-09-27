@@ -6,6 +6,7 @@ import { PageLoading, UserMenu } from '@/features/auth';
 import { LoadError } from '@/shared/ui';
 
 import { useMySpaces } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const primaryLink = 'rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700';
 
@@ -48,6 +49,8 @@ function SpaceCard({ space }: { space: SpaceSummaryDto }) {
 /** `/spaces`: my spaces with thumbnail and "Entrar", or an empty state (E2-S3). */
 export function SpacesPage() {
   const { t } = useTranslation('spaces');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.spaces'));
   const spaces = useMySpaces();
 
   let content;

@@ -9,6 +9,7 @@ import { LoadError } from '@/shared/ui';
 import { CreateSpaceForm } from '../components/CreateSpaceForm';
 import { RoomsSettings } from '../components/RoomsSettings';
 import { useSpace } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 function RoomsStep({ spaceId }: { spaceId: string }) {
   const { t } = useTranslation('spaces');
@@ -48,6 +49,8 @@ function RoomsStep({ spaceId }: { spaceId: string }) {
 /** `/spaces/new`: two-step wizard — name and template, then "Crear salas de reunión" (E2-S3). */
 export function CreateSpacePage() {
   const { t } = useTranslation('spaces');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.newSpace'));
   const [spaceId, setSpaceId] = useState<string | null>(null);
 
   return (

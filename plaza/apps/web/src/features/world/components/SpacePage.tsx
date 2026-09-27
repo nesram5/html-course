@@ -22,6 +22,7 @@ import { SessionNotice, SpaceNotice, isFinalError } from './SpaceNotice';
 import { SpaceBottomBar } from './SpaceBottomBar';
 import { WorldCanvas } from './WorldCanvas';
 import { WorldToolbar } from './WorldToolbar';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 /**
  * `/s/:slug`: the office of a space (E3, E4). Mounted inside `RequireAuth` + `RequireAvatar`, so
@@ -41,6 +42,7 @@ export function SpacePage() {
   const { user } = useSession();
   const avatars = useAvatars();
   const detail = space.data?.space;
+  useDocumentTitle(detail?.name ?? null);
   // The style the office is first drawn with. Later changes (E9-S1) are applied live by the
   // scene, so a refetched space with another theme must not reload (and redraw) the office.
   const [firstTheme, setFirstTheme] = useState<{ spaceId: string; themeId: string } | null>(null);

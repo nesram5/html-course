@@ -7,6 +7,7 @@ import { UserMenu } from '@/features/auth';
 import { errorMessageKey } from '@/shared/api';
 
 import { sendFeedback } from '../api/product-api';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const RATINGS = [
   [1, 'feedback.ratings.1'],
@@ -20,6 +21,7 @@ const RATINGS = [
 export function FeedbackPage() {
   const { t } = useTranslation('product');
   const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.feedback'));
   const messageId = useId();
   const hintId = useId();
   const [message, setMessage] = useState('');

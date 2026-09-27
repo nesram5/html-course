@@ -2,6 +2,7 @@ import { WEB_PATHS } from '@plaza/shared';
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const STORED = ['profile', 'spaces', 'chat', 'feedback', 'events', 'session'] as const;
 const NOT_STORED = ['media', 'positions', 'googleTokens'] as const;
@@ -25,6 +26,7 @@ function Section({ title, children }: { readonly title: string; readonly childre
  */
 export function PrivacyPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('docTitle.privacy'));
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
