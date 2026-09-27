@@ -84,6 +84,15 @@ function problemOf(error: unknown): DeviceProblem {
   return error instanceof Error && error.name === 'NotAllowedError' ? 'denied' : 'unavailable';
 }
 
+/**
+ * LiveKit refused the publication because the permission to publish was revoked while the device
+ * was opening (walking in and out of a meeting room quickly, E6-S3). Not a device problem: what
+ * the person wants is kept and applied when LiveKit lets them publish again.
+ */
+function isPublishRefusal(error: unknown): boolean {
+  return error instanceof Error && error.name === 'PublishTrackError';
+}
+
 /** The run was stopped (or restarted) while an async step was in flight. */
 class StaleRun extends Error {}
 
@@ -132,6 +141,9 @@ export class MediaController {
   #holds = { away: false, room: false };
   /** What was on before the first hold, restored when every hold is gone. */
   #restore: { mic: boolean; camera: boolean } | null = null;
+  /** Tails of the per-device queues of {@link #applyMic} / {@link #applyCamera} (never reject). */
+  #micChanges: Promise<void> = Promise.resolve();
+  #cameraChanges: Promise<void> = Promise.resolve();
 
   constructor(deps: MediaControllerDeps) {
     this.#deps = deps;
@@ -568,7 +580,22 @@ export class MediaController {
     return room.localParticipant.permissions?.canPublish !== false;
   }
 
-  async #applyMic(): Promise<void> {
+  /**
+   * Device changes run one at a time per device, each with what is wanted when it starts:
+   * LiveKit mixes up overlapping `setCameraEnabled(true)` / `(false)` calls (walking in and out
+   * of a meeting room quickly, E6-S3), leaving the device off when it should be on.
+   */
+  #applyMic(): Promise<void> {
+    this.#micChanges = this.#micChanges.then(() => this.#applyMicNow()).catch(reportError);
+    return this.#micChanges;
+  }
+
+  #applyCamera(): Promise<void> {
+    this.#cameraChanges = this.#cameraChanges.then(() => this.#applyCameraNow()).catch(reportError);
+    return this.#cameraChanges;
+  }
+
+  async #applyMicNow(): Promise<void> {
     const room = this.#room;
     if (room?.state !== ConnectionState.Connected || (this.#wantMic && !this.#canPublish(room))) {
       this.#sync();
@@ -577,13 +604,17 @@ export class MediaController {
     try {
       await room.localParticipant.setMicrophoneEnabled(this.#wantMic);
     } catch (error) {
+      if (isPublishRefusal(error) || !this.#canPublish(room)) {
+        this.#sync(); // retried on `ParticipantPermissionsChanged`
+        return;
+      }
       this.#wantMic = false;
       this.#deps.store.getState().patch({ deviceProblem: problemOf(error) });
     }
     this.#sync();
   }
 
-  async #applyCamera(): Promise<void> {
+  async #applyCameraNow(): Promise<void> {
     const room = this.#room;
     if (
       room?.state !== ConnectionState.Connected ||
@@ -595,6 +626,10 @@ export class MediaController {
     try {
       await room.localParticipant.setCameraEnabled(this.#wantCamera);
     } catch (error) {
+      if (isPublishRefusal(error) || !this.#canPublish(room)) {
+        this.#sync(); // retried on `ParticipantPermissionsChanged`
+        return;
+      }
       this.#wantCamera = false;
       this.#deps.store.getState().patch({ deviceProblem: problemOf(error) });
     }

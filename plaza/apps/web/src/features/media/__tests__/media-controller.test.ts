@@ -447,6 +447,54 @@ describe('MediaController: away and leaving', () => {
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true });
   });
 
+  it('keeps the camera wanted when LiveKit refuses it during a quick walk out and back in (E6-S3)', async () => {
+    const lk = await started();
+    events.emit('media:self-in-room', { inRoom: true });
+    await settle();
+    // Out again before the revoke of the entry reached this client: the camera is turned on,
+    // and LiveKit refuses it because the revoke arrives while the camera opens.
+    lk.localParticipant.cameraError = Object.assign(new Error('insufficient permissions'), {
+      name: 'PublishTrackError',
+    });
+    lk.localParticipant.micError = lk.localParticipant.cameraError;
+    events.emit('media:self-in-room', { inRoom: false });
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, deviceProblem: null });
+
+    // Back in the hallway for good: LiveKit grants publishing and both come back.
+    lk.localParticipant.cameraError = null;
+    lk.localParticipant.micError = null;
+    lk.localParticipant.permissions = { canPublish: true };
+    lk.emit(RoomEvent.ParticipantPermissionsChanged, undefined, lk.localParticipant);
+    await settle();
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, deviceProblem: null });
+  });
+
+  it('never overlaps two changes of the same device, and ends with what is wanted (E6-S3)', async () => {
+    const lk = await started();
+    const local = lk.localParticipant;
+    const original = local.setCameraEnabled.bind(local);
+    let inFlight = 0;
+    let maxInFlight = 0;
+    local.setCameraEnabled = async (enabled: boolean) => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 50)); // opening the camera takes time
+      await original(enabled);
+      inFlight--;
+    };
+
+    // In and out of a room four times, faster than the camera opens.
+    for (const inRoom of [true, false, true, false, true, false, true, false]) {
+      events.emit('media:self-in-room', { inRoom });
+    }
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(maxInFlight).toBe(1);
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, roomMuted: false });
+    expect(local.calls.at(-1)).toBe('camera:true');
+  });
+
   it('releases everything on stop and ignores late events', async () => {
     const lk = await started();
     const luis = lk.addParticipant('user-2');
