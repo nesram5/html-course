@@ -1,4 +1,4 @@
-import type { KickReason, MeetingRoomDto } from '@plaza/shared';
+import type { DeskState, KickReason, MeetingRoomDto } from '@plaza/shared';
 
 import type { PlazaIo } from '../../platform/socket.js';
 
@@ -42,5 +42,15 @@ export class SpaceNotifier {
   /** `room:updated` to everyone in the space (a Meet link was created or replaced, E2-S7). */
   async roomUpdated(spaceId: string, room: MeetingRoomDto): Promise<void> {
     for (const socket of await this.#sockets(spaceId)) socket.emit('room:updated', room);
+  }
+
+  /** `space:theme` to everyone in the space: the owner changed the office style (E9-S1). */
+  async themeChanged(spaceId: string, themeId: string): Promise<void> {
+    for (const socket of await this.#sockets(spaceId)) socket.emit('space:theme', { themeId });
+  }
+
+  /** `desk:updated` to everyone in the space: claimed, freed or decorated (E9-S2, E9-S3). */
+  async deskUpdated(spaceId: string, desk: DeskState): Promise<void> {
+    for (const socket of await this.#sockets(spaceId)) socket.emit('desk:updated', desk);
   }
 }

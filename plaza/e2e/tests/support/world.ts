@@ -31,6 +31,13 @@ declare global {
       realtime(): { connection: string; session: string };
       stress(count: number): void;
       dropConnection(): void;
+      /** Office style and drawn desks (E9), `null` without a running scene. */
+      office(): {
+        themeId: string;
+        swaps: number;
+        styleTextures: string[];
+        desks: { deskId: string; label: string; items: string[] }[];
+      } | null;
     };
   }
 }
@@ -131,4 +138,15 @@ export function avatars(page: Page): Promise<AvatarProbe[]> {
 /** The remote avatar of `userId` drawn in `page`, if any. */
 export async function remoteAvatar(page: Page, userId: string): Promise<AvatarProbe | undefined> {
   return (await avatars(page)).find((avatar) => avatar.userId === userId);
+}
+
+/** Makes the page believe its tab was hidden (or shown again). */
+export async function setTabHidden(page: Page, hidden: boolean): Promise<void> {
+  await page.evaluate((value) => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => (value ? 'hidden' : 'visible'),
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  }, hidden);
 }

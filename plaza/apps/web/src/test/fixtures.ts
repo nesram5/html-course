@@ -1,5 +1,7 @@
 import type { AvatarDto, Me, SpaceDetailDto } from '@plaza/shared';
 
+import type { SpaceInfo } from '@/features/world';
+
 /** Test data shared by the auth and spaces feature tests. */
 export function meFixture(overrides: Partial<Me> = {}): Me {
   return {
@@ -46,6 +48,29 @@ export function spaceFixture(overrides: Partial<SpaceDetailDto> = {}): SpaceDeta
       },
     ],
     inviteUrl: 'http://localhost:5173/join/tok_abcdefghijklmnopqrstuvwxyz0123456789ABCDE',
+    ...overrides,
+  };
+}
+
+/**
+ * What the office page hands to its extensions (`SpaceExtension` slots): Ana in "Acme", on a 4×3
+ * open map with one meeting room "Sala".
+ */
+export function spaceInfoFixture(overrides: Partial<SpaceInfo> = {}): SpaceInfo {
+  return {
+    spaceId: 'space-1',
+    spaceName: 'Acme',
+    userId: 'user-1',
+    displayName: 'Ana',
+    roomNames: { sala: 'Sala' },
+    map: {
+      width: 4,
+      height: 3,
+      collisionGrid: new Uint8Array(12),
+      rooms: [{ x: 2, y: 0, width: 2, height: 2, areaId: 'sala', name: 'Sala' }],
+      spawns: [{ x: 0, y: 2 }],
+      desks: [],
+    },
     ...overrides,
   };
 }

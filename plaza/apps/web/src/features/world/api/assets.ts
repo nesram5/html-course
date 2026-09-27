@@ -22,6 +22,11 @@ export function avatarUrl(avatarId: string): string {
   return `${MAPS_BASE_URL}/avatars/${avatarId}.png`;
 }
 
+/** Sprite of a desk decoration object of the catalog (`decor/<id>.png`, E9-S3). */
+export function decorUrl(itemId: string): string {
+  return `${MAPS_BASE_URL}/decor/${itemId}.png`;
+}
+
 /** The fields of `theme.json` the client needs (full schema: `@plaza/maps` `ThemeFileSchema`). */
 const ThemeJsonSchema = z.looseObject({
   baseThemeId: SlugIdSchema.optional(),

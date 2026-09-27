@@ -1,3 +1,4 @@
+import type { WorldMap } from '@plaza/shared';
 import { createContext, useContext, type ComponentType, type ReactNode } from 'react';
 
 /** What the office page tells the features that extend it. */
@@ -9,6 +10,8 @@ export interface SpaceInfo {
   readonly displayName: string;
   /** Meeting room names by area id of the office map ("En Sala X"). */
   readonly roomNames: Readonly<Record<string, string>>;
+  /** The office map (desks, rooms, collisions). */
+  readonly map: WorldMap;
 }
 
 export interface SpaceGateProps {

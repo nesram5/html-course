@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { presenceStore } from '@/features/presence';
 import { worldStore } from '@/features/world';
 import { createI18n } from '@/shared/i18n';
+import { spaceInfoFixture } from '@/test/fixtures';
 
 import { HallwayNotice } from '../components/HallwayNotice';
 import { MediaControls } from '../components/MediaControls';
@@ -18,13 +19,7 @@ import { DEFAULT_MEDIA_CHOICES } from '../lib/media-prefs';
 import { videoOpacity } from '../lib/video-opacity';
 import { testController, type FakeRealtime, type FakeRoom } from './fake-room';
 
-const SPACE = {
-  spaceId: 'space-1',
-  spaceName: 'Acme',
-  userId: 'user-1',
-  displayName: 'Ana',
-  roomNames: {},
-};
+const SPACE = spaceInfoFixture();
 
 function player(userId: string, displayName: string, x: number, y: number): PublicPlayer {
   return {

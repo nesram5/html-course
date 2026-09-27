@@ -20,7 +20,7 @@ describe('ManifestMapsCatalog', () => {
     expect(catalog.thumbnailUrl('campus@1', 'night')).toBe(
       '/assets/maps/templates/campus/themes/night/thumbnail.png',
     );
-    expect(catalog.thumbnailUrl('campus@1', 'watercolor')).toBeNull();
+    expect(catalog.thumbnailUrl('campus@1', 'sepia')).toBeNull();
     expect(await catalog.roomAreas('office-small@1')).toEqual([
       { areaId: 'sala-1', name: 'Sala 1' },
     ]);
@@ -80,9 +80,20 @@ describe('ManifestMapsCatalog', () => {
       'sala-coral',
     ]);
     for (const template of templates) {
-      expect(template.themes.map((theme) => theme.id)).toEqual(['pixel', 'night']);
+      expect(template.themes.map((theme) => theme.id)).toEqual(['pixel', 'night', 'watercolor']);
       expect(catalog.hasTheme(template.id, 'night')).toBe(true);
+      // The watercolor style has its own images; night reuses the pixel ones (color variant).
+      const watercolor = template.themes.find((theme) => theme.id === 'watercolor');
+      expect(watercolor?.belowUrl).toMatch(/\/themes\/watercolor\/below\.png$/);
+      expect(watercolor?.colorMatrix).toBeNull();
     }
+    const decor = catalog.listDecor();
+    expect(decor.length).toBeGreaterThanOrEqual(12);
+    expect(decor.find((item) => item.id === 'plant')).toEqual({
+      id: 'plant',
+      name: expect.any(String) as unknown,
+      spriteUrl: '/assets/maps/decor/plant.png',
+    });
     const avatars = catalog.listAvatars();
     expect(avatars).toHaveLength(8);
     expect(avatars.every((avatar) => catalog.hasAvatar(avatar.id))).toBe(true);

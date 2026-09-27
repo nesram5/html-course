@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createI18n } from '@/shared/i18n';
+import { spaceInfoFixture } from '@/test/fixtures';
 
 import { PreJoin } from '../components/PreJoin';
 import type { CameraPreview, DeviceAccess, MicrophonePreview } from '../lib/devices';
@@ -82,13 +83,7 @@ function memoryStorage(): PrefsStorage {
   };
 }
 
-const SPACE = {
-  spaceId: 'space-1',
-  spaceName: 'Acme',
-  userId: 'user-1',
-  displayName: 'Ana',
-  roomNames: {},
-};
+const SPACE = spaceInfoFixture();
 const denied = (): Error => Object.assign(new Error('denied'), { name: 'NotAllowedError' });
 
 let devices: FakeDevices;

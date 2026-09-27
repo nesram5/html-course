@@ -40,13 +40,25 @@ export {
 } from './extensions';
 export { sidePanelStore, useSidePanel, type SidePanelState } from './store/side-panel-store';
 export {
+  createWorldStore,
   useWorldStore,
   worldStore,
   type LocalPlayerState,
   type WorldState,
+  type WorldStore,
 } from './store/world-store';
 export { ZOOM_LEVELS, type ZoomLevel } from './game/constants';
+export { useDecorCatalog } from './hooks/useDecorCatalog';
 export { isTypingTarget } from './game/controller/keyboard-input';
+export {
+  createOfficeStore,
+  deskOfUser,
+  officeStore,
+  useOfficeStore,
+  type DecorPreview,
+  type OfficeState,
+  type OfficeStore,
+} from './store/office-store';
 export {
   RealtimeClient,
   RealtimeRequestError,

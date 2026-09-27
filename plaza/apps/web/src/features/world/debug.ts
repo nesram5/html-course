@@ -1,5 +1,6 @@
 import { worldEvents } from './bridge/event-bus';
 import { liveGameCount, worldProbe, type AvatarProbe } from './game/game-registry';
+import type { OfficeProbe } from './game/office/attach-office';
 import { realtimeClient } from './realtime/realtime-client';
 import { sessionStore } from './realtime/space-session';
 import { worldStore } from './store/world-store';
@@ -21,6 +22,8 @@ export interface WorldDebug {
   stress(count: number): void;
   /** Closes the realtime transport like a network failure (E4-S6); it reconnects by itself. */
   dropConnection(): void;
+  /** Style drawn, style textures alive and drawn desks (E9), `null` without a running scene. */
+  office(): OfficeProbe | null;
 }
 
 declare global {
@@ -49,5 +52,6 @@ export function installWorldDebug(): void {
     dropConnection: () => {
       realtimeClient.simulateNetworkDrop();
     },
+    office: () => worldProbe()?.office?.() ?? null,
   };
 }

@@ -10,6 +10,7 @@ import { BansPanel } from '../components/BansPanel';
 import { InvitePanel } from '../components/InvitePanel';
 import { MembersPanel } from '../components/MembersPanel';
 import { RoomsSettings } from '../components/RoomsSettings';
+import { ThemeSettings } from '../components/ThemeSettings';
 import { useSpace } from '../hooks/useSpaces';
 
 const RESULT_TONE = {
@@ -19,8 +20,8 @@ const RESULT_TONE = {
 } as const;
 
 /**
- * `/spaces/:spaceId/settings`: invite link, allowed domain, Meet rooms, members and removed people
- * (E2-S4..S7).
+ * `/spaces/:spaceId/settings`: invite link, allowed domain, office style (E9-S1), Meet rooms,
+ * members with their desks (E9-S2) and removed people (E2-S4..S7).
  */
 export function SpaceSettingsPage() {
   const { t } = useTranslation('spaces');
@@ -50,8 +51,9 @@ export function SpaceSettingsPage() {
         {isOwner && (
           <AllowedDomainForm spaceId={space.data.id} allowedDomain={space.data.allowedDomain} />
         )}
+        <ThemeSettings space={space.data} />
         <RoomsSettings space={space.data} />
-        {isOwner && <MembersPanel spaceId={space.data.id} />}
+        {isOwner && <MembersPanel space={space.data} />}
         {isOwner && <BansPanel spaceId={space.data.id} />}
       </>
     );

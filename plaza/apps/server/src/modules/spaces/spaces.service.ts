@@ -2,6 +2,7 @@ import {
   DEFAULT_THEME_ID,
   PresenceStatusSchema,
   type CreateSpaceBody,
+  type DeskState,
   type EnterSpaceResponse,
   type InviteLinkResponse,
   type JoinPreviewResponse,
@@ -44,6 +45,11 @@ export interface SpacesServiceDeps {
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+}
+
+/** `desk:updated` payload of a desk nobody owns. */
+export function freeDesk(deskId: string): DeskState {
+  return { deskId, userId: null, displayName: null, decor: null };
 }
 
 function emailDomain(email: string): string {
@@ -135,6 +141,9 @@ export class SpacesService {
       ...(body.allowedDomain !== undefined && { allowedDomain: body.allowedDomain }),
       ...(body.themeId !== undefined && { themeId: body.themeId }),
     });
+    // E9-S1: everyone connected switches to the new style live.
+    if (updated.themeId !== space.themeId)
+      await this.deps.notifier.themeChanged(spaceId, updated.themeId);
     return this.#detail({ ...updated, rooms: space.rooms }, 'OWNER');
   }
 
@@ -238,6 +247,9 @@ export class SpacesService {
       await repository.ban(spaceId, targetUserId);
     });
     await this.deps.notifier.kick(spaceId, targetUserId, 'REMOVED');
+    // E9-S2: the membership (and its desk) is gone, so the desk is free for everyone.
+    if (target.deskId !== null)
+      await this.deps.notifier.deskUpdated(spaceId, freeDesk(target.deskId));
   }
 
   /** People removed from the space (owner only), newest first. */

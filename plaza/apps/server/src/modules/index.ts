@@ -1,5 +1,6 @@
 import { authModule } from './auth/index.js';
 import { chatModule } from './chat/index.js';
+import { desksModule } from './desks/index.js';
 import { healthModule } from './health/index.js';
 import { mediaModule } from './media/index.js';
 import { presenceModule } from './presence/index.js';
@@ -21,6 +22,7 @@ export const modules: readonly PlazaModule[] = [
   usersModule,
   spacesModule,
   roomsModule,
+  desksModule,
   mediaModule,
   worldModule,
   presenceModule,

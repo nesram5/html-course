@@ -4,20 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { chatSpaceExtension } from '@/features/chat';
 import { mediaSpaceExtension } from '@/features/media';
+import { personalizationSpaceExtension } from '@/features/personalization';
 import { presenceSpaceExtension } from '@/features/presence';
-import { sidePanelStore, type SpaceInfo } from '@/features/world';
+import { sidePanelStore } from '@/features/world';
+import { spaceInfoFixture } from '@/test/fixtures';
 import { mockApi } from '@/test/mock-api';
 import { renderWithProviders } from '@/test/providers';
 
 import { spaceExtensions } from '../space-extensions';
 
-const SPACE: SpaceInfo = {
-  spaceId: 'space-1',
-  spaceName: 'Acme',
-  userId: 'user-1',
-  displayName: 'Ana',
-  roomNames: { sala: 'Sala' },
-};
+const SPACE = spaceInfoFixture();
 
 /** The bottom-bar controls and the side panels of the E7 extensions, as the office draws them. */
 function renderHud() {
@@ -49,12 +45,15 @@ afterEach(() => {
 });
 
 describe('office page extensions', () => {
-  it('draw, in order, the hallway media, presence and chat (E5, E7)', () => {
+  it('draw, in order, the hallway media, presence, chat and desks (E5, E7, E9)', () => {
     expect(spaceExtensions).toEqual([
       mediaSpaceExtension,
       presenceSpaceExtension,
       chatSpaceExtension,
+      personalizationSpaceExtension,
     ]);
+    expect(personalizationSpaceExtension.Overlay).toBeDefined();
+    expect(personalizationSpaceExtension.BarItems).toBeDefined();
     expect(mediaSpaceExtension.Gate).toBeDefined();
     expect(mediaSpaceExtension.Overlay).toBeDefined();
     expect(mediaSpaceExtension.BarItems).toBeDefined();

@@ -7,6 +7,7 @@ import {
   joinByInvite,
   openOffice,
   remoteAvatar,
+  setTabHidden,
   signIn,
   type CreatedSpace,
 } from './support/world';
@@ -70,17 +71,6 @@ async function anaAndLuis(browser: Browser) {
 
 function bottomBar(page: Page) {
   return page.getByRole('group', { name: 'Tus controles' });
-}
-
-/** Makes the page believe its tab was hidden (or shown again). */
-async function setTabHidden(page: Page, hidden: boolean): Promise<void> {
-  await page.evaluate((value) => {
-    Object.defineProperty(document, 'visibilityState', {
-      configurable: true,
-      get: () => (value ? 'hidden' : 'visible'),
-    });
-    document.dispatchEvent(new Event('visibilitychange'));
-  }, hidden);
 }
 
 test.describe('presence, chat and reactions (E7)', () => {

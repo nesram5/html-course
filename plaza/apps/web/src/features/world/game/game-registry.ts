@@ -1,3 +1,5 @@
+import type { OfficeProbe } from './office/attach-office';
+
 /**
  * Counts the Phaser games alive, without importing Phaser, so React code and tests can check
  * that leaving the space page frees the game (E3-S6).
@@ -47,6 +49,8 @@ export interface WorldProbe {
   avatars(): AvatarProbe[];
   /** Who the camera follows: `null` for the local avatar, a userId while locating (E7-S2). */
   cameraTarget(): string | null;
+  /** Office style and drawn desks (E9). */
+  office?(): OfficeProbe;
 }
 
 let probe: WorldProbe | null = null;

@@ -136,6 +136,18 @@ describe('validate:maps', () => {
     expect(problems).toContain('templates/campus/themes/pixel/below.png: not a PNG image');
   });
 
+  it('fails when a template offers fewer than 2 office styles (E9-S1)', () => {
+    const dir = copyPackage();
+    editJson<{ templates: { id: string; themes: unknown[] }[] }>(dir, 'manifest.json', (m) => {
+      const template = m.templates.find((t) => t.id === 'campus@1');
+      if (template !== undefined) template.themes = template.themes.slice(0, 1);
+    });
+
+    expect(validateMapsPackage(dir).problems).toContain(
+      'manifest.json: template "campus@1" needs at least 2 themes, found 1',
+    );
+  });
+
   it('fails on undeclared or unknown licenses and broken color variants', () => {
     const dir = copyPackage();
     editJson<Record<string, unknown>>(
@@ -149,7 +161,7 @@ describe('validate:maps', () => {
       theme.license = 'All rights reserved';
     });
     editJson<Record<string, unknown>>(dir, 'templates/campus/themes/night/theme.json', (theme) => {
-      theme.baseThemeId = 'watercolor';
+      theme.baseThemeId = 'sepia';
       delete theme.colorMatrix;
     });
 
@@ -162,7 +174,7 @@ describe('validate:maps', () => {
       'templates/campus/themes/pixel/theme.json: license "All rights reserved" is not one of CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0, OFL-1.1, MIT',
     );
     expect(problems).toContain(
-      'templates/campus/themes/night/theme.json: baseThemeId "watercolor" is not a theme of this template',
+      'templates/campus/themes/night/theme.json: baseThemeId "sepia" is not a theme of this template',
     );
     expect(problems).toContain(
       'templates/campus/themes/night/theme.json: a color variant needs a colorMatrix',

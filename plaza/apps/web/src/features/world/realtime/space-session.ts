@@ -3,7 +3,9 @@ import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import type { EventBus } from '../bridge/event-bus';
+import { officeStore, type OfficeStore } from '../store/office-store';
 import type { WorldStore } from '../store/world-store';
+import { syncOffice } from './office-sync';
 import {
   isRealtimeRequestError,
   type RealtimeClient,
@@ -52,6 +54,8 @@ export interface SpaceSessionOptions {
   readonly events: EventBus;
   readonly world: WorldStore;
   readonly store?: SessionStore;
+  /** Style and desks of the space (E9); the app-wide store by default. */
+  readonly office?: OfficeStore;
 }
 
 /**
@@ -133,6 +137,7 @@ export class SpaceSession {
           this.maybeJoin();
         }
       }),
+      syncOffice(client, events, this.options.office ?? officeStore),
     );
     client.connect();
     this.maybeJoin();

@@ -51,12 +51,12 @@ describe('generator', () => {
     expect(different, 'run `pnpm --filter @plaza/maps generate` and commit the result').toEqual([]);
   });
 
-  it('lists 2 templates with 2 themes, 8 avatars and at least 12 decor items in the manifest', () => {
+  it('lists 2 templates with 3 themes, 8 avatars and at least 12 decor items in the manifest', () => {
     const manifest = parseManifest(JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8')));
 
     expect(manifest.templates.map((t) => [t.id, t.name, t.themes.map((th) => th.id)])).toEqual([
-      ['office-small@1', 'Oficina pequeña', ['pixel', 'night']],
-      ['campus@1', 'Campus', ['pixel', 'night']],
+      ['office-small@1', 'Oficina pequeña', ['pixel', 'night', 'watercolor']],
+      ['campus@1', 'Campus', ['pixel', 'night', 'watercolor']],
     ]);
     expect(manifest.avatars).toHaveLength(8);
     expect(manifest.avatars[0]?.id).toBe('avatar-01');
@@ -91,9 +91,15 @@ describe('generator', () => {
       expect(map.rooms).toHaveLength(rooms);
       expect(map.desks.length).toBeGreaterThanOrEqual(desks);
       expect(map.spawns.length).toBeGreaterThanOrEqual(2);
-      for (const image of ['below', 'above']) {
-        const png = readFileSync(join(root, 'templates', dir, 'themes', 'pixel', `${image}.png`));
-        expect(readPngSize(png)).toEqual({ width: width * 32, height: height * 32 });
+      // Every style with its own images ("skins", ADR-011) covers exactly the same map.
+      for (const theme of ['pixel', 'watercolor']) {
+        for (const image of ['below', 'above']) {
+          const png = readFileSync(join(root, 'templates', dir, 'themes', theme, `${image}.png`));
+          expect(readPngSize(png), `${theme}/${image}`).toEqual({
+            width: width * 32,
+            height: height * 32,
+          });
+        }
       }
     },
   );

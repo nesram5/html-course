@@ -14,6 +14,7 @@ import type { BuiltMap } from './map-builder.js';
 import { Raster } from './raster.js';
 import { TEMPLATES, type TemplateSpec } from './templates.js';
 import { TILE, TILESET_COLUMNS, pixelTileset, type Tileset } from './tileset.js';
+import { watercolorBelow, watercolorObjects } from './watercolor.js';
 
 export const GENERATED_AUTHOR = 'Plaza (procedural, packages/maps/scripts/generator)';
 export const GENERATED_LICENSE = 'CC0-1.0';
@@ -25,6 +26,13 @@ const TILESET_FILE = 'tilesets/pixel-office.png';
  */
 export const NIGHT_COLOR_MATRIX = [
   0.5, 0.08, 0.12, 0, 0, 0.06, 0.55, 0.16, 0, 4, 0.1, 0.14, 0.82, 0, 22, 0, 0, 0, 1, 0,
+] as const;
+
+/** Office styles of every template, in the order the settings show them (E9-S1). */
+export const THEMES = [
+  { id: 'pixel', name: 'Pixel' },
+  { id: 'night', name: 'Noche' },
+  { id: 'watercolor', name: 'Acuarela' },
 ] as const;
 
 export interface GeneratedFile {
@@ -174,6 +182,14 @@ function templateFiles(spec: TemplateSpec, tileset: Tileset): GeneratedFile[] {
   const thumbnail = composite.downscale(spec.thumbnailScale);
   const nightThumbnail = thumbnail.crop(0, 0, thumbnail.width, thumbnail.height);
   nightThumbnail.applyColorMatrix(NIGHT_COLOR_MATRIX);
+  const paintedBelow = watercolorBelow(
+    rasterize(map, tileset, [map.floor]),
+    rasterize(map, tileset, [map.decorBelow]),
+  );
+  const paintedAbove = watercolorObjects(above);
+  const painted = new Raster(below.width, below.height);
+  painted.draw(paintedBelow, 0, 0);
+  painted.draw(paintedAbove, 0, 0);
   const theme = (name: string, extra: Record<string, Json> = {}) =>
     text(toPrettyJson({ name, author: GENERATED_AUTHOR, license: GENERATED_LICENSE, ...extra }));
   return [
@@ -187,6 +203,13 @@ function templateFiles(spec: TemplateSpec, tileset: Tileset): GeneratedFile[] {
       path: `${base}/themes/night/theme.json`,
       bytes: theme('Noche', { baseThemeId: 'pixel', colorMatrix: [...NIGHT_COLOR_MATRIX] }),
     },
+    { path: `${base}/themes/watercolor/below.png`, bytes: png(paintedBelow) },
+    { path: `${base}/themes/watercolor/above.png`, bytes: png(paintedAbove) },
+    {
+      path: `${base}/themes/watercolor/thumbnail.png`,
+      bytes: png(painted.downscale(spec.thumbnailScale)),
+    },
+    { path: `${base}/themes/watercolor/theme.json`, bytes: theme('Acuarela') },
   ];
 }
 
@@ -201,10 +224,7 @@ function manifest(): Json {
       dir: spec.dir,
       name: spec.name,
       defaultThemeId: 'pixel',
-      themes: [
-        { id: 'pixel', name: 'Pixel' },
-        { id: 'night', name: 'Noche' },
-      ],
+      themes: THEMES.map((theme) => ({ id: theme.id, name: theme.name })),
     })),
     avatars: AVATARS.map((avatar) => ({
       id: avatar.id,

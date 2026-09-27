@@ -17,16 +17,19 @@ import * as Phaser from 'phaser';
 
 import type { ThemeAssets } from '../../api/assets';
 import type { EventBus, LocalStep } from '../../bridge/event-bus';
+import type { OfficeStore } from '../../store/office-store';
 import type { WorldStore } from '../../store/world-store';
 import { recolorImage } from '../color-matrix';
 import { CAMERA_LERP, LOCATE_MS, STEP_MS } from '../constants';
 import { KeyboardInput } from '../controller/keyboard-input';
 import { LocalPlayerController } from '../controller/local-player-controller';
 import { setWorldProbe, type AvatarProbe } from '../game-registry';
+import { attachOffice } from '../office/attach-office';
 import { AvatarTextures } from '../remote/avatar-textures';
 import { RemotePlayersSystem } from '../remote/RemotePlayersSystem';
 import { StressDriver } from '../remote/stress';
 import { ABOVE_DEPTH, AvatarSprite } from '../sprites/AvatarSprite';
+import { BELOW_DEPTH, ROOM_DEPTH } from '../sprites/depth';
 import { SCENES, TEXTURES } from '../textures';
 
 export interface WorldSceneDeps {
@@ -37,9 +40,13 @@ export interface WorldSceneDeps {
   readonly avatarUrlOf: (avatarId: string) => string;
   readonly events: EventBus;
   readonly store: WorldStore;
+  /** Office style and desks (E9). */
+  readonly office: OfficeStore;
+  /** Image URLs and color matrix of a style of this map, for live style changes (E9-S1). */
+  readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
+  /** Sprite URL of a desk decoration object (E9-S3). */
+  readonly decorUrlOf: (itemId: string) => string;
 }
-
-const ROOM_DEPTH = 10;
 
 interface StressRun {
   readonly system: RemotePlayersSystem;
@@ -80,9 +87,15 @@ export class WorldScene extends Phaser.Scene {
     const width = map.width * TILE_SIZE;
     const height = map.height * TILE_SIZE;
 
-    this.add.image(0, 0, this.styleTexture(TEXTURES.below)).setOrigin(0).setDepth(0);
-    this.add.image(0, 0, this.styleTexture(TEXTURES.above)).setOrigin(0).setDepth(ABOVE_DEPTH);
+    const belowKey = this.styleTexture(TEXTURES.below);
+    const aboveKey = this.styleTexture(TEXTURES.above);
+    const below = this.add.image(0, 0, belowKey).setOrigin(0).setDepth(BELOW_DEPTH);
+    const above = this.add.image(0, 0, aboveKey).setOrigin(0).setDepth(ABOVE_DEPTH);
     this.drawRooms();
+    const office = attachOffice(this, {
+      ...this.deps,
+      drawn: { belowKey, aboveKey, below, above, extraKeys: [TEXTURES.below, TEXTURES.above] },
+    });
 
     this.avatarTextures = new AvatarTextures(this, this.deps.avatarUrlOf, TEXTURES.localAvatar);
     this.remote = new RemotePlayersSystem(this, this.avatarTextures, TEXTURES.localAvatar);
@@ -131,6 +144,10 @@ export class WorldScene extends Phaser.Scene {
       events.on('camera:locate', ({ userId }) => {
         this.locate(userId);
       }),
+      // Showing a desk (E9-S2) ends a "Localizar" in progress: its timer must not pull back.
+      events.on('camera:desk', () => {
+        this.stopLocating();
+      }),
       events.on('avatar:reaction', ({ userId, emoji }) => {
         this.showReaction(userId, emoji);
       }),
@@ -140,10 +157,12 @@ export class WorldScene extends Phaser.Scene {
       events.on('debug:stress', ({ count }) => {
         this.startStress(count);
       }),
+      office.dispose,
       setWorldProbe({
         fps: () => this.game.loop.actualFps,
         avatars: () => this.probeAvatars(),
         cameraTarget: () => this.locating?.userId ?? null,
+        office: () => office.probe(),
       }),
       () => {
         this.stopStress();

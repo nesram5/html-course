@@ -1,6 +1,6 @@
 import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -9,10 +9,11 @@ import { useEnterSpace } from '@/features/spaces';
 import { errorMessageKey, isApiError } from '@/shared/api';
 import { toast } from '@/shared/ui';
 
-import { avatarUrl, loadWorldAssets } from '../api/assets';
+import { avatarUrl, decorUrl, loadTheme, loadWorldAssets } from '../api/assets';
 import { worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
 import { useSpaceExtensions, type SpaceInfo } from '../extensions';
+import { useDecorCatalog } from '../hooks/useDecorCatalog';
 import { useSpaceSession } from '../hooks/useSpaceSession';
 import { sidePanelStore } from '../store/side-panel-store';
 import { useWorldStore } from '../store/world-store';
@@ -40,13 +41,35 @@ export function SpacePage() {
   const { user } = useSession();
   const avatars = useAvatars();
   const detail = space.data?.space;
+  // The style the office is first drawn with. Later changes (E9-S1) are applied live by the
+  // scene, so a refetched space with another theme must not reload (and redraw) the office.
+  const [firstTheme, setFirstTheme] = useState<{ spaceId: string; themeId: string } | null>(null);
+  if (detail !== undefined && firstTheme?.spaceId !== detail.id) {
+    setFirstTheme({ spaceId: detail.id, themeId: detail.themeId });
+  }
+  const mapTemplateId = detail?.mapTemplateId ?? '';
+  const themeId = firstTheme?.spaceId === detail?.id ? (firstTheme?.themeId ?? '') : '';
   const assets = useQuery({
-    queryKey: worldKeys.assets(detail?.mapTemplateId ?? '', detail?.themeId ?? ''),
-    queryFn: ({ signal }) =>
-      loadWorldAssets(detail?.mapTemplateId ?? '', detail?.themeId ?? '', signal),
-    enabled: detail !== undefined,
+    queryKey: worldKeys.assets(mapTemplateId, themeId),
+    queryFn: ({ signal }) => loadWorldAssets(mapTemplateId, themeId, signal),
+    enabled: detail !== undefined && themeId !== '',
     staleTime: Number.POSITIVE_INFINITY,
   });
+  const resolveTheme = useCallback(
+    (nextThemeId: string) => loadTheme(mapTemplateId, nextThemeId),
+    [mapTemplateId],
+  );
+  // Decoration sprites are looked up when drawn, so the catalog arriving later does not
+  // recreate the game; until it does, the conventional path is used.
+  const decor = useDecorCatalog();
+  const decorUrls = useRef<ReadonlyMap<string, string>>(new Map());
+  useEffect(() => {
+    decorUrls.current = new Map((decor.data ?? []).map((item) => [item.id, item.spriteUrl]));
+  }, [decor.data]);
+  const decorUrlOf = useCallback(
+    (itemId: string) => decorUrls.current.get(itemId) ?? decorUrl(itemId),
+    [],
+  );
   const extensions = useSpaceExtensions();
   const gates = useMemo(() => extensions.flatMap(({ Gate }) => (Gate ? [Gate] : [])), [extensions]);
   // Gates passed on this visit (a new slug starts over).
@@ -132,6 +155,7 @@ export function SpacePage() {
     userId: user.id,
     displayName: user.displayName,
     roomNames,
+    map,
   };
   const Gate = gates[gatesPassed];
   const avatar = avatars.data?.find((entry) => entry.id === user.avatarId);
@@ -159,6 +183,8 @@ export function SpacePage() {
           displayName={user.displayName}
           avatarUrl={sprite}
           avatarUrls={avatarUrls}
+          resolveTheme={resolveTheme}
+          decorUrlOf={decorUrlOf}
           label={t('canvas.label', { space: detail.name })}
         />
         {Gate !== undefined ? (

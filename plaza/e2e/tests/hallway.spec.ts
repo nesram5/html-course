@@ -7,6 +7,7 @@ import {
   joinByInvite,
   openOffice,
   remoteAvatar,
+  setTabHidden,
   signIn,
   tile,
   type CreatedSpace,
@@ -169,6 +170,46 @@ test.describe('hallway conversations with real media (E5)', () => {
       timeout: 5000,
     });
     await expect(anaTile.locator('video')).toBeHidden({ timeout: 5000 });
+
+    for (const someone of [ana, luis]) await someone.context.close();
+  });
+
+  test('away (hidden tab) mutes microphone and camera, shows "Ausente · Llamar" and restores on return (E5 × E7)', async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const run = randomUUID().slice(0, 8);
+    const ana = await person(browser, `ana-${run}@acme.com`, 'Ana');
+    const luis = await person(browser, `luis-${run}@acme.com`, 'Luis');
+    const space = await createSpace(ana.context.request, `Ausente ${run}`);
+    await joinByInvite(luis.context.request, space);
+    await openOffice(ana.page, space.slug, { media: true });
+    await openOffice(luis.page, space.slug, { media: true });
+    await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
+    const anaTile = luis.page.locator(
+      `[data-testid="hallway-video"][data-user-id="${ana.userId}"]`,
+    );
+
+    // Ana's tab is hidden: presence marks her away and the media feature mutes her.
+    await setTabHidden(ana.page, true);
+    await expect.poll(async () => (await media(ana.page))?.micOn).toBe(false);
+    expect((await media(ana.page))?.cameraOn).toBe(false);
+    await expect(anaTile.getByRole('img', { name: 'Micrófono silenciado' })).toBeVisible({
+      timeout: 5000,
+    });
+    const card = anaTile.getByRole('group', { name: 'Ana está ausente' });
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await expect(card.getByRole('button', { name: /Llamar/ })).toBeVisible();
+
+    // Back: exactly what was on comes back (microphone and camera), and the card goes.
+    await setTabHidden(ana.page, false);
+    await expect.poll(async () => (await media(ana.page))?.micOn).toBe(true);
+    expect((await media(ana.page))?.cameraOn).toBe(true);
+    await expect(card).toBeHidden({ timeout: 5000 });
+    await expect(anaTile.getByRole('img', { name: 'Micrófono silenciado' })).toBeHidden({
+      timeout: 5000,
+    });
+    await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
 
     for (const someone of [ana, luis]) await someone.context.close();
   });

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { ThemeAssets } from '../api/assets';
 import { worldEvents, type EventBus } from '../bridge/event-bus';
 import type { WorldGame } from '../game/create-game';
+import { officeStore, type OfficeStore } from '../store/office-store';
 import { useWorldStore, worldStore, type WorldStore } from '../store/world-store';
 
 export interface WorldCanvasProps {
@@ -14,10 +15,15 @@ export interface WorldCanvasProps {
   readonly avatarUrl: string;
   /** Sprite sheets of the avatar catalog by id, for the other people (E4-S5). */
   readonly avatarUrls?: Readonly<Record<string, string>>;
+  /** Resolves another style of the map for live style changes (E9-S1). Keep it stable. */
+  readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
+  /** Sprite URL of a desk decoration object (E9-S3). Keep it stable. */
+  readonly decorUrlOf?: (itemId: string) => string;
   /** Accessible name of the canvas region. */
   readonly label: string;
   readonly events?: EventBus;
   readonly store?: WorldStore;
+  readonly office?: OfficeStore;
 }
 
 /**
@@ -31,9 +37,12 @@ export function WorldCanvas({
   displayName,
   avatarUrl,
   avatarUrls,
+  resolveTheme,
+  decorUrlOf,
   label,
   events = worldEvents,
   store = worldStore,
+  office = officeStore,
 }: WorldCanvasProps) {
   const { t } = useTranslation('world');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,8 +66,11 @@ export function WorldCanvas({
           displayName,
           avatarUrl,
           ...(avatarUrls !== undefined && { avatarUrls }),
+          ...(decorUrlOf !== undefined && { decorUrlOf }),
+          resolveTheme,
           events,
           store,
+          office,
         });
       })
       .catch(() => {
@@ -69,7 +81,19 @@ export function WorldCanvas({
       game?.destroy();
       store.getState().reset();
     };
-  }, [map, theme, displayName, avatarUrl, avatarUrls, events, store, attempt]);
+  }, [
+    map,
+    theme,
+    displayName,
+    avatarUrl,
+    avatarUrls,
+    resolveTheme,
+    decorUrlOf,
+    events,
+    store,
+    office,
+    attempt,
+  ]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#1e2130]">

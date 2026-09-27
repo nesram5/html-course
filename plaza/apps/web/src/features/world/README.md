@@ -4,10 +4,11 @@ The only feature that imports Phaser, and home of the `RealtimeClient` (the only
 client). React owns the page and the DOM; Phaser owns one `<canvas>`. They talk through two
 objects only (architecture §6):
 
-| Bridge       | File                   | Direction                  | Used for                                                                                                                                                                          |
-| ------------ | ---------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room                                                                                                                         |
-| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center`, `camera:locate`, `world:snapshot`, `world:delta`, `player:correct`, `avatar:reaction` (→ scene), `local:step` (scene →), `presence:self-away` (presence → media) |
+| Bridge        | File                    | Direction                        | Used for                                                                                                                                                                                         |
+| ------------- | ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `worldStore`  | `store/world-store.ts`  | both (state)                     | loading progress/errors, zoom, local player tile and room, the other people                                                                                                                      |
+| `EventBus`    | `bridge/event-bus.ts`   | commands and one-off facts       | `camera:center`, `camera:locate`, `camera:desk`, `world:snapshot`, `world:delta`, `player:correct`, `avatar:reaction` (→ scene), `local:step` (scene →), `presence:self-away` (presence → media) |
+| `officeStore` | `store/office-store.ts` | server → React and scene (state) | office style, held desks with name and decoration, decoration preview (E9)                                                                                                                       |
 
 ```text
 SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
@@ -22,15 +23,21 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   │         ├─ RemotePlayersSystem     AvatarSprites of the others; logic in the pure RemotePlayersModel
   │         ├─ AvatarTextures          remote sprite sheets loaded on demand, once per avatar
   │         └─ KeyboardInput           window listeners: arrows/WASD, +/-, ignores text fields
+  │    └─ attachOffice (game/office/, E9)
+  │         ├─ ThemeLoader         pure: live style change, latest request wins; PhaserThemeBackend
+  │         │                      loads the new images (recolors color variants), cross-fades
+  │         │                      them in 600 ms and removes the old textures
+  │         └─ DeskLayer           names over held desks and decoration objects (deskDrawings, pure)
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
   ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
   ├─ SpaceBottomBar ── "Tus controles": avatar · name · the `BarItems` of every extension
-  └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, presence, chat)
+  └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, presence, chat,
+     personalization)
        Gate     before joining (media pre-join); the map loads behind it
-       Overlay  over the map (video strip, first-use notice)
-       BarItems in the bottom bar (mic/camera · status/"Personas" · reactions/chat); they also
-                start the presence and chat sessions
+       Overlay  over the map (video strip, first-use notice, X desk menu and "Decorar")
+       BarItems in the bottom bar (mic/camera · status/"Personas" · reactions/chat ·
+                "Mi escritorio"); they also start the presence and chat sessions
        Panel    side panels after the map controls ("Personas", chat); one open at a time
                 through `sidePanelStore`
        This feature never imports the features that extend it (no import cycles).
@@ -68,6 +75,19 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   the heap). `AvatarSprite` setters are no-ops when nothing changes, and depth changes by whole rows,
   so walking does not re-sort the scene every frame.
 
+## Office personalization (E9)
+
+- **Styles** (ADR-011): the page draws the office with the style it was opened with and never
+  reloads it; `space:snapshot.themeId` and `space:theme` go to `officeStore.themeId`, and the scene's
+  `ThemeLoader` swaps the two images with a fade, without touching avatars or geometry. Old style
+  textures are freed (`window.__plazaWorld.office().styleTextures`).
+- **Desks**: `SpaceSession` keeps `officeStore.desks` in step (`space:snapshot.desks`,
+  `desk:updated`, through `realtime/office-sync.ts`); `DeskLayer` draws the owner's name (over the
+  `above` art, under avatar names) and the objects in the 3 slots of `DeskArea.decorSlots`, from the
+  catalog sprites (neutral, same in every style). While "Decorar" is open, `officeStore.preview`
+  replaces the saved decoration of that desk. `camera:desk` pans to a desk ("Ir a su escritorio",
+  `/s/:slug?desk=<deskId>`).
+
 ## Rules of the pattern
 
 - **React never touches Phaser objects** and scenes never import React. React sends commands with
@@ -82,9 +102,12 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
 - **Keyboard**: handled on `window` (Phaser's keyboard plugin is disabled) so keys typed in inputs
   never move the avatar and `Tab` always moves the focus on. The canvas container is focusable
   (`role="application"`).
-- **Office styles** (§8.1): `below.png` → avatars (depth `100 + row`) → `above.png` (depth 100 000)
-  → name labels (depth `100 001 + row`, never hidden by trees). Color variants (`theme.json` with
-  `baseThemeId` + `colorMatrix`) reuse the base images, recolored once on the CPU.
+- **Office styles** (§8.1): `below.png` (0; a style fading in: 1) → room borders (10) → desk objects
+  (20) → avatars (`100 + row`) → `above.png` (100 000; fading in: 100 000.25) → desk owner names
+  (100 000.5) → per avatar, at `100 001 + row`: name label, status dot (left), 💬 (right) and
+  reaction (over them). Nothing drawn over the art is ever hidden by trees or roofs, in any style.
+  Color variants (`theme.json` with `baseThemeId` + `colorMatrix`) reuse the base images, recolored
+  once on the CPU.
 
 ## Development probes
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DESK_DECOR_SLOTS } from '../../constants.js';
 import { DeskDecorSchema } from '../../contracts/http/common.js';
-import { deskSpawnCandidates, deskSpawnTile, validateDeskDecor } from '../desks.js';
+import { deskNear, deskSpawnCandidates, deskSpawnTile, validateDeskDecor } from '../desks.js';
 import { isAdjacent, isInsideRect } from '../geometry.js';
 import type { DeskArea } from '../map.js';
 import { gridMap } from './grid-fixture.js';
@@ -139,7 +139,7 @@ describe('deskSpawnCandidates / deskSpawnTile (E9-S2)', () => {
     ]);
   });
 
-  it('returns null when the desk is walled in', () => {
+  it('returns null when the desk is walled in (a map spawn is used instead)', () => {
     const map = gridMap(['###', '###', '###']);
     expect(deskSpawnTile(map, desk(1, 1, 1, 1))).toBeNull();
   });
@@ -171,5 +171,38 @@ describe('deskSpawnCandidates / deskSpawnTile (E9-S2)', () => {
         }
       }),
     );
+  });
+});
+
+describe('deskNear (E9-S2)', () => {
+  const desks = [
+    { deskId: 'a', x: 2, y: 2, width: 2, height: 1 },
+    { deskId: 'b', x: 6, y: 2, width: 1, height: 1 },
+  ];
+
+  it('finds the desk touching the tile, sides and diagonals included', () => {
+    expect(deskNear(desks, { x: 2, y: 3 })?.deskId).toBe('a');
+    expect(deskNear(desks, { x: 4, y: 2 })?.deskId).toBe('a');
+    expect(deskNear(desks, { x: 1, y: 1 })?.deskId).toBe('a');
+    expect(deskNear(desks, { x: 7, y: 3 })?.deskId).toBe('b');
+  });
+
+  it('returns null two tiles away or more', () => {
+    expect(deskNear(desks, { x: 2, y: 4 })).toBeNull();
+    expect(deskNear(desks, { x: 0, y: 2 })).toBeNull();
+    expect(deskNear([], { x: 0, y: 0 })).toBeNull();
+  });
+
+  it('prefers a desk sharing a side over one touching only by a corner, then map order', () => {
+    const close = [
+      { deskId: 'corner', x: 0, y: 0, width: 1, height: 1 },
+      { deskId: 'side', x: 1, y: 2, width: 1, height: 1 },
+    ];
+    expect(deskNear(close, { x: 1, y: 1 })?.deskId).toBe('side');
+    const twins = [
+      { deskId: 'left', x: 0, y: 0, width: 1, height: 1 },
+      { deskId: 'right', x: 2, y: 0, width: 1, height: 1 },
+    ];
+    expect(deskNear(twins, { x: 1, y: 0 })?.deskId).toBe('left');
   });
 });
