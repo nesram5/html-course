@@ -114,6 +114,15 @@ describe('computePeers (E5-S1)', () => {
       }
     });
 
+    it('does not connect anyone to a disconnected (reconnecting) person, even if they were talking', () => {
+      const players = [player('a', 0, 0), player('b', 1, 0, { reconnecting: true })];
+      for (const prev of [NONE, wasConnected]) {
+        const result = computePeers(players, prev);
+        expect(peersOf(result, 'a')).toEqual([]);
+        expect(peersOf(result, 'b')).toEqual([]);
+      }
+    });
+
     it('does not connect anyone to a person inside a meeting room, even if they were talking', () => {
       const players = [player('a', 0, 0), player('b', 1, 0, { roomId: 'sala-1' })];
       for (const prev of [NONE, wasConnected]) {

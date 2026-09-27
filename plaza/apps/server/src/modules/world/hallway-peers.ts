@@ -20,7 +20,8 @@ interface OpenConversation {
 /**
  * Hallway conversations of one space (E5-S2, architecture §10.1). Keeps the last
  * `computePeers` result (the hysteresis needs it) and, on each working tick:
- * 1. recomputes the peers of everyone in the runtime (people in a meeting room or busy have none);
+ * 1. recomputes the peers of everyone in the runtime (people in a meeting room, busy or
+ *    disconnected in the reconnection grace have none);
  * 2. flags `inConversation` in the runtime, so the change reaches `world:delta.changed` (💬);
  * 3. returns who must get `media:peers`: only the people whose set changed, plus the ones that
  *    (re)connected since the last tick and need their current list.

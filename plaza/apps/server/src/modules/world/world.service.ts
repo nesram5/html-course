@@ -34,8 +34,10 @@ import type { WorldRepository } from './world.repository.js';
 
 /**
  * Disconnect reasons of a connection ended on purpose, not by the network: by the client
- * ("Salir", leaving the page) or by the server (logout; kicked and replaced sockets have left
- * the runtime already).
+ * ("Salir", leaving the office for another page of the app) or by the server (logout; kicked and
+ * replaced sockets have left the runtime already). Closing the tab or the browser is a
+ * "transport close", like a network cut: the avatar waits out the grace, but it has no hallway
+ * peers meanwhile (`computePeers` skips `reconnecting` people), so conversations end at once.
  */
 const DELIBERATE_REASONS: readonly DisconnectReason[] = [
   'client namespace disconnect',
@@ -374,10 +376,10 @@ export class WorldService {
   // ── Disconnection and kicks (E4-S6, E2-S6) ──────────────────────────────
 
   /**
-   * Connection lost: the avatar stays, flagged `reconnecting`, and leaves only if the person
-   * does not come back within {@link RECONNECT_GRACE_MS}. A deliberate leave (the client closed
-   * the socket itself: "Salir", leaving the page; or the server did: logout) is not a network
-   * cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
+   * Connection lost: the avatar stays, flagged `reconnecting` (out of every hallway conversation),
+   * and leaves only if the person does not come back within {@link RECONNECT_GRACE_MS}. A
+   * deliberate leave (the client closed the socket itself: "Salir"; or the server did: logout) is
+   * not a network cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
    */
   disconnected(socket: PlazaSocket, reason?: DisconnectReason): void {
     const { spaceId, userId } = socket.data;

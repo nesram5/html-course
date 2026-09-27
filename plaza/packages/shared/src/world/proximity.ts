@@ -2,7 +2,8 @@ import { MAX_PEERS, PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '../constants.
 import type { PlayerState } from '../contracts/realtime/player.js';
 
 /** Fields of a player the proximity engine needs. `PlayerState` satisfies it. */
-export type ProximityPlayer = Pick<PlayerState, 'userId' | 'x' | 'y' | 'roomId' | 'status'>;
+export type ProximityPlayer = Pick<PlayerState, 'userId' | 'x' | 'y' | 'roomId' | 'status'> &
+  Partial<Pick<PlayerState, 'reconnecting'>>;
 
 export interface ProximityConfig {
   /** Connect at `distance <= radius` (RN-01). */
@@ -50,7 +51,8 @@ function byPriority(x: Candidate, y: Candidate): number {
 
 /**
  * Pure proximity engine (architecture §10.1, E5-S1):
- * 1. ignore people in a meeting room (RN-03) or busy (RN-04);
+ * 1. ignore people in a meeting room (RN-03), busy (RN-04) or disconnected (`reconnecting`: the
+ *    avatar waits out the grace period, but nobody is there to talk to, E4-S6);
  * 2. all-against-all: connected if `dist <= radius`, or if they already were (in `prev`, in
  *    either direction) and `dist <= radius + hysteresis`;
  * 3. trim to `maxPeers` by distance: candidate pairs are accepted closest first while BOTH ends
@@ -68,7 +70,9 @@ export function computePeers(
   const result: PeerMap = new Map();
   for (const player of players) result.set(player.userId, new Set());
 
-  const eligible = players.filter((p) => p.roomId === null && p.status !== 'busy');
+  const eligible = players.filter(
+    (p) => p.roomId === null && p.status !== 'busy' && p.reconnecting !== true,
+  );
   const connectSq = cfg.radius * cfg.radius;
   const keepRadius = cfg.radius + cfg.hysteresis;
   const keepSq = keepRadius * keepRadius;
