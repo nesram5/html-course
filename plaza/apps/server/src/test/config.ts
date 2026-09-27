@@ -19,6 +19,8 @@ export function testEnv(
     LIVEKIT_API_KEY: 'devkey',
     LIVEKIT_API_SECRET: 'secret',
     AUTH_TEST_LOGIN: 'true',
+    // Every test connects from 127.0.0.1: the per-IP limit is tested on its own.
+    REALTIME_CONNECTIONS_PER_MINUTE: '100000',
     ...overrides,
   };
 }

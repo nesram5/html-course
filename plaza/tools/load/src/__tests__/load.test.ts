@@ -1,7 +1,7 @@
 import { isWalkable, type WorldMap } from '@plaza/shared';
 import { describe, expect, it } from 'vitest';
 
-import { LatencyTracker, percentile, summarize } from '../stats.js';
+import { LatencyTracker, memoryTrend, percentile, summarize, type ServerSample } from '../stats.js';
 import { nextStep } from '../walker.js';
 
 /** 4x3 map: a wall column at x = 2 except the middle row. */
@@ -91,5 +91,27 @@ describe('nextStep (random walk)', () => {
     };
 
     expect(nextStep(map, { x: 0, y: 0 }, null)).toBeNull();
+  });
+});
+
+describe('memoryTrend', () => {
+  const sample = (atS: number, heapUsedMb: number | null): ServerSample => ({
+    atS,
+    rssMb: null,
+    heapUsedMb,
+    avgTickMs: null,
+    connected: null,
+    latencyP95Ms: null,
+  });
+
+  it('measures the heap growth per minute after the warm-up', () => {
+    expect(
+      memoryTrend([sample(0, 10), sample(30, 40), sample(90, 42), sample(150, 44)], 30),
+    ).toEqual({ fromMb: 40, toMb: 44, mbPerMinute: 2 });
+  });
+
+  it('needs two readings after the warm-up', () => {
+    expect(memoryTrend([sample(0, 10), sample(30, 40)], 30)).toBeNull();
+    expect(memoryTrend([sample(40, null), sample(50, null)], 30)).toBeNull();
   });
 });

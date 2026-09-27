@@ -13,7 +13,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../test/app.js';
 import { AppError } from '../errors.js';
-import { attachSocketServer, REALTIME_HEARTBEAT, safeHandler } from '../socket.js';
+import {
+  attachSocketServer,
+  REALTIME_HEARTBEAT,
+  REALTIME_MAX_MESSAGE_BYTES,
+  safeHandler,
+} from '../socket.js';
 
 type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -121,6 +126,35 @@ describe('realtime platform', () => {
   });
 });
 
+describe('realtime message size (E8-S2)', () => {
+  it('closes the connection of a client that sends an oversized message', async () => {
+    const app = Fastify();
+    attachSocketServer(app, { corsOrigin: 'http://localhost:5173' });
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = app.server.address() as AddressInfo;
+    const client: Client = connect(`http://127.0.0.1:${String(port)}`, {
+      path: REALTIME_PATH,
+      transports: ['websocket'],
+      reconnection: false,
+    });
+    try {
+      await new Promise<void>((resolve) => client.on('connect', resolve));
+      const disconnected = new Promise<string>((resolve) => client.on('disconnect', resolve));
+
+      client.emit(
+        'chat:send',
+        { v: PROTOCOL_VERSION, body: 'x'.repeat(REALTIME_MAX_MESSAGE_BYTES + 1) },
+        () => undefined,
+      );
+
+      expect(await disconnected).toMatch(/transport (close|error)/);
+    } finally {
+      client.disconnect();
+      await app.close();
+    }
+  });
+});
+
 describe('realtime heartbeat (E4-S6)', () => {
   it('notices a silent network cut within 20 s', () => {
     expect(
@@ -194,6 +228,46 @@ describe('realtime shutdown (E4-S6)', () => {
       expect(client.active).toBe(true);
     } finally {
       client.disconnect();
+    }
+  });
+});
+
+describe('realtime connection rate limit (E8-S2)', () => {
+  it('refuses new connections from an address over REALTIME_CONNECTIONS_PER_MINUTE', async () => {
+    const testApp = await buildTestApp({
+      modules: [],
+      env: { REALTIME_CONNECTIONS_PER_MINUTE: '2', TRUST_PROXY: '1' },
+    });
+    await testApp.app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = testApp.app.server.address() as AddressInfo;
+    const clients: Client[] = [];
+    const attempt = (forwardedFor: string): Promise<'connected' | 'refused'> => {
+      const client: Client = connect(`http://127.0.0.1:${String(port)}`, {
+        path: REALTIME_PATH,
+        transports: ['websocket'],
+        reconnection: false,
+        extraHeaders: { 'x-forwarded-for': forwardedFor },
+      });
+      clients.push(client);
+      return new Promise((resolve) => {
+        client.on('connect', () => {
+          resolve('connected');
+        });
+        client.on('connect_error', () => {
+          resolve('refused');
+        });
+      });
+    };
+
+    try {
+      const results: string[] = [];
+      for (let i = 0; i < 3; i++) results.push(await attempt(`6.6.6.${String(i)}, 198.51.100.7`));
+      expect(results).toEqual(['connected', 'connected', 'refused']);
+      // Other addresses keep their own allowance.
+      expect(await attempt('198.51.100.8')).toBe('connected');
+    } finally {
+      for (const client of clients) client.disconnect();
+      await testApp.app.close();
     }
   });
 });

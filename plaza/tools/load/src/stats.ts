@@ -74,3 +74,32 @@ export class LatencyTracker {
     return null;
   }
 }
+
+/** One reading of the server during the run (`/api/health` with the health token). */
+export interface ServerSample {
+  /** Seconds since the bots started walking. */
+  atS: number;
+  rssMb: number | null;
+  heapUsedMb: number | null;
+  avgTickMs: number | null;
+  connected: number | null;
+  /** p95 of the movement latency measured since the previous sample. */
+  latencyP95Ms: number | null;
+}
+
+/**
+ * Memory growth over the run, from the first sample taken after `warmupS` to the last one
+ * (MB per minute): a steady climb under a constant load points to a leak.
+ */
+export function memoryTrend(
+  samples: readonly ServerSample[],
+  warmupS: number,
+): { fromMb: number; toMb: number; mbPerMinute: number } | null {
+  const usable = samples.filter((s) => s.atS >= warmupS && s.heapUsedMb !== null);
+  const first = usable[0];
+  const last = usable.at(-1);
+  if (first === undefined || last === undefined || last.atS <= first.atS) return null;
+  const fromMb = first.heapUsedMb ?? 0;
+  const toMb = last.heapUsedMb ?? 0;
+  return { fromMb, toMb, mbPerMinute: ((toMb - fromMb) / (last.atS - first.atS)) * 60 };
+}

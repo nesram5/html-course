@@ -1,3 +1,4 @@
+import { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { PlazaModule } from '../types.js';
 import { SpaceNotifier } from './space-notifier.js';
 import { registerSpacesRoutes } from './spaces.routes.js';
@@ -13,6 +14,11 @@ export interface SpacesApi {
   service: SpacesService;
   /** `space:kicked` and `room:updated` to the sockets of a space. */
   notifier: SpaceNotifier;
+  /**
+   * Desk changes of each space run one at a time through this queue (keyed by space id): the
+   * desks module and member removal share it, so `desk:updated` follows the database order.
+   */
+  deskChanges: KeyedSerial;
 }
 
 declare module '../types.js' {
@@ -29,6 +35,7 @@ export const spacesModule: PlazaModule = {
   name: 'spaces',
   register({ app, io, container, services }) {
     const notifier = new SpaceNotifier(io);
+    const deskChanges = new KeyedSerial();
     const service = new SpacesService({
       db: container.db,
       maps: container.maps,
@@ -37,12 +44,13 @@ export const spacesModule: PlazaModule = {
       reporter: container.reporter,
       secret: container.config.sessionSecret,
       publicUrl: container.config.publicUrl,
+      deskChanges,
     });
     registerSpacesRoutes(app, {
       spaces: service,
       maps: container.maps,
       requireUser: services.get('auth').requireUser,
     });
-    services.provide('spaces', { service, notifier });
+    services.provide('spaces', { service, notifier, deskChanges });
   },
 };

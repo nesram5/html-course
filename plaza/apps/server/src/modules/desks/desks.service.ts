@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';
 import { AppError } from '../../platform/errors.js';
-import { KeyedSerial } from '../../platform/keyed-serial.js';
+import type { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { MapsCatalog } from '../../platform/maps-catalog.js';
 import { freeDesk, type SpaceNotifier, type SpacesService } from '../spaces/index.js';
 import { DesksRepository, deskStateOf, type DeskHolder } from './desks.repository.js';
@@ -13,6 +13,8 @@ export interface DesksServiceDeps {
   maps: MapsCatalog;
   spaces: SpacesService;
   notifier: SpaceNotifier;
+  /** Desk queue of the spaces module, shared with member removal (see `SpacesApi`). */
+  serial: KeyedSerial;
 }
 
 /** Body of `PATCH …/decor` before the catalog check: any list of item ids or empty slots. */
@@ -48,7 +50,6 @@ function stateOf(holder: DeskHolder): DeskState {
 export class DesksService {
   readonly #repository: DesksRepository;
   readonly #catalogIds: ReadonlySet<string>;
-  readonly #serial = new KeyedSerial();
 
   constructor(private readonly deps: DesksServiceDeps) {
     this.#repository = new DesksRepository(deps.db);
@@ -77,7 +78,7 @@ export class DesksService {
     deskId: string,
     targetUserId: string = actorId,
   ): Promise<DeskState> {
-    return this.#serial.run(spaceId, () => this.#claim(spaceId, actorId, deskId, targetUserId));
+    return this.deps.serial.run(spaceId, () => this.#claim(spaceId, actorId, deskId, targetUserId));
   }
 
   async #claim(
@@ -120,7 +121,7 @@ export class DesksService {
 
   /** Frees a desk: its holder or an owner (403 otherwise). A free desk stays free. */
   release(spaceId: string, actorId: string, deskId: string): Promise<void> {
-    return this.#serial.run(spaceId, () => this.#release(spaceId, actorId, deskId));
+    return this.deps.serial.run(spaceId, () => this.#release(spaceId, actorId, deskId));
   }
 
   async #release(spaceId: string, actorId: string, deskId: string): Promise<void> {
@@ -146,7 +147,7 @@ export class DesksService {
     deskId: string,
     request: DecorRequest,
   ): Promise<DeskState> {
-    return this.#serial.run(spaceId, () => this.#decorate(spaceId, actorId, deskId, request));
+    return this.deps.serial.run(spaceId, () => this.#decorate(spaceId, actorId, deskId, request));
   }
 
   async #decorate(

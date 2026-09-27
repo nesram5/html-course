@@ -12,9 +12,11 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { Server, type Socket } from 'socket.io';
 
+import { clientIp } from './client-ip.js';
 import type { ErrorReporter } from './error-reporter.js';
 import { AppError, normalizeError } from './errors.js';
 import type { Logger } from './logger.js';
+import { KeyedTokenBuckets } from './token-bucket.js';
 
 /** Per-connection data, filled by the auth middleware (E1/E4) and `space:join` (E4-S1). */
 export interface SocketData {
@@ -62,28 +64,71 @@ export interface Heartbeat {
 export const REALTIME_HEARTBEAT: Heartbeat = { pingIntervalMs: 10_000, pingTimeoutMs: 10_000 };
 
 /**
+ * Largest realtime message accepted (E8-S2). The biggest legitimate one is a chat message of
+ * `CHAT_MAX_LEN` characters (< 4 KiB in UTF-8); Socket.IO's default of 1 MB let a client make the
+ * server buffer and parse a megabyte per message before zod could refuse it. A bigger frame
+ * closes the connection.
+ */
+export const REALTIME_MAX_MESSAGE_BYTES = 16 * 1024;
+
+/** Rate limit of new realtime connections per client IP (E8-S2). */
+export interface ConnectionLimit {
+  /** Connections per minute and IP, as a burst refilled over the minute. */
+  perMinute: number;
+  /** Trusted reverse-proxy hops for the client IP (`TRUST_PROXY`). */
+  trustProxy: number | false;
+  now?: () => number;
+}
+
+/**
  * Mounts Socket.IO on Fastify's HTTP server at `/realtime` (WebSocket transport only).
  * CORS does not apply to WebSocket upgrades, so the handshake itself checks `Origin`: a browser
  * on another origin is refused even if it carries the session cookie (cross-site WebSocket
  * hijacking). Requests without `Origin` come from non-browser clients, which cannot ride on
  * someone else's cookie.
+ *
+ * The upgrade does not go through Fastify's routes (nor `@fastify/rate-limit`), so new
+ * connections are rate-limited here per client IP when `connectionLimit` is given: every
+ * handshake reads the session from the database.
  */
 export function attachSocketServer(
   app: FastifyInstance,
-  options: { corsOrigin: string; heartbeat?: Heartbeat },
+  options: { corsOrigin: string; heartbeat?: Heartbeat; connectionLimit?: ConnectionLimit },
 ): PlazaIo {
   const allowedOrigin = new URL(options.corsOrigin).origin;
   const heartbeat = options.heartbeat ?? REALTIME_HEARTBEAT;
+  const limit = options.connectionLimit;
+  const connections =
+    limit === undefined
+      ? null
+      : new KeyedTokenBuckets({
+          capacity: limit.perMinute,
+          refillPerSecond: limit.perMinute / 60,
+          ...(limit.now !== undefined && { now: limit.now }),
+        });
   const io: PlazaIo = new Server(app.server, {
     path: REALTIME_PATH,
     transports: ['websocket'],
     serveClient: false,
     pingInterval: heartbeat.pingIntervalMs,
     pingTimeout: heartbeat.pingTimeoutMs,
+    maxHttpBufferSize: REALTIME_MAX_MESSAGE_BYTES,
     cors: { origin: options.corsOrigin, credentials: true },
     allowRequest: (request, callback) => {
       const { origin } = request.headers;
-      callback(null, origin === undefined || origin === allowedOrigin);
+      if (origin !== undefined && origin !== allowedOrigin) {
+        callback(null, false);
+        return;
+      }
+      if (connections !== null && limit !== undefined) {
+        const ip = clientIp(request, limit.trustProxy);
+        if (!connections.tryTake(ip)) {
+          app.log.warn({ ip }, 'Too many realtime connections from one address');
+          callback('RATE_LIMITED', false);
+          return;
+        }
+      }
+      callback(null, true);
     },
   });
   app.decorate('io', io);

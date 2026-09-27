@@ -51,6 +51,8 @@ export default defineConfig({
         LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET ?? 'secret',
         AUTH_TEST_LOGIN: 'true',
         RATE_LIMIT_PER_MINUTE: '10000',
+        // Every browser of the run connects from 127.0.0.1 (E8-S2 per-IP connection limit).
+        REALTIME_CONNECTIONS_PER_MINUTE: '10000',
       },
     },
     {

@@ -26,11 +26,8 @@ describe('App shell', () => {
 
   it('shows the home page with texts from es.json and the server status', async () => {
     const fetchMock = mockFetch(
-      jsonResponse({
-        status: 'ok',
-        version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
-      }),
+      // The public liveness answer (the figures need the health token, E8-S1).
+      jsonResponse({ status: 'ok', version: '0.1.0' }),
     );
 
     renderApp({ route: '/' });
@@ -58,11 +55,8 @@ describe('App shell', () => {
 
   it('shows a 404 page for unknown routes with a way back home', async () => {
     mockFetch(
-      jsonResponse({
-        status: 'ok',
-        version: '0.1.0',
-        realtime: { connectedBySpace: {}, avgTickMs: null, avgMediaPeersPerTick: null },
-      }),
+      // The public liveness answer (the figures need the health token, E8-S1).
+      jsonResponse({ status: 'ok', version: '0.1.0' }),
     );
     const user = userEvent.setup();
 

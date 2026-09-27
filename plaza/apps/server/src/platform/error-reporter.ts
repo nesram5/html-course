@@ -1,3 +1,6 @@
+import { scrubBreadcrumb, scrubEvent } from '@plaza/shared';
+import type { NodeOptions } from '@sentry/node';
+
 import type { AppConfig } from './config.js';
 import type { Logger } from './logger.js';
 
@@ -20,10 +23,23 @@ export const noopErrorReporter: ErrorReporter = {
   flush: () => Promise.resolve(),
 };
 
-/** Sentry reporter when `SENTRY_DSN` is set; otherwise a no-op. */
+export interface ErrorReporterOptions {
+  /** Replaces Sentry's HTTP transport (tests inspect what would be sent). */
+  transport?: NodeOptions['transport'];
+}
+
+/**
+ * Sentry reporter when `SENTRY_DSN` is set; otherwise a no-op. Every event carries the release
+ * (`plaza-server@<version>`), the person (`user.id` only) and the space, request and socket
+ * event as tags. Nothing else about the person is sent (`sendDefaultPii: false`, no default
+ * integrations, so no request bodies, cookies or local variables), and `beforeSend` /
+ * `beforeBreadcrumb` scrub anything shaped like a token, an invite link, a cookie or an e-mail
+ * that could still slip into a message (E8-S1).
+ */
 export async function createErrorReporter(
   config: Pick<AppConfig, 'sentry' | 'version'>,
   logger: Logger,
+  options: ErrorReporterOptions = {},
 ): Promise<ErrorReporter> {
   if (config.sentry === null) return noopErrorReporter;
 
@@ -34,6 +50,9 @@ export async function createErrorReporter(
     release: `plaza-server@${config.version}`,
     sendDefaultPii: false,
     defaultIntegrations: false,
+    beforeSend: (event) => scrubEvent(event),
+    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
+    ...(options.transport !== undefined && { transport: options.transport }),
   });
   logger.info('Sentry error reporting enabled');
 

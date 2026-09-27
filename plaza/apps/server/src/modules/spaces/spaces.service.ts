@@ -42,6 +42,11 @@ export interface SpacesServiceDeps {
   /** `SESSION_SECRET`: derives invite tokens. */
   secret: string;
   publicUrl: string;
+  /**
+   * Queue of the desk changes of each space (keyed by space id), shared with the desks module:
+   * removing a member frees their desk, so it must not interleave with a desk claim (E8-S2).
+   */
+  deskChanges: KeyedSerial;
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -241,7 +246,15 @@ export class SpacesService {
    * is banned (invite links and the allowed domain no longer let them in) and their sockets get
    * `space:kicked`. The last owner cannot be removed (409 `LAST_OWNER`).
    */
-  async removeMember(spaceId: string, actorId: string, targetUserId: string): Promise<void> {
+  removeMember(spaceId: string, actorId: string, targetUserId: string): Promise<void> {
+    // In the desk queue of the space: the desk read here is the one really freed, and a claim
+    // queued after the removal finds no membership (E8-S2).
+    return this.deps.deskChanges.run(spaceId, () =>
+      this.#removeMember(spaceId, actorId, targetUserId),
+    );
+  }
+
+  async #removeMember(spaceId: string, actorId: string, targetUserId: string): Promise<void> {
     await this.assertOwner(spaceId, actorId);
     const target = await this.#repository.findMembership(spaceId, targetUserId);
     if (target === null) throw new AppError('NOT_FOUND', 'Member not found');
