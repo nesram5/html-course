@@ -34,8 +34,8 @@ export function registerWorldSocket(
         return undefined;
       }),
     );
-    socket.on('disconnect', () => {
-      world.disconnected(socket);
+    socket.on('disconnect', (reason) => {
+      world.disconnected(socket, reason);
     });
   });
 }

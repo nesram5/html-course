@@ -174,6 +174,11 @@ describe('world module: realtime multiplayer (E4)', () => {
     }
   }
 
+  /** A network cut: the transport closes without the client saying goodbye. */
+  function cut(client: Client): void {
+    client.io.engine.close();
+  }
+
   function move(client: Client, x: number, y: number, dir: Direction = 'down'): void {
     client.emit('player:move', { v: PROTOCOL_VERSION, x, y, dir });
   }
@@ -469,7 +474,7 @@ describe('world module: realtime multiplayer (E4)', () => {
       await tick(staying.client);
       inbox(staying.client).deltas.length = 0;
 
-      leaving.client.disconnect();
+      cut(leaving.client);
       await vi.waitFor(() => {
         expect(runtime().get(luis.user.id)?.reconnecting).toBe(true);
       });
@@ -494,12 +499,30 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(runtime().has(luis.user.id)).toBe(false);
     });
 
+    it('announces a deliberate leave in left at once, with no reconnection grace', async () => {
+      const staying = await enter(ana);
+      const leaving = await enter(luis);
+      await tick(staying.client);
+      inbox(staying.client).deltas.length = 0;
+
+      leaving.client.disconnect();
+      await vi.waitFor(() => {
+        expect(runtime().has(luis.user.id)).toBe(false);
+      });
+      await tick(staying.client);
+
+      expect(inbox(staying.client).deltas).toEqual([
+        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+      ]);
+      expect(testApp.container.metrics.connectedBySpace()).toEqual({ [space.id]: 1 });
+    });
+
     it('gives the avatar back where it was when the person reconnects within 30 s', async () => {
       const staying = await enter(ana);
       const leaving = await enter(luis);
       move(leaving.client, 12, 24, 'up');
       await barrier(leaving.client);
-      leaving.client.disconnect();
+      cut(leaving.client);
       await vi.waitFor(() => {
         expect(runtime().get(luis.user.id)?.reconnecting).toBe(true);
       });
@@ -531,8 +554,8 @@ describe('world module: realtime multiplayer (E4)', () => {
       const second = await enter(luis);
       expect(runtime()).toBe(loaded);
 
-      first.client.disconnect();
-      second.client.disconnect();
+      cut(first.client);
+      cut(second.client);
       await vi.waitFor(() => {
         expect(loaded.connectedCount).toBe(0);
       });

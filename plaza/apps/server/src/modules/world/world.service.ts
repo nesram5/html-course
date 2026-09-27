@@ -9,6 +9,7 @@ import {
   type SpaceSnapshot,
   type WorldDelta,
 } from '@plaza/shared';
+import type { DisconnectReason } from 'socket.io';
 
 import type { ErrorReporter } from '../../platform/error-reporter.js';
 import { AppError } from '../../platform/errors.js';
@@ -24,6 +25,9 @@ import type { SpacesService } from '../spaces/index.js';
 import { SpaceRuntime } from './space-runtime.js';
 import { InMemorySpaceStateStore, type SpaceStateStore } from './space-state-store.js';
 import type { WorldRepository } from './world.repository.js';
+
+/** Disconnect reason of a socket the client closed on purpose (not a network cut). */
+const CLIENT_LEFT_REASON: DisconnectReason = 'client namespace disconnect';
 
 /** Socket.IO room with every connection of a space. */
 export function spaceRoom(spaceId: string): string {
@@ -195,13 +199,19 @@ export class WorldService {
 
   /**
    * Connection lost: the avatar stays, flagged `reconnecting`, and leaves only if the person
-   * does not come back within {@link RECONNECT_GRACE_MS}. Replaced or kicked sockets are ignored.
+   * does not come back within {@link RECONNECT_GRACE_MS}. A deliberate leave (the client closed
+   * the socket itself: "Salir", leaving the page) is not a network cut, so the avatar leaves at
+   * once. Replaced or kicked sockets are ignored.
    */
-  disconnected(socket: PlazaSocket): void {
+  disconnected(socket: PlazaSocket, reason?: DisconnectReason): void {
     const { spaceId, userId } = socket.data;
     if (spaceId === undefined || userId === undefined) return;
     const runtime = this.store.get(spaceId);
     if (runtime?.socketOf(userId) !== socket.id) return;
+    if (reason === CLIENT_LEFT_REASON) {
+      this.#remove(runtime, userId);
+      return;
+    }
     runtime.disconnect(userId);
     this.#updateConnected(runtime);
     this.#cancelGrace(spaceId, userId);

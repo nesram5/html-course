@@ -144,6 +144,26 @@ test.describe('multiplayer in real time (E4)', () => {
     await ana.context.close();
   });
 
+  test('"Salir" takes the avatar out for the others at once, with no reconnection grace', async ({
+    browser,
+  }) => {
+    const { ana, luis, space } = await anaAndLuis(browser);
+    await openOffice(ana.page, space.slug);
+    await openOffice(luis.page, space.slug);
+    await expect.poll(async () => (await remoteAvatar(ana.page, luis.userId))?.alpha).toBe(1);
+
+    await luis.page.getByRole('link', { name: 'Salir' }).click();
+    await expect(luis.page).toHaveURL(/\/spaces$/);
+
+    // Ana sees him fade out well within the 30 s grace a network cut would get.
+    await expect
+      .poll(async () => remoteAvatar(ana.page, luis.userId), { timeout: 5_000 })
+      .toBeUndefined();
+
+    await ana.context.close();
+    await luis.context.close();
+  });
+
   test('a person removed by the owner leaves the office with an explanation', async ({
     browser,
   }) => {
