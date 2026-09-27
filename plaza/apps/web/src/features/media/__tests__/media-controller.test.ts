@@ -13,6 +13,7 @@ import {
   FIRST_FRAME_TIMING,
   MediaController,
   RECONNECT_DELAYS_MS,
+  TOKEN_FRESH_MS,
 } from '../controller/media-controller';
 import { DEFAULT_MEDIA_CHOICES, type MediaChoices } from '../lib/media-prefs';
 import { createMediaStore, type MediaStore } from '../store/media-store';
@@ -312,15 +313,21 @@ describe('MediaController: reconnection and tokens', () => {
   it('refreshes the token when the realtime connection comes back', async () => {
     await started();
 
+    // The first realtime connection of the visit does not ask for another token.
     realtime.reconnect();
     await settle();
+    expect(fetchToken).toHaveBeenCalledTimes(1);
 
+    clock += TOKEN_FRESH_MS;
+    realtime.reconnect();
+    await settle();
     expect(fetchToken).toHaveBeenCalledTimes(2);
   });
 
   it('ends the media when the server says the person is no longer a member', async () => {
     const lk = await started();
     fetchToken.mockRejectedValueOnce(new ApiError(404, 'NOT_A_MEMBER', 'gone'));
+    clock += TOKEN_FRESH_MS;
 
     realtime.reconnect();
     await settle();

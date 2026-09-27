@@ -24,6 +24,8 @@ import type { DeviceProblem, MediaStore, RemoteMedia } from '../store/media-stor
 export const RECONNECT_DELAYS_MS = [1000, 2000, 5000, 10_000, 30_000] as const;
 /** Retry delay of a failed token refresh (network error) in ms. */
 export const TOKEN_RETRY_MS = 30_000;
+/** A token younger than this is not replaced on a realtime (re)connection (ms). */
+export const TOKEN_FRESH_MS = 60_000;
 /** Name of the timing sent to Sentry (E5-S5, p95 < 1.5 s). */
 export const FIRST_FRAME_TIMING = 'media.peers_to_first_frame';
 
@@ -109,6 +111,8 @@ export class MediaController {
   #spaceId: string | null = null;
   #room: Room | null = null;
   #token: MediaTokenResponse | null = null;
+  /** When `#token` was received (`now()`). */
+  #tokenAt = 0;
   #peers = new Set<string>();
   /** userId → when it became a peer, until its first video frame. */
   readonly #pendingFrames = new Map<string, number>();
@@ -287,6 +291,7 @@ export class MediaController {
     const token = await this.#deps.fetchToken(spaceId);
     this.#assertCurrent(run);
     this.#token = token;
+    this.#tokenAt = this.#now();
     this.#scheduleRefresh(run, token.expiresInSeconds);
     return token;
   }
@@ -323,6 +328,8 @@ export class MediaController {
   /** The realtime socket (re)connected: fresh token, and reconnect now if media is down. */
   #onRealtimeReconnect(run: number): void {
     if (run !== this.#run || this.#token === null) return;
+    // The first connection of the visit races with the first token: no need for another one.
+    if (!this.#reconnecting && this.#now() - this.#tokenAt < TOKEN_FRESH_MS) return;
     void this.#refreshToken(run).then(() => {
       if (run !== this.#run || !this.#reconnecting) return;
       if (this.#reconnectTimer !== null) clearTimeout(this.#reconnectTimer);
