@@ -3,15 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Realtime load test (E8-S3): N socket.io-client bots walking in one space.",
+  "description": "Load tests (E8-S3): N socket.io-client bots walking in one space, and hallway media conversations against LiveKit.",
   "scripts": {
     "load": "tsx --conditions=@plaza/source src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "media": "tsx src/media.ts"
   },
   "dependencies": {
+    "@livekit/rtc-node": "^1.1.0",
     "@plaza/shared": "workspace:*",
+    "livekit-server-sdk": "^2.19.1",
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
