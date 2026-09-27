@@ -2,7 +2,16 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
-import { frontOf, loadMap, office, pathTo, walk, type DeskRect, type Tile } from './support/office';
+import {
+  frontOf,
+  loadMap,
+  office,
+  pathTo,
+  walk,
+  type DeskRect,
+  type TestMap,
+  type Tile,
+} from './support/office';
 import {
   CLIENT,
   createSpace,
@@ -47,21 +56,33 @@ function touches(desk: DeskRect, at: Tile): boolean {
   return Math.max(dx, dy) === 1;
 }
 
-/** Walks down into the bottom wall and back: the same route must end on the same tiles. */
-async function bumpIntoTheBottomWall(page: Page): Promise<Tile[]> {
+const STEPS = {
+  ArrowDown: { x: 0, y: 1 },
+  ArrowUp: { x: 0, y: -1 },
+} as const;
+
+/**
+ * Walks down into the bottom wall and back, one key at a time. Each step must end where the
+ * map geometry says (the wall stops the avatar), so the same route ends on the same tiles in
+ * every style. Returns the tiles visited.
+ */
+async function bumpIntoTheBottomWall(page: Page, map: TestMap): Promise<Tile[]> {
   const canvas = page.getByTestId('world-canvas');
   await canvas.focus();
   const visited: Tile[] = [];
-  for (const key of ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown']) {
+  const keys = ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowUp', 'ArrowUp'] as const;
+  for (const key of keys) {
+    const at = await tile(page);
+    const next = { x: at.x + STEPS[key].x, y: at.y + STEPS[key].y };
+    const expected = map.blocked(next.x, next.y) ? at : next;
     await page.keyboard.press(key);
-    await page.waitForTimeout(160);
-    visited.push(await tile(page));
+    if (expected === at) await page.waitForTimeout(300);
+    await expect(canvas).toHaveAttribute('data-tile-y', String(expected.y));
+    expect(await tile(page)).toEqual(expected);
+    visited.push(expected);
   }
-  for (const key of ['ArrowUp', 'ArrowUp']) {
-    await page.keyboard.press(key);
-    await page.waitForTimeout(160);
-    visited.push(await tile(page));
-  }
+  // The route really hits the wall at least once.
+  expect(new Set(visited.map((t) => t.y)).size).toBeLessThan(visited.length);
   return visited;
 }
 
@@ -81,7 +102,7 @@ test.describe('office personalization (E9)', () => {
     expect((await office(luis.page))?.themeId).toBe('pixel');
 
     // Same route in the pixel style…
-    const pixelRoute = await bumpIntoTheBottomWall(luis.page);
+    const pixelRoute = await bumpIntoTheBottomWall(luis.page, map);
 
     // Ana opens the settings in another tab: the "Estilo" section with its thumbnails.
     const settings = await ana.context.newPage();
@@ -118,7 +139,7 @@ test.describe('office personalization (E9)', () => {
     // …and the same route ends on the same tiles in the watercolor style (same collisions).
     await walk(luis.page, pathTo(map, await tile(luis.page), [luisStart]) ?? []);
     expect(await tile(luis.page)).toEqual(luisStart);
-    expect(await bumpIntoTheBottomWall(luis.page)).toEqual(pixelRoute);
+    expect(await bumpIntoTheBottomWall(luis.page, map)).toEqual(pixelRoute);
 
     // Whoever enters later gets the new style directly.
     await openOffice(luis.page, space.slug);
