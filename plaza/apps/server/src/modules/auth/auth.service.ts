@@ -29,7 +29,7 @@ export interface AuthenticatedSession extends AuthContext {
 }
 
 export interface NewSession {
-  /** Raw token for the `plaza_sid` cookie. Never stored or logged. */
+  /** Raw token for the session cookie. Never stored or logged. */
   token: string;
   user: User;
 }

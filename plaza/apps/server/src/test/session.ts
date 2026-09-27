@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 export interface TestUser {
   user: Me;
-  /** `Cookie` header value with the session (`plaza_sid=<token>`). */
+  /** `Cookie` header value with the session (`__Host-plaza_sid=<token>`). */
   cookie: string;
   /** Headers for authenticated state-changing requests (cookie + `X-Plaza-Client`). */
   headers: Record<string, string>;

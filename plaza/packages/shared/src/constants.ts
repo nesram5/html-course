@@ -56,8 +56,12 @@ export const RECONNECT_GRACE_MS = 30_000;
 /** Decoration slots per desk (RF-18, RN-15). */
 export const DESK_DECOR_SLOTS = 3;
 
-/** Session cookie (architecture §11.1). */
-export const SESSION_COOKIE_NAME = 'plaza_sid';
+/**
+ * Session cookie (architecture §11.1). The `__Host-` prefix makes the browser refuse it unless it
+ * is `Secure`, has `Path=/` and no `Domain`: a sibling subdomain cannot plant or overwrite it
+ * (cookie tossing, login CSRF).
+ */
+export const SESSION_COOKIE_NAME = '__Host-plaza_sid';
 /** Sliding session lifetime: 30 days. */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Header required on state-changing requests (CSRF defence, architecture §11.1). */

@@ -87,7 +87,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
       expect(flowCookie).not.toContain(location.searchParams.get('state'));
     });
 
-    it('comes back with a plaza_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
+    it('comes back with a __Host-plaza_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
       testApp.identity.willAuthenticate('good-code', {
         sub: 'google-sub-ana',
         email: 'ana@acme.com',
@@ -107,6 +107,8 @@ describe('auth module (E1-S1, E1-S2)', () => {
         path: '/',
         maxAge: SESSION_TTL_MS / 1000,
       });
+      expect(session?.name.startsWith('__Host-')).toBe(true);
+      expect(session?.domain).toBeUndefined();
       // PKCE: the verifier sent to Google hashes to the challenge of the redirect.
       const verifier = testApp.identity.exchanges.at(-1)?.codeVerifier ?? '';
       expect(createHash('sha256').update(verifier).digest('base64url')).toBe(

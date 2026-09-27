@@ -17,7 +17,7 @@ function handshakeError(payload: ErrorPayload): ExtendedError {
 
 /**
  * Socket.IO handshake authentication (`requireUser` for sockets, E1-S2 / E4-S1): reads the
- * `plaza_sid` cookie of the upgrade request and fills `socket.data.userId` / `sessionId`.
+ * `__Host-plaza_sid` cookie of the upgrade request and fills `socket.data.userId` / `sessionId`.
  * Connections without a valid session are refused with `connect_error` `{ code: UNAUTHORIZED }`.
  */
 export function createSocketAuthMiddleware(deps: {

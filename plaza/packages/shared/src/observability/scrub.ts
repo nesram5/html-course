@@ -36,6 +36,7 @@ const SENSITIVE_KEYS = new Set(
     'sessionSecret',
     'apiSecret',
     'plaza_sid',
+    '__host-plaza_sid',
     'email',
     'ip_address',
     // Local variables of stack frames may hold anything (a chat message being sent).
