@@ -1,3 +1,4 @@
+export * from './desks.js';
 export * from './geometry.js';
 export * from './map.js';
 export * from './movement.js';
