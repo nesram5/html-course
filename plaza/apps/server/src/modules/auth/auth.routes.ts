@@ -79,7 +79,14 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthRoutesDeps): 
 
   app.post(API_PATHS.authLogout, async (request, reply) => {
     const token = sessionTokenOf(request);
-    if (token !== undefined) await auth.logout(token);
+    if (token !== undefined) {
+      const sessionId = await auth.logout(token);
+      // Realtime connections opened with this session end too (other tabs of this browser):
+      // the handshake is the only moment a socket shows its cookie.
+      for (const socket of app.io.sockets.sockets.values()) {
+        if (socket.data.sessionId === sessionId) socket.disconnect(true);
+      }
+    }
     clearSessionCookie(reply);
     return reply.code(204).send();
   });

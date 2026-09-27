@@ -567,6 +567,23 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(testApp.container.metrics.connectedBySpace()).toEqual({ [space.id]: 1 });
     });
 
+    it('takes the avatar out at once when the person logs out (from any tab)', async () => {
+      const staying = await enter(ana);
+      const leaving = await enter(luis);
+      await tick(staying.client);
+      inbox(staying.client).deltas.length = 0;
+
+      await testApp.app.inject({ method: 'POST', url: '/api/auth/logout', headers: luis.headers });
+      await vi.waitFor(() => {
+        expect(inbox(leaving.client).disconnects).toEqual(['io server disconnect']);
+      });
+      await tick(staying.client);
+
+      expect(inbox(staying.client).deltas).toEqual([
+        { moved: [], joined: [], left: [luis.user.id], changed: [] },
+      ]);
+    });
+
     it('gives the avatar back where it was when the person reconnects within 30 s', async () => {
       const staying = await enter(ana);
       const leaving = await enter(luis);

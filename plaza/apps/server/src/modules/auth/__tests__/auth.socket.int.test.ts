@@ -88,6 +88,24 @@ describe('Socket.IO handshake authentication (requireUser for sockets)', () => {
     expect(error.data?.code).toBe('UNAUTHORIZED');
   });
 
+  it('closes the open connections of a session when it logs out, and only those', async () => {
+    const ana = await signIn(testApp.app, 'ana@acme.com');
+    const otherDevice = await signIn(testApp.app, 'ana@acme.com');
+    const loggingOut = open(ana.cookie);
+    const staying = open(otherDevice.cookie);
+    await Promise.all(
+      [loggingOut, staying].map(
+        (client) => new Promise<void>((resolve) => client.on('connect', resolve)),
+      ),
+    );
+    const closed = new Promise<string>((resolve) => loggingOut.on('disconnect', resolve));
+
+    await testApp.app.inject({ method: 'POST', url: '/api/auth/logout', headers: ana.headers });
+
+    expect(await closed).toBe('io server disconnect');
+    expect(staying.connected).toBe(true);
+  });
+
   it('accepts a valid session and fills socket.data', async () => {
     const ana = await signIn(testApp.app, 'ana@acme.com');
     const client = open(ana.cookie);

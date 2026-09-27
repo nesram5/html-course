@@ -127,8 +127,10 @@ export class AuthService {
     return { userId: session.userId, sessionId: id, user: session.user, refreshed };
   }
 
-  /** Deletes the session: reusing its cookie afterwards gets 401 (E1-S2). */
-  async logout(token: string): Promise<void> {
-    await this.repository.deleteSession(hashToken(token));
+  /** Deletes the session: reusing its cookie afterwards gets 401 (E1-S2). Returns its id. */
+  async logout(token: string): Promise<string> {
+    const id = hashToken(token);
+    await this.repository.deleteSession(id);
+    return id;
   }
 }

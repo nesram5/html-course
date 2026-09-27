@@ -28,8 +28,15 @@ import { SpaceRuntime } from './space-runtime.js';
 import { InMemorySpaceStateStore, type SpaceStateStore } from './space-state-store.js';
 import type { WorldRepository } from './world.repository.js';
 
-/** Disconnect reason of a socket the client closed on purpose (not a network cut). */
-const CLIENT_LEFT_REASON: DisconnectReason = 'client namespace disconnect';
+/**
+ * Disconnect reasons of a connection ended on purpose, not by the network: by the client
+ * ("Salir", leaving the page) or by the server (logout; kicked and replaced sockets have left
+ * the runtime already).
+ */
+const DELIBERATE_REASONS: readonly DisconnectReason[] = [
+  'client namespace disconnect',
+  'server namespace disconnect',
+];
 
 /** A `space:join` in progress; `kickedFor` is set when the person is removed meanwhile. */
 interface PendingJoin {
@@ -266,15 +273,15 @@ export class WorldService {
   /**
    * Connection lost: the avatar stays, flagged `reconnecting`, and leaves only if the person
    * does not come back within {@link RECONNECT_GRACE_MS}. A deliberate leave (the client closed
-   * the socket itself: "Salir", leaving the page) is not a network cut, so the avatar leaves at
-   * once. Replaced or kicked sockets are ignored.
+   * the socket itself: "Salir", leaving the page; or the server did: logout) is not a network
+   * cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
    */
   disconnected(socket: PlazaSocket, reason?: DisconnectReason): void {
     const { spaceId, userId } = socket.data;
     if (spaceId === undefined || userId === undefined) return;
     const runtime = this.store.get(spaceId);
     if (runtime?.socketOf(userId) !== socket.id) return;
-    if (reason === CLIENT_LEFT_REASON) {
+    if (reason !== undefined && DELIBERATE_REASONS.includes(reason)) {
       this.#remove(runtime, userId);
       return;
     }
