@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - tools/*
 
 # pnpm 10 does not run dependency install scripts unless they are allow-listed.
 onlyBuiltDependencies:
