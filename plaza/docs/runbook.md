@@ -202,7 +202,7 @@ Imágenes (GHCR, construidas por [`plaza-deploy.yml`](../../.github/workflows/pl
 | `ghcr.io/<owner>/plaza-server` | [`apps/server/Dockerfile`](../apps/server/Dockerfile) | `node dist/main.js` como usuario `node`, dependencias de producción, Prisma CLI para las migraciones |
 | `ghcr.io/<owner>/plaza-web`    | [`apps/web/Dockerfile`](../apps/web/Dockerfile)       | Caddy + el _build_ de Vite (`VITE_APP_VERSION`, `VITE_SENTRY_DSN` fijados al construir)              |
 
-Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta` (cada etiqueta).
+Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` (cada etiqueta) y `beta` (la última versión desplegada con éxito en beta).
 
 ### Preparar una VM de app (una vez por entorno)
 
@@ -238,10 +238,10 @@ Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta
 
 ## Desplegar — E8-S5
 
-| Entorno   | Cuándo                                                                         | Cómo                                                                                                 |
-| --------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| _staging_ | Cada _merge_ en `main` cuyo CI («Plaza CI») pasa                               | Automático: _build_ → GHCR (`sha-<commit>`) → `deploy.sh` en la VM de _staging_                      |
-| beta      | Al publicar una etiqueta `v0.x.y` (`git tag v0.3.0 && git push origin v0.3.0`) | _Build_ → GHCR (`v0.3.0`) → el _job_ espera la **aprobación** del _environment_ `beta` → `deploy.sh` |
+| Entorno   | Cuándo                                                                                                                                                            | Cómo                                                                                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _staging_ | Cada _merge_ en `main` cuyo CI («Plaza CI») pasa                                                                                                                  | Automático: _build_ → GHCR (`sha-<commit>`) → `deploy.sh` en la VM de _staging_                                                                       |
+| beta      | Al publicar una etiqueta `v0.x.y` (`git tag v0.3.0 && git push origin v0.3.0`) sobre un commit de `main` cuyo CI («Plaza CI») pasó; si no, el _workflow_ se niega | _Build_ → GHCR (`v0.3.0`) → el _job_ espera la **aprobación** del _environment_ `beta` → `deploy.sh` → la etiqueta flotante `beta` pasa a esa versión |
 
 Qué hace [`infra/app/deploy.sh`](../infra/app/deploy.sh) en la VM (el _workflow_ lo copia junto
 al `docker-compose.yml` de esa versión):
@@ -294,8 +294,12 @@ y entrar a un espacio con dos personas (se ven, se oyen, el chat funciona).
 
 1. Ver la versión anterior en `/opt/plaza/deployed-versions.log` (o en GHCR).
 2. GitHub → Actions → «Plaza deploy» → _Run workflow_: entorno y etiqueta anterior
-   (`v0.2.1`, `sha-abc1234`). En beta pide la aprobación.
-   Sin GitHub: en la VM, `./deploy.sh ghcr.io/<owner>/plaza-server:v0.2.1 ghcr.io/<owner>/plaza-web:v0.2.1`
+   (`v0.2.1`, `sha-abc1234`). En beta pide la aprobación. El _workflow_ copia a la VM el
+   `docker-compose.yml` y los _scripts_ **de esa versión** (su etiqueta o su commit de `main`), no
+   los actuales de `main`.
+   Sin GitHub: en la VM, poner antes el `docker-compose.yml`, `backup.sh` y `deploy.sh` de esa
+   versión (`git show v0.2.1:plaza/infra/app/docker-compose.yml`) y ejecutar
+   `./deploy.sh ghcr.io/<owner>/plaza-server:v0.2.1 ghcr.io/<owner>/plaza-web:v0.2.1`
    (tras `docker login ghcr.io` con un _token_ de solo lectura).
 3. Si la versión revertida incluía una migración **no** compatible hacia atrás: restaurar la
    copia de antes del despliegue (siguiente sección) y después revertir la imagen.
