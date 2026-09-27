@@ -129,7 +129,7 @@ test.describe('hallway conversations with real media (E5)', () => {
     expect((await media(luis.page))?.subscribed).not.toContain(eva.userId);
     await expect(eva.page.getByTestId('hallway-video')).toHaveCount(0);
 
-    for (const someone of [ana, luis, eva]) await someone.context.close();
+    await Promise.all([ana, luis, eva].map((someone) => someone.context.close()));
   });
 
   test('the bottom bar mutes the microphone and turns the camera off for the others', async ({
@@ -159,7 +159,7 @@ test.describe('hallway conversations with real media (E5)', () => {
     });
     await expect(anaTile.locator('video')).toBeHidden({ timeout: 5000 });
 
-    for (const someone of [ana, luis]) await someone.context.close();
+    await Promise.all([ana, luis].map((someone) => someone.context.close()));
   });
 
   test('away (hidden tab) mutes microphone and camera, shows "Ausente · Llamar" and restores on return (E5 × E7)', async ({
@@ -207,7 +207,7 @@ test.describe('hallway conversations with real media (E5)', () => {
     });
     await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
 
-    for (const someone of [ana, luis]) await someone.context.close();
+    await Promise.all([ana, luis].map((someone) => someone.context.close()));
   });
 
   test('choosing "Ocupado" leaves the hallway conversation; "Disponible" joins it again (E5 × E7)', async ({
@@ -234,6 +234,6 @@ test.describe('hallway conversations with real media (E5)', () => {
     await ana.page.getByRole('menuitemradio', { name: /Disponible/ }).click();
     await expect.poll(() => playing(luis.page, ana.userId), { timeout: 10_000 }).toBe(true);
 
-    for (const someone of [ana, luis]) await someone.context.close();
+    await Promise.all([ana, luis].map((someone) => someone.context.close()));
   });
 });

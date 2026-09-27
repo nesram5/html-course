@@ -156,8 +156,7 @@ test.describe('office personalization (E9)', () => {
     expect((await office(luis.page))?.swaps).toBe(0);
 
     await luis.page.screenshot({ path: 'test-results/office-watercolor.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a member claims and decorates a desk; the other person sees the name and the objects', async ({
@@ -250,7 +249,6 @@ test.describe('office personalization (E9)', () => {
       .toEqual([{ deskId, label: 'Luis', items: ['plant', 'lamp'] }]);
 
     await ana.page.screenshot({ path: 'test-results/office-desk-decorated.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

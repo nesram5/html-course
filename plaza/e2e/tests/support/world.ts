@@ -128,12 +128,31 @@ export async function step(
   key: ArrowKey,
   options: { expected?: { x: number; y: number }; seenBy?: Observer } = {},
 ): Promise<{ x: number; y: number }> {
-  const canvas = page.getByTestId('world-canvas');
-  const at = await tile(page);
+  // Read the tile and tap in one round trip, then wait in the page (one more).
+  const at = await page.evaluate((code) => {
+    const canvas = document.querySelector('[data-testid="world-canvas"]');
+    const from = {
+      x: Number(canvas?.getAttribute('data-tile-x')),
+      y: Number(canvas?.getAttribute('data-tile-y')),
+    };
+    const target = document.activeElement ?? document.body;
+    for (const type of ['keydown', 'keyup']) {
+      target.dispatchEvent(new KeyboardEvent(type, { key: code, code, bubbles: true }));
+    }
+    return from;
+  }, key);
   const expected = options.expected ?? { x: at.x + STEP_OF[key].x, y: at.y + STEP_OF[key].y };
-  await tapKey(page, key);
-  await expect(canvas).toHaveAttribute('data-tile-x', String(expected.x));
-  await expect(canvas).toHaveAttribute('data-tile-y', String(expected.y));
+  await page.waitForFunction(
+    (goal) => {
+      const canvas = document.querySelector('[data-testid="world-canvas"]');
+      return (
+        canvas?.getAttribute('data-tile-x') === String(goal.x) &&
+        canvas.getAttribute('data-tile-y') === String(goal.y)
+      );
+    },
+    expected,
+    { polling: 'raf', timeout: 5000 },
+  );
   if (options.seenBy !== undefined) await expectSeenAt(options.seenBy, expected);
   return expected;
 }
@@ -152,11 +171,33 @@ export async function expectSeenAt(
 }
 
 /**
- * Walks along the current row to column `x`, one confirmed tile at a time; with `seenBy`, the
- * final tile is also confirmed by the server (another page draws the avatar there).
+ * Walks along the current row to column `x`. Long stretches hold the arrow key and let go two
+ * tiles before the goal (the game walks a tile every 120 ms by itself, with no round trip per
+ * tile, which matters on a loaded machine); the last tiles, and any overshoot, are single
+ * confirmed taps. With `seenBy`, the final tile is also confirmed by the server (another page
+ * draws the avatar there).
  */
 export async function walkToColumn(page: Page, x: number, seenBy?: Observer): Promise<void> {
   await page.getByTestId('world-canvas').focus();
+  const start = await tile(page);
+  const direction = Math.sign(x - start.x);
+  if (Math.abs(x - start.x) > 3) {
+    const key: ArrowKey = direction > 0 ? 'ArrowRight' : 'ArrowLeft';
+    await page.keyboard.down(key);
+    try {
+      await page.waitForFunction(
+        ({ release, dir }) => {
+          const canvas = document.querySelector('[data-testid="world-canvas"]');
+          const at = Number(canvas?.getAttribute('data-tile-x'));
+          return dir > 0 ? at >= release : at <= release;
+        },
+        { release: x - 2 * direction, dir: direction },
+        { polling: 'raf', timeout: 30_000 },
+      );
+    } finally {
+      await page.keyboard.up(key);
+    }
+  }
   for (let attempt = 0; attempt < 60; attempt++) {
     const at = await tile(page);
     if (at.x === x) {

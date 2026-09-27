@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-import { tapKey, tile } from './world';
+import { step, tile } from './world';
 
 /** Office personalization as reported by `window.__plazaWorld.office()` (E9). */
 export interface OfficeProbe {
@@ -104,20 +104,17 @@ export function pathTo(map: TestMap, from: Tile, goals: Tile[]): Tile[] | null {
 
 /** Walks the local avatar along `path` with the arrow keys, one confirmed tile at a time. */
 export async function walk(page: Page, path: Tile[]): Promise<void> {
-  const canvas = page.getByTestId('world-canvas');
-  await canvas.focus();
-  for (const step of path) {
+  await page.getByTestId('world-canvas').focus();
+  for (const next of path) {
     const at = await tile(page);
     const key =
-      step.x > at.x
+      next.x > at.x
         ? 'ArrowRight'
-        : step.x < at.x
+        : next.x < at.x
           ? 'ArrowLeft'
-          : step.y > at.y
+          : next.y > at.y
             ? 'ArrowDown'
             : 'ArrowUp';
-    await tapKey(page, key);
-    await expect(canvas).toHaveAttribute('data-tile-x', String(step.x));
-    await expect(canvas).toHaveAttribute('data-tile-y', String(step.y));
+    await step(page, key, { expected: next });
   }
 }

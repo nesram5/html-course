@@ -82,8 +82,7 @@ test.describe('multiplayer in real time (E4)', () => {
     for (const avatar of await avatars(ana.page)) expect(avatar.labelAboveArt).toBe(true);
 
     await ana.page.screenshot({ path: 'test-results/realtime-two-people.png' });
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('three people walk in the same office and each sees the other two (Hito M2)', async ({
@@ -121,7 +120,7 @@ test.describe('multiplayer in real time (E4)', () => {
       }
     }
 
-    for (const someone of people) await someone.context.close();
+    await Promise.all(people.map((someone) => someone.context.close()));
   });
 
   test('a short network cut: "Reconectando…", semi-transparent for others, back in place', async ({
@@ -158,8 +157,7 @@ test.describe('multiplayer in real time (E4)', () => {
       tileY: before.y,
     });
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a second tab replaces the first, which can take the session back', async ({ browser }) => {
@@ -199,8 +197,7 @@ test.describe('multiplayer in real time (E4)', () => {
       .poll(async () => remoteAvatar(ana.page, luis.userId), { timeout: 5_000 })
       .toBeUndefined();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a person removed by the owner leaves the office with an explanation', async ({
@@ -222,7 +219,6 @@ test.describe('multiplayer in real time (E4)', () => {
     // Ana sees Luis fade out and disappear.
     await expect.poll(async () => remoteAvatar(ana.page, luis.userId)).toBeUndefined();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

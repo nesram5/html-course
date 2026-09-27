@@ -113,8 +113,7 @@ test.describe('presence, chat and reactions (E7)', () => {
       bottomBar(ana.page).getByRole('button', { name: 'Estado: Ocupado' }),
     ).toBeVisible();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('"Localizar" shows the other person for 3 s and comes back', async ({ browser }) => {
@@ -134,8 +133,7 @@ test.describe('presence, chat and reactions (E7)', () => {
       })
       .toBeNull();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a chat message reaches the other person, with an unread counter and safe links', async ({
@@ -175,8 +173,7 @@ test.describe('presence, chat and reactions (E7)', () => {
     await bottomBar(luis.page).getByRole('button', { name: 'Chat del espacio' }).click();
     await expect(luis.page.getByTestId('chat-message')).toContainText('Hola <b>equipo</b>');
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('a reaction floats over the avatar for everyone for 3 s', async ({ browser }) => {
@@ -195,8 +192,7 @@ test.describe('presence, chat and reactions (E7)', () => {
     await ana.page.getByRole('button', { name: 'Corazón (tecla 1)' }).click();
     await expect.poll(async () => (await remoteAvatar(luis.page, ana.userId))?.reaction).toBe('❤️');
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 
   test('ringing someone shows a notification on their side, then a 30 s countdown', async ({
@@ -221,7 +217,6 @@ test.describe('presence, chat and reactions (E7)', () => {
       ana.page.getByRole('button', { name: /Podrás volver a llamar a Luis en (30|29) s/ }),
     ).toBeDisabled();
 
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

@@ -87,7 +87,6 @@ test.describe('account deletion (E8-S6)', () => {
     await expect(ana.page.getByTestId('chat-message').filter({ hasText: 'Adiós' })).toContainText(
       'Usuario eliminado',
     );
-    await ana.context.close();
-    await luis.context.close();
+    await Promise.all([ana.context.close(), luis.context.close()]);
   });
 });

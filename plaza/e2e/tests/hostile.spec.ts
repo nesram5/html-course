@@ -192,7 +192,7 @@ test.describe('hostile and edge cases across hallway, presence and personalizati
       .poll(async () => (await media(luis.page))?.connection ?? 'gone')
       .not.toBe('connected');
 
-    for (const someone of [eva, ana, luis]) await someone.context.close();
+    await Promise.all([eva, ana, luis].map((someone) => someone.context.close()));
   });
 
   test('hostile input: chat markup stays text; forged desk and style requests are refused', async ({
@@ -259,6 +259,6 @@ test.describe('hostile and edge cases across hallway, presence and personalizati
       .poll(async () => (await office(eva.page))?.desks)
       .toEqual([{ deskId: 'desk-05', label: winner.name, items: ['plant', 'lamp'] }]);
 
-    for (const someone of [eva, ana, luis]) await someone.context.close();
+    await Promise.all([eva, ana, luis].map((someone) => someone.context.close()));
   });
 });
