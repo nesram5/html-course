@@ -2,11 +2,14 @@ import {
   API_PATHS,
   apiPath,
   CLIENT_HEADER,
+  HEALTH_TOKEN_HEADER,
+  HealthResponseSchema,
   MapTemplatesResponseSchema,
   TestLoginResponseSchema,
   parseMap,
   SESSION_COOKIE_NAME,
   SpaceResponseSchema,
+  type HealthResponse,
   type WorldMap,
 } from '@plaza/shared';
 
@@ -19,12 +22,13 @@ export interface BotSession {
 async function request(
   baseUrl: string,
   path: string,
-  init: { method?: string; cookie?: string; body?: unknown } = {},
+  init: { method?: string; cookie?: string; body?: unknown; headers?: Record<string, string> } = {},
 ): Promise<Response> {
   const response = await fetch(new URL(path, baseUrl), {
     method: init.method ?? 'GET',
     headers: {
       [CLIENT_HEADER]: 'load-test',
+      ...init.headers,
       ...(init.cookie !== undefined && { cookie: init.cookie }),
       ...(init.body !== undefined && { 'content-type': 'application/json' }),
     },
@@ -91,7 +95,13 @@ export async function fetchWorldMap(baseUrl: string, mapTemplateId: string): Pro
   return parseMap(await (await request(baseUrl, template.mapUrl)).json());
 }
 
-/** `GET /api/health` as plain JSON (realtime figures of E8-S1). */
-export async function health(baseUrl: string): Promise<unknown> {
-  return (await request(baseUrl, API_PATHS.health)).json();
+/**
+ * `GET /api/health` (E8-S1). The realtime and process figures need the server's
+ * `HEALTH_TOKEN` (header `X-Health-Token`) unless the server runs outside production without one.
+ */
+export async function health(baseUrl: string, token?: string): Promise<HealthResponse> {
+  const response = await request(baseUrl, API_PATHS.health, {
+    ...(token !== undefined && token !== '' && { headers: { [HEALTH_TOKEN_HEADER]: token } }),
+  });
+  return HealthResponseSchema.parse(await response.json());
 }

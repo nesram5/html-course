@@ -16,7 +16,7 @@ import { io, type Socket } from 'socket.io-client';
 
 import { createSpace, fetchWorldMap, health, joinSpace, signIn, type BotSession } from './api.js';
 import { JoinError, joinBots } from './join.js';
-import { LatencyTracker, summarize } from './stats.js';
+import { LatencyTracker, memoryTrend, percentile, summarize, type ServerSample } from './stats.js';
 import { nextStep } from './walker.js';
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -28,6 +28,8 @@ const USAGE = `Usage: pnpm --filter @plaza/load load [options]
   --duration <s>          walking time in seconds (default 60)
   --steps-per-second <n>  steps per bot and second (default 4, the server allows 10)
   --template <id>         map template of the new space (default office-small@1)
+  --sample-every <s>      read /api/health every s seconds (default 30): memory, tick, latency
+  --health-token <token>  X-Health-Token for the figures (default $PLAZA_HEALTH_TOKEN)
 
 The server needs AUTH_TEST_LOGIN=true and enough RATE_LIMIT_PER_MINUTE for 2 requests per bot.
 `;
@@ -39,6 +41,8 @@ const { values } = parseArgs({
     duration: { type: 'string', default: '60' },
     'steps-per-second': { type: 'string', default: '4' },
     template: { type: 'string', default: 'office-small@1' },
+    'sample-every': { type: 'string', default: '30' },
+    'health-token': { type: 'string', default: process.env.PLAZA_HEALTH_TOKEN ?? '' },
     help: { type: 'boolean', default: false },
   },
 });
@@ -150,6 +154,8 @@ async function main(): Promise<void> {
   const botCount = positiveNumber('bots', values.bots);
   const durationS = positiveNumber('duration', values.duration);
   const stepsPerSecond = positiveNumber('steps-per-second', values['steps-per-second']);
+  const sampleEveryS = positiveNumber('sample-every', values['sample-every']);
+  const healthToken = values['health-token'];
   const run = randomUUID().slice(0, 8);
 
   print(
@@ -184,15 +190,40 @@ async function main(): Promise<void> {
   print(`${String(bots.length)} bots in space ${space.spaceId}; walking…`);
 
   const started = performance.now();
+  const samples: ServerSample[] = [];
+  let seenSamples = 0;
+  const sampleServer = async (): Promise<unknown> => {
+    const reading = await health(url, healthToken);
+    const window = tracker.samples.slice(seenSamples);
+    seenSamples = tracker.samples.length;
+    const connected = reading.realtime?.connectedBySpace[space.spaceId];
+    const sample: ServerSample = {
+      atS: Math.round((performance.now() - started) / 1000),
+      rssMb: reading.process?.rssMb ?? null,
+      heapUsedMb: reading.process?.heapUsedMb ?? null,
+      avgTickMs: reading.realtime?.avgTickMs ?? null,
+      connected: connected ?? null,
+      latencyP95Ms: percentile(window, 95),
+    };
+    samples.push(sample);
+    print(`  t=${String(sample.atS)}s ${JSON.stringify(sample)}`);
+    return reading;
+  };
   let serverHealth: unknown;
   try {
     for (const bot of bots) bot.walk(1000 / stepsPerSecond);
-    await sleep(durationS * 1000);
-    serverHealth = await health(url);
+    const endAt = started + durationS * 1000;
+    while (performance.now() + sampleEveryS * 1000 < endAt) {
+      await sleep(sampleEveryS * 1000);
+      await sampleServer();
+    }
+    await sleep(Math.max(0, endAt - performance.now()));
+    serverHealth = await sampleServer();
   } finally {
     for (const bot of bots) bot.stop();
   }
   const elapsedS = (performance.now() - started) / 1000;
+  const trend = memoryTrend(samples, Math.min(60, durationS / 4));
 
   const latency = summarize(tracker.samples);
   const round = (value: number | null) => (value === null ? 'n/a' : `${value.toFixed(1)} ms`);
@@ -213,6 +244,11 @@ async function main(): Promise<void> {
   );
   print(`server /api/health:    ${JSON.stringify(serverHealth)}`);
   print(
+    trend === null
+      ? 'server heap trend:     n/a (no process figures: pass --health-token)'
+      : `server heap trend:     ${trend.fromMb.toFixed(1)} → ${trend.toMb.toFixed(1)} MB (${trend.mbPerMinute.toFixed(2)} MB/min after warm-up)`,
+  );
+  print(
     JSON.stringify({
       run,
       bots: botCount,
@@ -220,6 +256,8 @@ async function main(): Promise<void> {
       stepsPerSecond,
       ...counters,
       latencyMs: latency,
+      heapTrend: trend,
+      samples,
       health: serverHealth,
     }),
   );
