@@ -3,7 +3,7 @@ import { deskSpawnTile, type DeskArea, type Direction, type Tile } from '@plaza/
 import { AppError } from '../../platform/errors.js';
 import { safeHandler, type PlazaIo, type SafeHandlerDeps } from '../../platform/socket.js';
 import type { PlazaSocket } from '../../platform/socket.js';
-import { TokenBucket } from '../../platform/token-bucket.js';
+import { KeyedTokenBuckets } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { WorldRepository } from './world.repository.js';
 import type { WorldService } from './world.service.js';
@@ -58,16 +58,18 @@ export function registerDeskGoto(
   repository: WorldRepository,
   clock: () => number,
 ): void {
+  // Per person, across all their connections (each press reads the membership, E8-S2).
+  const presses = new KeyedTokenBuckets({
+    capacity: GOTO_BURST,
+    refillPerSecond: GOTO_PER_SECOND,
+    now: clock,
+  });
   io.on('connection', (socket) => {
-    const bucket = new TokenBucket({
-      capacity: GOTO_BURST,
-      refillPerSecond: GOTO_PER_SECOND,
-      now: clock,
-    });
     socket.on(
       'desk:goto',
       safeHandler(deps, socket, 'desk:goto', async () => {
-        if (!bucket.tryTake()) throw new AppError('RATE_LIMITED', 'Too many "Mi escritorio"');
+        if (!presses.tryTake(socketUserId(socket)))
+          throw new AppError('RATE_LIMITED', 'Too many "Mi escritorio"');
         await gotoDesk(world, repository, socket);
         return undefined;
       }),

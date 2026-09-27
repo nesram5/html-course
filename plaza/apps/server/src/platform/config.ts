@@ -42,6 +42,33 @@ const EnvSchema = z
 
     /** Max HTTP requests per minute and client IP (@fastify/rate-limit). */
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
+    /**
+     * Realtime (WebSocket) connections a client IP may open per minute, as a burst refilled
+     * over the minute. The handshake reads the session from the database.
+     */
+    REALTIME_CONNECTIONS_PER_MINUTE: z.coerce.number().int().positive().default(120),
+
+    /**
+     * Reverse proxies in front of the server whose `X-Forwarded-For` is trusted: `false`/`0`
+     * (default: the client IP is the TCP peer, so the header cannot spoof the rate-limit key)
+     * or a number of hops (`1` behind the Caddy of `infra/app`).
+     */
+    TRUST_PROXY: z
+      .string()
+      .default('false')
+      .transform((value, ctx): number | false => {
+        if (value === 'false' || value === '0') return false;
+        if (/^[1-9]$/.test(value)) return Number(value);
+        ctx.addIssue({ code: 'custom', message: 'must be false or a number of hops (1-9)' });
+        return z.NEVER;
+      }),
+
+    /**
+     * Secret of the detailed `GET /api/health` (connected per space, tick, media peers,
+     * process): sent as the `X-Health-Token` header. Without it only liveness is public in
+     * production; outside production the details are public when it is unset.
+     */
+    HEALTH_TOKEN: optional(z.string().min(16, 'must be at least 16 characters')),
 
     /**
      * People connected at once per space; `MAX_PLAYERS_PER_SPACE` of `@plaza/shared` (RN-06)
@@ -103,6 +130,9 @@ const ConfigSchema = EnvSchema.transform((env) => ({
   authTestLogin: env.AUTH_TEST_LOGIN,
   mapsDir: env.MAPS_DIR ?? null,
   rateLimitPerMinute: env.RATE_LIMIT_PER_MINUTE,
+  realtimeConnectionsPerMinute: env.REALTIME_CONNECTIONS_PER_MINUTE,
+  trustProxy: env.TRUST_PROXY,
+  healthToken: env.HEALTH_TOKEN ?? null,
   realtime: { maxPlayersPerSpace: env.MAX_PLAYERS_PER_SPACE ?? null },
   sentry:
     env.SENTRY_DSN !== undefined

@@ -36,10 +36,14 @@ export async function buildApp(
   options: BuildAppOptions = {},
 ): Promise<FastifyInstance> {
   const { config, reporter } = container;
+  const hops = config.trustProxy;
 
   const app = Fastify({
     loggerInstance: container.logger,
-    trustProxy: true,
+    // Only the configured proxy hops may set the client IP (rate limits, logs): with `true`,
+    // any client could pick its IP with X-Forwarded-For and dodge the limits (E8-S2).
+    // The same as proxy-addr's numeric hop count (not in Fastify's types).
+    trustProxy: hops === false ? false : (_address: string, hop: number) => hop < hops,
     bodyLimit: 64 * 1024,
     genReqId: () => randomUUID(),
   });
@@ -84,7 +88,14 @@ export async function buildApp(
     maxAge: config.isProduction ? '1h' : 0,
   });
 
-  const io = attachSocketServer(app, { corsOrigin: config.publicUrl });
+  const io = attachSocketServer(app, {
+    corsOrigin: config.publicUrl,
+    connectionLimit: {
+      perMinute: config.realtimeConnectionsPerMinute,
+      trustProxy: hops,
+      now: () => container.now().getTime(),
+    },
+  });
   const ctx = {
     app,
     io,

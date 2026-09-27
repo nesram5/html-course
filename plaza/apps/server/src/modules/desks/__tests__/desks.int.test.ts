@@ -447,6 +447,33 @@ describe('desks and office styles (E9)', () => {
       expect((await request(eva, 'PUT', deskUrl('desk-03'), {})).statusCode).toBe(200);
     });
 
+    it('frees the right desk when a member is removed while claiming desks (E8-S2)', async () => {
+      const anaIn = await enter(ana);
+      await request(luis, 'PUT', deskUrl('desk-01'), {});
+      await barrier(anaIn.client);
+      const memberUrl = apiPath(API_PATHS.member, { spaceId: space.id, userId: luis.user.id });
+
+      // The removal goes through the same per-space queue as the claims: whatever order they
+      // run in, the last desk:updated of every desk matches the database.
+      const [claims, removed] = await Promise.all([
+        Promise.all(
+          ['desk-03', 'desk-04', 'desk-05'].map((deskId) =>
+            request(luis, 'PUT', deskUrl(deskId), {}),
+          ),
+        ),
+        request(ana, 'DELETE', memberUrl),
+        request(ana, 'PUT', deskUrl('desk-06'), { userId: luis.user.id }),
+      ]);
+      await barrier(anaIn.client);
+
+      expect(removed.statusCode).toBe(204);
+      expect(claims.every((r) => r.statusCode === 200 || r.statusCode === 404)).toBe(true);
+      const seen = new Map<string, string | null>();
+      for (const desk of inbox(anaIn.client).desks) seen.set(desk.deskId, desk.userId);
+      expect([...seen].filter(([, userId]) => userId !== null)).toEqual([]);
+      expect(await heldDesks()).toEqual([]);
+    });
+
     it('frees the desk of someone whose account is deleted', async () => {
       await request(luis, 'PUT', deskUrl('desk-03'), {});
 

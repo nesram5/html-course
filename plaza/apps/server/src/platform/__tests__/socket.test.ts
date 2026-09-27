@@ -197,3 +197,43 @@ describe('realtime shutdown (E4-S6)', () => {
     }
   });
 });
+
+describe('realtime connection rate limit (E8-S2)', () => {
+  it('refuses new connections from an address over REALTIME_CONNECTIONS_PER_MINUTE', async () => {
+    const testApp = await buildTestApp({
+      modules: [],
+      env: { REALTIME_CONNECTIONS_PER_MINUTE: '2', TRUST_PROXY: '1' },
+    });
+    await testApp.app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = testApp.app.server.address() as AddressInfo;
+    const clients: Client[] = [];
+    const attempt = (forwardedFor: string): Promise<'connected' | 'refused'> => {
+      const client: Client = connect(`http://127.0.0.1:${String(port)}`, {
+        path: REALTIME_PATH,
+        transports: ['websocket'],
+        reconnection: false,
+        extraHeaders: { 'x-forwarded-for': forwardedFor },
+      });
+      clients.push(client);
+      return new Promise((resolve) => {
+        client.on('connect', () => {
+          resolve('connected');
+        });
+        client.on('connect_error', () => {
+          resolve('refused');
+        });
+      });
+    };
+
+    try {
+      const results: string[] = [];
+      for (let i = 0; i < 3; i++) results.push(await attempt(`6.6.6.${String(i)}, 198.51.100.7`));
+      expect(results).toEqual(['connected', 'connected', 'refused']);
+      // Other addresses keep their own allowance.
+      expect(await attempt('198.51.100.8')).toBe('connected');
+    } finally {
+      for (const client of clients) client.disconnect();
+      await testApp.app.close();
+    }
+  });
+});

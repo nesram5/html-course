@@ -115,7 +115,7 @@ describe('presence module: status, away and ring (E7-S1, E7-S5)', () => {
       expect(await storedStatus(luis.user.id)).toBe('available');
     });
 
-    it('rate-limits status and away changes per socket', async () => {
+    it('rate-limits status and away changes per person', async () => {
       const me = await harness.enter(ana, spaceId);
 
       for (let i = 0; i < 12; i++) away(me.client, i % 2 === 0);
@@ -125,6 +125,31 @@ describe('presence module: status, away and ring (E7-S1, E7-S5)', () => {
         'RATE_LIMITED',
         'RATE_LIMITED',
       ]);
+    });
+
+    it('does not refill the presence bucket when the person opens another connection (E8-S2)', async () => {
+      const first = await harness.enter(ana, spaceId);
+      for (let i = 0; i < 10; i++) away(first.client, i % 2 === 0);
+      await harness.barrier(spaceId, first.client);
+      expect(harness.inbox(first.client).error).toEqual([]);
+
+      // A new tab (or a reconnection) of the same person shares the empty bucket.
+      const second = await harness.enter(ana, spaceId);
+      status(second.client, 'busy');
+      away(second.client, true);
+      await harness.barrier(spaceId, second.client);
+
+      expect(harness.inbox(second.client).error.map((e) => e.code)).toEqual([
+        'RATE_LIMITED',
+        'RATE_LIMITED',
+      ]);
+      expect(await storedStatus(ana.user.id)).toBe('available');
+
+      // Someone else is not affected.
+      const other = await harness.enter(luis, spaceId);
+      away(other.client, true);
+      await harness.barrier(spaceId, other.client);
+      expect(harness.inbox(other.client).error).toEqual([]);
     });
   });
 

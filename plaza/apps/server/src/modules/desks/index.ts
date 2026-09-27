@@ -24,6 +24,7 @@ export const desksModule: PlazaModule = {
       maps: container.maps,
       spaces: spaces.service,
       notifier: spaces.notifier,
+      serial: spaces.deskChanges,
     });
     registerDesksRoutes(app, { desks, requireUser: services.get('auth').requireUser });
     services.provide('desks', desks);

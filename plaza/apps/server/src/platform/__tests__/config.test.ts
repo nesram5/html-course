@@ -74,6 +74,25 @@ describe('loadConfig', () => {
     expect(config.google).toEqual({ clientId: 'id', clientSecret: 's' });
   });
 
+  it('trusts no proxy by default and a number of hops with TRUST_PROXY (E8-S2)', () => {
+    expect(loadConfig(testEnv()).trustProxy).toBe(false);
+    expect(loadConfig(testEnv({ TRUST_PROXY: '0' })).trustProxy).toBe(false);
+    expect(loadConfig(testEnv({ TRUST_PROXY: 'false' })).trustProxy).toBe(false);
+    expect(loadConfig(testEnv({ TRUST_PROXY: '1' })).trustProxy).toBe(1);
+    // `true` would trust any X-Forwarded-For: refused, like anything that is not a hop count.
+    for (const value of ['true', '-1', '1.5', 'caddy']) {
+      expect(configError(testEnv({ TRUST_PROXY: value })).variables).toEqual(['TRUST_PROXY']);
+    }
+  });
+
+  it('reads the health token and the realtime connection limit', () => {
+    const defaults = loadConfig(testEnv({ REALTIME_CONNECTIONS_PER_MINUTE: undefined }));
+    expect(defaults.healthToken).toBeNull();
+    expect(defaults.realtimeConnectionsPerMinute).toBe(120);
+    expect(loadConfig(testEnv({ HEALTH_TOKEN: 'x'.repeat(32) })).healthToken).toBe('x'.repeat(32));
+    expect(configError(testEnv({ HEALTH_TOKEN: 'short' })).variables).toEqual(['HEALTH_TOKEN']);
+  });
+
   it('treats empty optional variables as unset and enables Sentry only with a DSN', () => {
     expect(loadConfig(testEnv({ SENTRY_DSN: '', GOOGLE_CLIENT_ID: '' })).sentry).toBeNull();
     const config = loadConfig(testEnv({ SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1' }));
