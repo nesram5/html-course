@@ -40,18 +40,21 @@ export class AvatarTextures {
 
   private load(key: string, avatarId: string): void {
     const { load } = this.scene;
+    const completeEvent = `${Phaser.Loader.Events.FILE_KEY_COMPLETE}spritesheet-${key}`;
     const settle = (textureKey: string) => {
       const waiting = this.pending.get(key);
       this.pending.delete(key);
       load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+      load.off(completeEvent, onComplete);
       for (const ready of waiting ?? []) ready(textureKey);
     };
     const onError = (file: Phaser.Loader.File) => {
       if (file.key === key) settle(this.fallbackKey);
     };
-    load.once(`${Phaser.Loader.Events.FILE_KEY_COMPLETE}spritesheet-${key}`, () => {
+    const onComplete = () => {
       settle(key);
-    });
+    };
+    load.on(completeEvent, onComplete);
     load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
     load.spritesheet(key, this.urlOf(avatarId), {
       frameWidth: AVATAR_FRAME_SIZE,
