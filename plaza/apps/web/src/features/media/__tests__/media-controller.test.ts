@@ -434,24 +434,34 @@ describe('MediaController: away and leaving', () => {
   it('mutes the microphone and camera while away and restores what was on', async () => {
     const lk = await started({ ...DEFAULT_MEDIA_CHOICES, videoEnabled: false });
 
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
 
-    events.emit('presence:self-away', { away: true }); // repeated: still remembers "mic on"
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: true }); // repeated: still remembers "mic on"
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, awayMuted: false });
     expect(lk.localParticipant.calls.at(-2)).toBe('mic:true');
   });
 
-  it('a manual toggle while away wins over the restore', async () => {
+  it('does not touch the media when the person is only idle (away without a hidden tab)', async () => {
+    // Ten minutes talking face to face in the hallway without mouse or keyboard (RN-05).
     await started();
+
     events.emit('presence:self-away', { away: true });
     await settle();
 
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
+  });
+
+  it('a manual toggle while away wins over the restore', async () => {
+    await started();
+    events.emit('presence:self-hidden', { hidden: true });
+    await settle();
+
     await controller.setMicEnabled(true);
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
 
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, awayMuted: false });
@@ -483,17 +493,17 @@ describe('MediaController: away and leaving', () => {
     await started();
 
     events.emit('media:self-in-room', { inRoom: true });
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     events.emit('media:self-in-room', { inRoom: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
 
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     events.emit('media:self-in-room', { inRoom: true });
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: true });
     // A manual toggle neither turns anything on inside the room nor forgets what to restore.

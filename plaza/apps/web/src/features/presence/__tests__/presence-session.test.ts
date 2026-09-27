@@ -87,6 +87,18 @@ describe('PresenceSession: status and away (E7-S1)', () => {
     expect(selfAway).toEqual([true, false]);
   });
 
+  it('tells the media feature when the tab is hidden or shown (presence:self-hidden), once', () => {
+    const hidden: boolean[] = [];
+    events.on('presence:self-hidden', (event) => hidden.push(event.hidden));
+
+    session.setHidden(true);
+    session.setHidden(true);
+    session.setHidden(false);
+
+    expect(hidden).toEqual([true, false]);
+    expect(client.sent).toEqual([]);
+  });
+
   it('keeps changes made outside the space and sends them after the next snapshot', () => {
     joined = false;
     session.setAway(true);

@@ -41,6 +41,28 @@ describe('usePresenceActivity (E7-S1, RN-05)', () => {
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 
+  it('reports the hidden tab separately: 10 minutes idle is not a hidden tab', () => {
+    const onChange = vi.fn();
+    const onHiddenChange = vi.fn();
+    renderHook(() => {
+      usePresenceActivity(onChange, { onHiddenChange });
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(AWAY_IDLE_MS);
+    });
+    expect(onChange).toHaveBeenLastCalledWith(true);
+    expect(onHiddenChange).not.toHaveBeenCalled();
+
+    act(() => {
+      setVisibility('hidden');
+    });
+    act(() => {
+      setVisibility('visible');
+    });
+    expect(onHiddenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
   it('becomes away after 10 minutes without interaction, not before', () => {
     const onChange = vi.fn();
     renderHook(() => {

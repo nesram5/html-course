@@ -55,5 +55,8 @@ export function usePresenceSession(spaceId: string): void {
   const onAway = useCallback((away: boolean) => {
     sessionRef.current?.setAway(away);
   }, []);
-  usePresenceActivity(onAway);
+  const onHidden = useCallback((hidden: boolean) => {
+    sessionRef.current?.setHidden(hidden);
+  }, []);
+  usePresenceActivity(onAway, { onHiddenChange: onHidden });
 }

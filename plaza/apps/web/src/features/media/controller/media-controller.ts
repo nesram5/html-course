@@ -58,7 +58,7 @@ export interface MediaControllerDeps {
   /** Source of `media:peers` and of realtime reconnections (the world `RealtimeClient`). */
   readonly realtime: Pick<RealtimeClient, 'on' | 'onConnect'>;
   /**
-   * Source of `presence:self-away`, `media:self-in-room` and `world:snapshot` (a realtime join
+   * Source of `presence:self-hidden`, `media:self-in-room` and `world:snapshot` (a realtime join
    * of this tab) (the world `EventBus`).
    */
   readonly events: Pick<EventBus, 'on'>;
@@ -147,8 +147,9 @@ class StaleRun extends Error {}
  *   reconnection; a `NOT_A_MEMBER` answer (removed from the space) ends the media.
  * - LiveKit resumes short cuts by itself; after a full disconnection it reconnects with a fresh
  *   token and backoff. Either way the last `media:peers` is applied again.
- * - `presence:self-away` and `media:self-in-room` turn the microphone and camera off and, once
- *   the person is neither away nor in a meeting room, restore exactly what was on. Inside a room
+ * - `presence:self-hidden` (hidden tab) and `media:self-in-room` turn the microphone and camera
+ *   off and, once the tab is visible and the person is not in a meeting room, restore exactly
+ *   what was on. Being idle for 10 min only changes the status (RN-05), never the media. Inside a room
  *   the server revokes the permission to publish (E6-S3): the restore waits until LiveKit grants
  *   it back and the person has stayed out of the room for {@link ROOM_EXIT_SETTLE_MS}; a
  *   publication LiveKit fails is published again, never taken for a device problem.
@@ -179,7 +180,7 @@ export class MediaController {
   /** Wanted state of the local devices (what the person chose). */
   #wantMic = false;
   #wantCamera = false;
-  /** Why the devices are held off: away (E7) and / or in a meeting room (E6-S2). */
+  /** Why the devices are held off: hidden tab (E7) and / or in a meeting room (E6-S2). */
   #holds = { away: false, room: false };
   /** What was on before the first hold, restored when every hold is gone. */
   #restore: { mic: boolean; camera: boolean } | null = null;
@@ -224,8 +225,8 @@ export class MediaController {
         this.#connectOnJoin = false;
         void this.#connect(run);
       }),
-      events.on('presence:self-away', ({ away }) => {
-        this.#setHold('away', away);
+      events.on('presence:self-hidden', ({ hidden }) => {
+        this.#setHold('away', hidden);
       }),
       events.on('media:self-in-room', ({ inRoom }) => {
         this.#setHold('room', inRoom);

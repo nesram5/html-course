@@ -18,7 +18,8 @@ export interface PresenceSessionOptions {
  * Presence of the local person while in a space (E7-S1, E7-S5), framework-free:
  * - keeps the presence store in sync with `world:snapshot` / `world:delta`;
  * - sends the chosen status and the away flag, and tells the rest of the app when the person
- *   becomes away or comes back (`presence:self-away`: the media feature mutes / restores);
+ *   becomes away or comes back (`presence:self-away`), and when their tab is hidden or shown
+ *   (`presence:self-hidden`: the media feature mutes / restores, RN-05);
  * - whatever changed while not in the space (joining, reconnecting) is sent after the next
  *   snapshot: the away flag when the server has another one, and a status chosen meanwhile;
  * - hands incoming rings to `onRing`.
@@ -27,6 +28,7 @@ export class PresenceSession {
   private readonly cleanups: (() => void)[] = [];
   /** Status chosen while not in the space, sent after the next snapshot. */
   private pendingStatus: PresenceStatus | null = null;
+  private hidden = false;
 
   constructor(private readonly options: PresenceSessionOptions) {}
 
@@ -56,6 +58,7 @@ export class PresenceSession {
   stop(): void {
     for (const dispose of this.cleanups.splice(0)) dispose();
     this.pendingStatus = null;
+    this.hidden = false;
     this.options.store.getState().reset();
   }
 
@@ -74,5 +77,12 @@ export class PresenceSession {
     store.getState().setAway(away);
     if (isJoined()) client.setAway(away);
     events.emit('presence:self-away', { away });
+  }
+
+  /** From the activity detection: the tab was hidden or shown (mutes / restores the media). */
+  setHidden(hidden: boolean): void {
+    if (this.hidden === hidden) return;
+    this.hidden = hidden;
+    this.options.events.emit('presence:self-hidden', { hidden });
   }
 }
