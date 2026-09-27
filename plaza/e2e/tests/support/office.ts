@@ -10,6 +10,8 @@ export interface OfficeProbe {
   /** Styles loaded ahead when the office starts, ready to be shown without loading. */
   preloaded: string[];
   desks: { deskId: string; label: string; items: string[] }[];
+  /** Last desk the camera was asked to show ("Ir a su escritorio", E9-S2). */
+  shownDesk: string | null;
 }
 
 export function office(page: Page): Promise<OfficeProbe | null> {

@@ -30,6 +30,8 @@
     "inRoom": "En {{name}}",
     "locate": "Localizar",
     "locateLabel": "Localizar a {{name}} en el mapa",
+    "desk": "Escritorio",
+    "deskLabel": "Ir al escritorio de {{name}}",
     "noMatch": "Nadie coincide con «{{query}}».",
     "loadError": "No se pudo cargar la lista de miembros."
   },

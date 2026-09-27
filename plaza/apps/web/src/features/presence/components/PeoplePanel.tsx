@@ -2,7 +2,13 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMembers } from '@/features/spaces';
-import { worldEvents, type EventBus } from '@/features/world';
+import {
+  officeStore,
+  useOfficeStore,
+  worldEvents,
+  type EventBus,
+  type OfficeStore,
+} from '@/features/world';
 import { useEscapeKey } from '@/shared/ui';
 
 import { peopleLists, type ConnectedRow } from '../lib/people';
@@ -17,11 +23,14 @@ export interface PeoplePanelProps {
   readonly onClose: () => void;
   readonly store?: PresenceStore;
   readonly events?: EventBus;
+  /** Who holds each desk (E9-S2), for "Ir a su escritorio". */
+  readonly office?: OfficeStore;
 }
 
 /**
  * "Personas" (E7-S2): who is connected (status and meeting room) and, below, the members who
- * are not, with a name search. "Localizar" moves the camera to the person for 3 s; "Llamar"
+ * are not, with a name search. "Localizar" moves the camera to the person for 3 s; "Escritorio"
+ * shows their desk, connected or not (E9-S2: the desk is where to find someone); "Llamar"
  * rings them (E7-S5). Opening it puts the focus on the search; `Escape` closes it (E8-S6).
  */
 export function PeoplePanel({
@@ -30,6 +39,7 @@ export function PeoplePanel({
   onClose,
   store = presenceStore,
   events = worldEvents,
+  office = officeStore,
 }: PeoplePanelProps) {
   const { t } = useTranslation('presence');
   const [query, setQuery] = useState('');
@@ -47,6 +57,18 @@ export function PeoplePanel({
     [people, members.data, selfId, query],
   );
   const nobody = connected.length === 0 && disconnected.length === 0 && query.trim() !== '';
+  // Live desk holders (realtime), falling back to the members list.
+  const heldDesks = useOfficeStore((state) => state.desks, office);
+  const deskOf = useMemo(() => {
+    const byUser = new Map<string, string>();
+    for (const member of members.data ?? []) {
+      if (member.deskId !== null) byUser.set(member.userId, member.deskId);
+    }
+    for (const desk of Object.values(heldDesks)) {
+      if (desk.userId !== null) byUser.set(desk.userId, desk.deskId);
+    }
+    return byUser;
+  }, [members.data, heldDesks]);
 
   return (
     <section
@@ -86,7 +108,13 @@ export function PeoplePanel({
         </h3>
         <ul className="mb-4 flex flex-col gap-1">
           {connected.map((row) => (
-            <ConnectedItem key={row.userId} row={row} roomNames={roomNames} events={events} />
+            <ConnectedItem
+              key={row.userId}
+              row={row}
+              roomNames={roomNames}
+              events={events}
+              deskId={deskOf.get(row.userId) ?? null}
+            />
           ))}
         </ul>
         <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
@@ -96,8 +124,13 @@ export function PeoplePanel({
           {disconnected.map((member) => (
             <li key={member.userId} className="flex items-center gap-2 py-1 text-sm text-slate-600">
               <StatusDot presence="offline" />
-              <span className="truncate">{member.displayName}</span>
+              <span className="flex-1 truncate">{member.displayName}</span>
               <span className="sr-only">{t('status.offline')}</span>
+              <DeskButton
+                deskId={deskOf.get(member.userId) ?? null}
+                name={member.displayName}
+                events={events}
+              />
             </li>
           ))}
         </ul>
@@ -106,13 +139,38 @@ export function PeoplePanel({
             {t('people.loadError')}
           </p>
         )}
-        {nobody && (
-          <p role="status" className="mt-2 text-sm text-slate-600">
-            {t('people.noMatch', { query: query.trim() })}
-          </p>
-        )}
+        {/* Always mounted: a live region inserted with its text is often not announced. */}
+        <p role="status" className={nobody ? 'mt-2 text-sm text-slate-600' : 'sr-only'}>
+          {nobody ? t('people.noMatch', { query: query.trim() }) : ''}
+        </p>
       </div>
     </section>
+  );
+}
+
+/** "Escritorio": the camera shows the person's desk (E9-S2), only when they have one. */
+function DeskButton({
+  deskId,
+  name,
+  events,
+}: {
+  readonly deskId: string | null;
+  readonly name: string;
+  readonly events: EventBus;
+}) {
+  const { t } = useTranslation('presence');
+  if (deskId === null) return null;
+  return (
+    <button
+      type="button"
+      aria-label={t('people.deskLabel', { name })}
+      className="rounded-md px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+      onClick={() => {
+        events.emit('camera:desk', { deskId });
+      }}
+    >
+      {t('people.desk')}
+    </button>
   );
 }
 
@@ -120,9 +178,10 @@ interface ConnectedItemProps {
   readonly row: ConnectedRow;
   readonly roomNames: Readonly<Record<string, string>>;
   readonly events: EventBus;
+  readonly deskId: string | null;
 }
 
-function ConnectedItem({ row, roomNames, events }: ConnectedItemProps) {
+function ConnectedItem({ row, roomNames, events, deskId }: ConnectedItemProps) {
   const { t } = useTranslation('presence');
   const room = row.roomId === null ? undefined : (roomNames[row.roomId] ?? row.roomId);
   const state = row.reconnecting ? t('status.reconnecting') : t(`status.${row.presence}`);
@@ -148,6 +207,7 @@ function ConnectedItem({ row, roomNames, events }: ConnectedItemProps) {
       >
         {t('people.locate')}
       </button>
+      <DeskButton deskId={deskId} name={row.displayName} events={events} />
       {!row.isSelf && <RingButton userId={row.userId} displayName={row.displayName} />}
     </li>
   );
