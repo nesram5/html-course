@@ -1,5 +1,6 @@
 import { authModule } from './auth/index.js';
 import { healthModule } from './health/index.js';
+import { spacesModule } from './spaces/index.js';
 import type { PlazaModule } from './types.js';
 import { usersModule } from './users/index.js';
 
@@ -9,4 +10,9 @@ import { usersModule } from './users/index.js';
  * here (see `modules/README.md`). Expected order: auth, users, spaces, rooms, desks, world,
  * media, presence, chat, events.
  */
-export const modules: readonly PlazaModule[] = [healthModule, authModule, usersModule];
+export const modules: readonly PlazaModule[] = [
+  healthModule,
+  authModule,
+  usersModule,
+  spacesModule,
+];

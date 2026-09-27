@@ -8,13 +8,16 @@ import process from 'node:process';
 
 import { PrismaClient } from '@prisma/client';
 
+import { deriveInviteToken } from '../src/modules/spaces/invite-token.js';
+
 const DEV_EMAIL = 'dev@plaza.local';
-/** Dev-only invite token: /join/dev-invite-token-000000 */
-const DEV_INVITE_TOKEN = 'dev-invite-token-000000';
+const SESSION_SECRET = process.env.SESSION_SECRET ?? '';
+const PUBLIC_URL = (process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 
 const prisma = new PrismaClient();
 
 async function seed(): Promise<void> {
+  if (SESSION_SECRET.length < 32) throw new Error('SESSION_SECRET must be set (see .env.example)');
   const user = await prisma.user.upsert({
     where: { googleSub: DEV_EMAIL },
     update: {},
@@ -29,8 +32,14 @@ async function seed(): Promise<void> {
       slug: 'oficina-demo',
       mapTemplateId: 'office-small@1',
       ownerId: user.id,
-      inviteTokenHash: createHash('sha256').update(DEV_INVITE_TOKEN).digest('hex'),
+      // Replaced below by the token derived from the id (like SpacesService.create does).
+      inviteTokenHash: createHash('sha256').update(`seed:${Date.now().toString()}`).digest('hex'),
     },
+  });
+  const token = deriveInviteToken(SESSION_SECRET, space.id, space.inviteVersion);
+  await prisma.space.update({
+    where: { id: space.id },
+    data: { inviteTokenHash: createHash('sha256').update(token).digest('hex') },
   });
 
   await prisma.membership.upsert({
@@ -39,7 +48,9 @@ async function seed(): Promise<void> {
     create: { userId: user.id, spaceId: space.id, role: 'OWNER' },
   });
 
-  process.stdout.write(`Seeded user ${DEV_EMAIL} and space /s/${space.slug}\n`);
+  process.stdout.write(
+    `Seeded user ${DEV_EMAIL} and space /s/${space.slug} (invite: ${PUBLIC_URL}/join/${token})\n`,
+  );
 }
 
 try {
