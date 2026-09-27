@@ -174,7 +174,7 @@ export function SpacePage() {
         </div>
         <Link
           to={WEB_PATHS.spaces}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-white/10"
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           {t('page.leave')}
         </Link>

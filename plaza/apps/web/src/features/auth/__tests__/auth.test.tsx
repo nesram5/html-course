@@ -35,7 +35,7 @@ describe('auth feature (E1-S3, E1-S4)', () => {
       renderApp({ route: '/login?error=cancelled&next=/spaces' });
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'No se completó el inicio de sesión.',
+        'Has cancelado el inicio de sesión con Google.',
       );
       expect(screen.getByRole('link', { name: 'Entrar con Google' })).toHaveAttribute(
         'href',

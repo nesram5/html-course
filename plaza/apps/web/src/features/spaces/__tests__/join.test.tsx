@@ -106,6 +106,25 @@ describe('join page /join/:token (E2-S5)', () => {
     ).toBeInTheDocument();
   });
 
+  it('does not call a server failure an invalid invitation, and retries', async () => {
+    let fail = true;
+    mockApi({
+      [`GET /api/join/${TOKEN}`]: () =>
+        fail ? apiError(503, 'INTERNAL') : preview[`GET /api/join/${TOKEN}`],
+      'GET /api/me': apiError(401, 'UNAUTHORIZED'),
+    });
+    const user = userEvent.setup();
+    renderApp({ route: `/join/${TOKEN}` });
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 5000 });
+    expect(screen.queryByRole('heading', { name: 'Esta invitación ya no es válida' })).toBeNull();
+    fail = false;
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('heading', { name: /Oficina Acme/ })).toBeInTheDocument();
+    expect(alert).not.toBeInTheDocument();
+  });
+
   it('says so too when the link is revoked between the preview and the join', async () => {
     mockApi({
       ...preview,
@@ -133,7 +152,9 @@ describe('join page /join/:token (E2-S5)', () => {
       await screen.findByRole('heading', { name: 'Ya no puedes unirte a este espacio' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('La administración te expulsó. Si fue un error, pídele que te readmita.'),
+      screen.getByText(
+        'La administración te ha expulsado. Si ha sido un error, pídele que te readmita.',
+      ),
     ).toBeInTheDocument();
   });
 });

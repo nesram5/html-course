@@ -65,6 +65,7 @@ function AutoJoin({ token }: { token: string }) {
 /** `/join/:token`: space name + "Entrar con Google"; once signed in, joins automatically (E2-S5). */
 export function JoinPage() {
   const { t } = useTranslation('spaces');
+  const { t: tc } = useTranslation();
   const { token = '' } = useParams();
   const session = useSession();
   const preview = useJoinPreview(token);
@@ -75,8 +76,28 @@ export function JoinPage() {
 
   let content;
   if (preview.isPending || session.status === 'loading') content = <PageLoading />;
-  else if (preview.isError) content = <InvalidInvite />;
-  else if (session.status === 'authenticated') content = <AutoJoin token={token} />;
+  else if (preview.isError) {
+    const code = isApiError(preview.error) ? preview.error.code : null;
+    // Only a refused token is an invalid invitation; a network or server failure is not a reason
+    // to ask for a new link.
+    content =
+      code === 'INVALID_INVITE' || code === 'NOT_FOUND' ? (
+        <InvalidInvite />
+      ) : (
+        <div role="alert" className="flex flex-col items-start gap-3">
+          <p>{tc(errorMessageKey(preview.error))}</p>
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 px-3 py-1"
+            onClick={() => {
+              void preview.refetch();
+            }}
+          >
+            {tc('errorBoundary.retry')}
+          </button>
+        </div>
+      );
+  } else if (session.status === 'authenticated') content = <AutoJoin token={token} />;
   else {
     content = (
       <>

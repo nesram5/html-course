@@ -4,13 +4,16 @@ import { useTranslation } from 'react-i18next';
 
 import { officeStore, type OfficeStore } from '@/features/world';
 
-import { useDialog } from '@/shared/ui';
+import { LoadError, useDialog } from '@/shared/ui';
 
 export interface DeskDecorPanelProps {
   readonly deskId: string;
   /** Saved decoration of the desk (`null`: nothing yet). */
   readonly decor: DeskDecor | null;
   readonly catalog: readonly DecorItemDto[];
+  /** Whether the catalog is still loading or failed (then `onRetryCatalog` asks again). */
+  readonly catalogState?: 'loading' | 'error' | 'ready';
+  readonly onRetryCatalog?: () => void;
   readonly saving: boolean;
   readonly onSave: (decor: DeskDecor) => void;
   readonly onClose: () => void;
@@ -34,6 +37,8 @@ export function DeskDecorPanel({
   deskId,
   decor,
   catalog,
+  catalogState = 'ready',
+  onRetryCatalog,
   saving,
   onSave,
   onClose,
@@ -144,6 +149,20 @@ export function DeskDecorPanel({
             </li>
           ))}
         </ul>
+        {catalogState === 'loading' && (
+          <p role="status" className="text-sm text-slate-600">
+            {t('decor.catalogLoading')}
+          </p>
+        )}
+        {catalogState === 'error' && (
+          <LoadError
+            error={null}
+            message={t('decor.catalogError')}
+            onRetry={() => {
+              onRetryCatalog?.();
+            }}
+          />
+        )}
       </fieldset>
 
       <div className="mt-4 flex justify-end gap-2">

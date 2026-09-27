@@ -68,7 +68,7 @@ export function ReactionPicker({ react = defaultReact }: ReactionPickerProps) {
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         aria-label={t('reactions.button')}
-        className="rounded-md px-2 py-1.5 text-lg leading-none hover:bg-white/10"
+        className="rounded-md px-2 py-1.5 text-lg leading-none hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         onClick={() => {
           setOpen((value) => !value);
         }}

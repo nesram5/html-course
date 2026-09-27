@@ -6,6 +6,7 @@
     "unread_other": "Chat del espacio: {{count}} mensajes sin leer"
   },
   "panel": {
+    "yesterday": "ayer {{time}}",
     "title": "Chat del espacio",
     "close": "Cerrar el chat",
     "messages": "Mensajes",

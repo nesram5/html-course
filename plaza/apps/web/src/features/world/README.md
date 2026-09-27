@@ -29,7 +29,7 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   │         │                      them in 600 ms and removes the old textures
   │         └─ DeskLayer           names over held desks and decoration objects (deskDrawings, pure)
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
-  ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
+  ├─ SessionNotice ── "Has abierto Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
   ├─ SpaceBottomBar ── "Tus controles": avatar · name · the `BarItems` of every extension
   └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, rooms, presence,

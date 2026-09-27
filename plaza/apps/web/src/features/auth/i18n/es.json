@@ -4,7 +4,7 @@
     "title": "Entra en Plaza",
     "subtitle": "La oficina virtual de tu equipo. Entra con tu cuenta de Google, sin contraseñas nuevas.",
     "google": "Entrar con Google",
-    "cancelled": "No se completó el inicio de sesión.",
+    "cancelled": "Has cancelado el inicio de sesión con Google.",
     "failed": "No se completó el inicio de sesión.",
     "retryHint": "Puedes volver a intentarlo cuando quieras.",
     "privacy": "Qué datos guardamos"

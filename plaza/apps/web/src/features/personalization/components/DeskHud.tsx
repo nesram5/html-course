@@ -138,6 +138,10 @@ export function DeskHud({
             deskId={decorating}
             decor={desks[decorating]?.decor ?? null}
             catalog={catalog.data ?? []}
+            catalogState={catalog.isPending ? 'loading' : catalog.isError ? 'error' : 'ready'}
+            onRetryCatalog={() => {
+              void catalog.refetch();
+            }}
             saving={save.isPending}
             office={office}
             onClose={() => {

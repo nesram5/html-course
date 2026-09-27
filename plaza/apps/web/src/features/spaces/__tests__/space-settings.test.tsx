@@ -47,6 +47,7 @@ function settingsApi(overrides: Parameters<typeof mockApi>[0] = {}) {
       },
     },
     'GET /api/spaces/space-1/bans': { body: { bans: [] } },
+    'GET /api/map-templates': { body: { templates: [] } },
     'POST /api/spaces/space-1/invite-link': () => {
       inviteUrl = NEW_URL;
       return { body: { url: NEW_URL } };
@@ -72,6 +73,20 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
 
     expect(await navigator.clipboard.readText()).toBe(OLD_URL);
     expect(await screen.findByText('Enlace copiado.')).toBeInTheDocument();
+  });
+
+  it('opened with #salas (the room card link), scrolls to the rooms and focuses their heading', async () => {
+    settingsApi();
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    renderApp({ route: '/spaces/space-1/settings#salas' });
+
+    const heading = await screen.findByRole('heading', { name: 'Salas de reunión' });
+
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    expect(scrolled).toHaveBeenCalledOnce();
   });
 
   it('regenerates the link only after confirming', async () => {

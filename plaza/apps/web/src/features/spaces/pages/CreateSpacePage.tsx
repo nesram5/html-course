@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { UserMenu } from '@/features/auth';
+import { PageLoading, UserMenu } from '@/features/auth';
+import { LoadError } from '@/shared/ui';
 
 import { CreateSpaceForm } from '../components/CreateSpaceForm';
 import { RoomsSettings } from '../components/RoomsSettings';
@@ -12,7 +13,17 @@ import { useSpace } from '../hooks/useSpaces';
 function RoomsStep({ spaceId }: { spaceId: string }) {
   const { t } = useTranslation('spaces');
   const space = useSpace(spaceId);
-  if (!space.isSuccess) return null;
+  if (space.isPending) return <PageLoading />;
+  if (space.isError) {
+    return (
+      <LoadError
+        error={space.error}
+        onRetry={() => {
+          void space.refetch();
+        }}
+      />
+    );
+  }
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl font-semibold">{t('wizard.roomsTitle')}</h2>

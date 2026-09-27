@@ -89,7 +89,7 @@ export function StatusMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-white hover:bg-white/10"
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         onClick={() => {
           if (!open) setOfferNotifications(canAskNotifications());
           setOpen((value) => !value);
