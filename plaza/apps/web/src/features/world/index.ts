@@ -1,4 +1,8 @@
+import { WEB_PATHS } from '@plaza/shared';
+import { createElement } from 'react';
 import type { RouteObject } from 'react-router';
+
+import { RequireAuth, RequireAvatar } from '@/features/auth';
 
 import { SpacePage } from './components/SpacePage';
 import es from './i18n/es.json';
@@ -10,7 +14,17 @@ import es from './i18n/es.json';
  */
 
 /** Routes of the feature, mounted by `app/routes.tsx` inside the root layout. */
-export const worldRoutes: RouteObject[] = [{ path: 's/:slug', Component: SpacePage }];
+export const worldRoutes: RouteObject[] = [
+  {
+    // Signed in (back to `/s/:slug` after the login) and with an avatar (first-time picker).
+    path: WEB_PATHS.space,
+    element: createElement(
+      RequireAuth,
+      null,
+      createElement(RequireAvatar, null, createElement(SpacePage)),
+    ),
+  },
+];
 
 /** i18n namespace `world` (texts in `./i18n/es.json`). */
 export const worldMessages = { es } as const;

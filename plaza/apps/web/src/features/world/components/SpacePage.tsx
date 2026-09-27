@@ -1,29 +1,32 @@
+import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
+import { useAvatars, useSession } from '@/features/auth';
+import { useEnterSpace } from '@/features/spaces';
 import { errorMessageKey } from '@/shared/api';
 
 import { avatarUrl, loadWorldAssets } from '../api/assets';
-import { enterSpace, fetchMe, worldKeys } from '../api/space-api';
+import { worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
 import { useWorldStore } from '../store/world-store';
 import { WorldCanvas } from './WorldCanvas';
 import { WorldToolbar } from './WorldToolbar';
 
-/** `/s/:slug`: the office of a space (E3). */
+/**
+ * `/s/:slug`: the office of a space (E3). Mounted inside `RequireAuth` + `RequireAvatar`, so the
+ * session is there and the avatar is chosen. Entering by slug joins by allowed domain (E2-S4).
+ */
 export function SpacePage() {
   const { t } = useTranslation('world');
   const { t: tc } = useTranslation();
   const { slug = '' } = useParams();
 
-  const space = useQuery({
-    queryKey: worldKeys.space(slug),
-    queryFn: ({ signal }) => enterSpace(slug, signal),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-  const me = useQuery({ queryKey: worldKeys.me(), queryFn: ({ signal }) => fetchMe(signal) });
+  const space = useEnterSpace(slug);
+  const { user } = useSession();
+  const avatars = useAvatars();
   const detail = space.data?.space;
   const assets = useQuery({
     queryKey: worldKeys.assets(detail?.mapTemplateId ?? '', detail?.themeId ?? ''),
@@ -35,7 +38,7 @@ export function SpacePage() {
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
   useEffect(installWorldDebug, []);
 
-  const failed = [space, me, assets].find((query) => query.isError);
+  const failed = [space, assets].find((query) => query.isError);
   if (failed !== undefined) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col justify-center gap-4 p-8 text-center">
@@ -48,23 +51,24 @@ export function SpacePage() {
             type="button"
             className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
             onClick={() => {
-              for (const query of [space, me, assets]) if (query.isError) void query.refetch();
+              for (const query of [space, assets]) if (query.isError) void query.refetch();
             }}
           >
             {t('page.retry')}
           </button>
           <Link
-            to="/"
+            to={WEB_PATHS.spaces}
             className="rounded-md px-4 py-2 font-medium text-brand-700 hover:bg-brand-50"
           >
-            {t('page.backHome')}
+            {t('page.backToSpaces')}
           </Link>
         </div>
       </main>
     );
   }
 
-  if (detail === undefined || me.data === undefined || assets.data === undefined) {
+  // The avatar catalog only gives the sprite URL; if it fails, the conventional path is used.
+  if (detail === undefined || user === null || assets.data === undefined || avatars.isPending) {
     return (
       <main className="grid min-h-full place-items-center p-8">
         <p role="status" className="text-slate-600">
@@ -76,6 +80,9 @@ export function SpacePage() {
 
   const { map, theme } = assets.data;
   const roomName = map.rooms.find((room) => room.areaId === roomId)?.name;
+  const sprite =
+    avatars.data?.find((avatar) => avatar.id === user.avatarId)?.spriteUrl ??
+    avatarUrl(user.avatarId);
 
   return (
     <main className="flex h-screen flex-col bg-slate-900">
@@ -87,7 +94,7 @@ export function SpacePage() {
           </p>
         </div>
         <Link
-          to="/"
+          to={WEB_PATHS.spaces}
           className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-white/10"
         >
           {t('page.leave')}
@@ -97,8 +104,8 @@ export function SpacePage() {
         <WorldCanvas
           map={map}
           theme={theme}
-          displayName={me.data.displayName}
-          avatarUrl={avatarUrl(me.data.avatarId)}
+          displayName={user.displayName}
+          avatarUrl={sprite}
           label={t('canvas.label', { space: detail.name })}
         />
         <div className="absolute right-3 bottom-3">

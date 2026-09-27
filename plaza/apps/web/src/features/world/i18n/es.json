@@ -3,7 +3,7 @@
     "loading": "Entrando en el espacio…",
     "errorTitle": "No pudimos abrir este espacio",
     "retry": "Reintentar",
-    "backHome": "Volver al inicio",
+    "backToSpaces": "Volver a mis espacios",
     "leave": "Salir",
     "hallway": "En el pasillo",
     "inRoom": "En {{name}}"

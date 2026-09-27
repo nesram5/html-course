@@ -9,7 +9,7 @@ They talk through two objects only (architecture §6):
 | `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center` (React → scene), `local:step` (scene → E4 client) |
 
 ```text
-SpacePage (/s/:slug) ── TanStack Query: enter space, /api/me, map.tmj → parseMap, theme.json
+SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
   └─ WorldCanvas ── lazy import('game/create-game') → Phaser.Game
        ├─ PreloadScene   below.png / above.png / avatar sheet → worldStore.load (progress, error)
        └─ WorldScene     below → room borders → AvatarSprite (+ name) → above; camera follow

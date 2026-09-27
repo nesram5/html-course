@@ -39,6 +39,16 @@ const ME = {
   pictureUrl: null,
 };
 
+const AVATARS = [
+  {
+    id: 'avatar-04',
+    name: 'Lavanda',
+    spriteUrl: '/assets/maps/avatars/lavanda.png',
+    frameWidth: 32,
+    frameHeight: 32,
+  },
+];
+
 const TMJ = {
   type: 'map',
   orientation: 'orthogonal',
@@ -91,6 +101,7 @@ function mockServer(overrides: Record<string, () => Response> = {}) {
     if (url === '/api/spaces/by-slug/acme/enter')
       return Promise.resolve(json({ space: SPACE, joined: false }));
     if (url === '/api/me') return Promise.resolve(json({ user: ME }));
+    if (url === '/api/avatars') return Promise.resolve(json({ avatars: AVATARS }));
     if (url.endsWith('/map.tmj')) return Promise.resolve(json(TMJ));
     if (url.endsWith('/night/theme.json')) {
       return Promise.resolve(
@@ -121,7 +132,7 @@ describe('SpacePage (/s/:slug)', () => {
 
     renderApp({ route: '/s/acme' });
 
-    expect(screen.getByRole('status')).toHaveTextContent('Entrando en el espacio…');
+    expect(await screen.findByText('Entrando en el espacio…')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Acme' })).toBeInTheDocument();
     await waitFor(() => {
       expect(games).toHaveLength(1);
@@ -130,7 +141,8 @@ describe('SpacePage (/s/:slug)', () => {
     expect(enter?.[1]).toMatchObject({ method: 'POST', headers: { 'x-plaza-client': 'web' } });
     const [options] = games;
     expect(options?.displayName).toBe('Ana');
-    expect(options?.avatarUrl).toBe('/assets/maps/avatars/avatar-04.png');
+    // The sprite comes from the avatar catalog (GET /api/avatars).
+    expect(options?.avatarUrl).toBe('/assets/maps/avatars/lavanda.png');
     expect(options?.map).toMatchObject({ width: 4, height: 3, spawns: [{ x: 1, y: 1 }] });
     expect(options?.theme).toMatchObject({
       themeId: 'night',
@@ -165,7 +177,50 @@ describe('SpacePage (/s/:slug)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No lo encontramos.');
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toHaveAttribute(
+      'href',
+      '/spaces',
+    );
     expect(games).toHaveLength(0);
+  });
+
+  it('sends people without a session to the login page and back to the space', async () => {
+    mockServer({
+      '/api/me': () => json({ error: { code: 'UNAUTHORIZED', message: 'no' } }, 401),
+    });
+
+    const { router } = renderApp({ route: '/s/acme' });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/login');
+    });
+    expect(router.state.location.search).toBe('?next=%2Fs%2Facme');
+    expect(games).toHaveLength(0);
+  });
+
+  it('asks for an avatar the first time before drawing the office', async () => {
+    mockServer({
+      '/api/me': () => json({ user: { ...ME, avatarChosen: false } }),
+    });
+
+    renderApp({ route: '/s/acme' });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Elige cómo te verán en el mapa' }),
+    ).toBeInTheDocument();
+    expect(games).toHaveLength(0);
+  });
+
+  it('falls back to the conventional sprite path when the avatar catalog fails', async () => {
+    mockServer({
+      '/api/avatars': () => json({ error: { code: 'INTERNAL', message: 'no' } }, 500),
+    });
+
+    renderApp({ route: '/s/acme' });
+
+    await waitFor(() => {
+      expect(games).toHaveLength(1);
+    });
+    expect(games[0]?.avatarUrl).toBe('/assets/maps/avatars/avatar-04.png');
   });
 });

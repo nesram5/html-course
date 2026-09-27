@@ -3,7 +3,7 @@
   "home": {
     "title": "Plaza",
     "tagline": "La oficina virtual de tu equipo: acércate a alguien y hablad, como en la oficina.",
-    "comingSoon": "Muy pronto podrás entrar con tu cuenta de Google y crear el espacio de tu equipo.",
+    "cta": "Entrar a mis espacios",
     "serverStatus": {
       "label": "Estado del servidor",
       "checking": "Comprobando…",

@@ -38,6 +38,10 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Plaza' })).toBeInTheDocument();
     expect(screen.getByText(/La oficina virtual de tu equipo/)).toBeInTheDocument();
     expect(await screen.findByText('Conectado (versión 0.1.0)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Entrar a mis espacios' })).toHaveAttribute(
+      'href',
+      '/spaces',
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/health',
       expect.objectContaining({ credentials: 'include' }),
