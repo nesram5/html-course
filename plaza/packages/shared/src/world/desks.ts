@@ -80,3 +80,32 @@ export function deskSpawnCandidates(map: DeskSpawnMap, desk: TileRect): Tile[] {
 export function deskSpawnTile(map: DeskSpawnMap, desk: TileRect): Tile | null {
   return deskSpawnCandidates(map, desk)[0] ?? null;
 }
+
+/** Distance in tiles from a coordinate to a span `[start, start + size)` (0 inside it). */
+function axisGap(value: number, start: number, size: number): number {
+  if (value < start) return start - value;
+  if (value >= start + size) return value - (start + size - 1);
+  return 0;
+}
+
+/**
+ * The desk a person standing on `tile` can interact with (`X` → "Reclamar este escritorio",
+ * "Decorar", E9-S2): a desk touching the tile, diagonals included. When several do, one sharing
+ * a side with the tile wins over one touching only by a corner, then the first in map order.
+ * `null` when no desk is next to the tile.
+ */
+export function deskNear<D extends TileRect>(desks: readonly D[], tile: Tile): D | null {
+  let best: D | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const desk of desks) {
+    const dx = axisGap(tile.x, desk.x, desk.width);
+    const dy = axisGap(tile.y, desk.y, desk.height);
+    if (Math.max(dx, dy) > 1) continue;
+    const score = dx + dy;
+    if (score < bestScore) {
+      best = desk;
+      bestScore = score;
+    }
+  }
+  return best;
+}
