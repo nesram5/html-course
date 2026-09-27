@@ -241,6 +241,26 @@ export class WorldService {
     this.#remove(runtime, userId);
   }
 
+  /**
+   * The runtime of the space this socket joined, and its person; `NOT_IN_SPACE` when the socket
+   * has not joined (or was replaced by a newer tab). Used by the presence and chat handlers.
+   */
+  joinedRuntime(socket: PlazaSocket): { runtime: SpaceRuntime; userId: string } {
+    const userId = socketUserId(socket);
+    const { spaceId } = socket.data;
+    const runtime = spaceId === undefined ? undefined : this.store.get(spaceId);
+    if (runtime?.socketOf(userId) !== socket.id) {
+      throw new AppError('NOT_IN_SPACE', 'Join the space first');
+    }
+    return { runtime, userId };
+  }
+
+  /** The live socket of a person in a space, `undefined` when not connected. */
+  socketOf(runtime: SpaceRuntime, userId: string): PlazaSocket | undefined {
+    const socketId = runtime.socketOf(userId);
+    return socketId === null ? undefined : this.deps.io.sockets.sockets.get(socketId);
+  }
+
   // ── player:move (E4-S3) ─────────────────────────────────────────────────
 
   /**
@@ -249,7 +269,7 @@ export class WorldService {
    * next tick. Entering a meeting room mutes the hallway media server-side (E6-S3).
    */
   move(socket: PlazaSocket, bucket: TokenBucket, move: PlayerMove): void {
-    const { runtime, userId } = this.#joinedRuntime(socket);
+    const { runtime, userId } = this.joinedRuntime(socket);
     const current = runtime.get(userId);
     if (current === undefined) throw new AppError('NOT_IN_SPACE');
     if (!bucket.tryTake()) {
@@ -356,16 +376,6 @@ export class WorldService {
     const space = await this.deps.spaces.spaceWithRooms(spaceId);
     const map = await this.deps.maps.worldMap(space.mapTemplateId);
     return new SpaceRuntime(spaceId, space.mapTemplateId, map);
-  }
-
-  #joinedRuntime(socket: PlazaSocket): { runtime: SpaceRuntime; userId: string } {
-    const userId = socketUserId(socket);
-    const { spaceId } = socket.data;
-    const runtime = spaceId === undefined ? undefined : this.store.get(spaceId);
-    if (runtime?.socketOf(userId) !== socket.id) {
-      throw new AppError('NOT_IN_SPACE', 'Join the space first');
-    }
-    return { runtime, userId };
   }
 
   /** The older tab of the same person: told why, then disconnected (E4-S1). */

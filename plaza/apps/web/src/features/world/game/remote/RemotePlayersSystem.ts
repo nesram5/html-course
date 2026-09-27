@@ -1,4 +1,4 @@
-import type { PublicPlayer, WorldDelta } from '@plaza/shared';
+import { effectivePresence, type PublicPlayer, type WorldDelta } from '@plaza/shared';
 import type * as Phaser from 'phaser';
 
 import { AvatarSprite } from '../sprites/AvatarSprite';
@@ -53,6 +53,11 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
     this.model.clear();
   }
 
+  /** The sprite of a player (locate, reactions), `undefined` when not drawn. */
+  spriteOf(userId: string): AvatarSprite | undefined {
+    return this.sprites.get(userId)?.sprite;
+  }
+
   /** Depth of the name label of a player (debug probe), `undefined` when not drawn. */
   labelDepth(userId: string): number | undefined {
     return this.sprites.get(userId)?.sprite.nameLabel.depth;
@@ -63,7 +68,8 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
       .setFigureVisible(false)
       .setOpacity(player.alpha)
       .setTilePosition(player.x, player.y)
-      .setMotion(player.dir, false);
+      .setMotion(player.dir, false)
+      .setPresence(effectivePresence(player.state));
     const entry: RemoteSprite = {
       sprite,
       avatarId: player.state.avatarId,
@@ -81,7 +87,8 @@ export class RemotePlayersSystem implements RemotePlayersRenderer {
     entry.sprite
       .setTilePosition(player.x, player.y)
       .setMotion(player.dir, player.moving)
-      .setOpacity(player.alpha);
+      .setOpacity(player.alpha)
+      .setPresence(effectivePresence(state));
     if (state.displayName !== entry.displayName) {
       entry.displayName = state.displayName;
       entry.sprite.setDisplayName(state.displayName);

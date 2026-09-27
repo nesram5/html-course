@@ -15,6 +15,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 
 import { createSpace, fetchWorldMap, health, joinSpace, signIn, type BotSession } from './api.js';
+import { JoinError, joinBots } from './join.js';
 import { LatencyTracker, summarize } from './stats.js';
 import { nextStep } from './walker.js';
 
@@ -69,6 +70,7 @@ class Bot {
   #stopping = false;
 
   constructor(
+    readonly index: number,
     readonly session: BotSession,
     private readonly client: Client,
     private readonly map: WorldMap,
@@ -95,7 +97,7 @@ class Bot {
 
   async join(spaceId: string): Promise<void> {
     const ack = await this.client.emitWithAck('space:join', { v: PROTOCOL_VERSION, spaceId });
-    if (!ack.ok) throw new Error(`space:join failed: ${ack.error.code}`);
+    if (!ack.ok) throw new JoinError(this.index + 1, ack.error.code);
     this.#x = ack.data.self.x;
     this.#y = ack.data.self.y;
   }
@@ -172,19 +174,24 @@ async function main(): Promise<void> {
     errors: 0,
     unexpectedDisconnects: 0,
   };
-  const bots: Bot[] = [];
-  for (const session of sessions) {
-    const bot = new Bot(session, await connect(url, session.cookie), map, tracker, counters);
-    await bot.join(space.spaceId);
-    bots.push(bot);
-  }
+  // A refused join (SPACE_FULL...) stops every bot and ends the run with exit code 1.
+  const bots = await joinBots(
+    sessions,
+    async (session, index) =>
+      new Bot(index, session, await connect(url, session.cookie), map, tracker, counters),
+    space.spaceId,
+  );
   print(`${String(bots.length)} bots in space ${space.spaceId}; walking…`);
 
   const started = performance.now();
-  for (const bot of bots) bot.walk(1000 / stepsPerSecond);
-  await sleep(durationS * 1000);
-  const serverHealth = await health(url);
-  for (const bot of bots) bot.stop();
+  let serverHealth: unknown;
+  try {
+    for (const bot of bots) bot.walk(1000 / stepsPerSecond);
+    await sleep(durationS * 1000);
+    serverHealth = await health(url);
+  } finally {
+    for (const bot of bots) bot.stop();
+  }
   const elapsedS = (performance.now() - started) / 1000;
 
   const latency = summarize(tracker.samples);
@@ -219,8 +226,13 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write(
-    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
-  );
+  // Every socket is closed by now, so setting the exit code is enough: the process ends.
+  const message =
+    error instanceof JoinError
+      ? error.message
+      : error instanceof Error
+        ? (error.stack ?? error.message)
+        : String(error);
+  process.stderr.write(`${message}\n`);
   process.exitCode = 1;
 });

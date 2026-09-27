@@ -4,7 +4,7 @@ import { systemTimers, type Timers } from '../../platform/timers.js';
 import type { PlazaModule } from '../types.js';
 import { WorldRepository } from './world.repository.js';
 import { WorldService } from './world.service.js';
-import { registerWorldSocket } from './world.socket.js';
+import { registerWorldSocket, type JoinRateLimit } from './world.socket.js';
 
 export { SpaceRuntime } from './space-runtime.js';
 export type { SpaceStateStore } from './space-state-store.js';
@@ -19,6 +19,8 @@ declare module '../types.js' {
 export interface WorldModuleOptions {
   /** Ticks, reconnection grace, runtime unload and move rate limit; tests pass `ManualTimers`. */
   timers?: Timers;
+  /** `space:join` rate limit per person (default 5 per 10 s). */
+  joinLimit?: JoinRateLimit;
 }
 
 /**
@@ -48,7 +50,7 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
           MAX_PLAYERS_PER_SPACE,
         ),
       });
-      registerWorldSocket(io, socketDeps, world, () => timers.now());
+      registerWorldSocket(io, socketDeps, world, () => timers.now(), options.joinLimit);
       spaces.notifier.onKick((spaceId, userId, reason) => {
         world.kicked(spaceId, userId, reason);
       });

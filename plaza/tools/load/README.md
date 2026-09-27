@@ -16,6 +16,10 @@ pnpm --filter @plaza/load load --url http://127.0.0.1:3201 --bots 50 --duration 
 Options: `--bots` (50), `--duration` seconds (60), `--steps-per-second` per bot (4; the server
 accepts 10), `--template` (`office-small@1`), `--url` (`http://localhost:3000`).
 
+If a bot cannot connect or its `space:join` is refused (`SPACE_FULL` when `--bots` is above the
+server's `MAX_PLAYERS_PER_SPACE`, `RATE_LIMITED`...), every bot is disconnected and the script exits
+with code 1 and a message such as `Bot 51 could not join: SPACE_FULL (...)`.
+
 ## Local baseline
 
 One process for the 50 bots and the compiled server on the same development VM (no network in

@@ -1,1 +1,40 @@
-{}
+{
+  "button": {
+    "text": "Chat",
+    "label": "Chat del espacio",
+    "unread_one": "Chat del espacio: {{count}} mensaje sin leer",
+    "unread_other": "Chat del espacio: {{count}} mensajes sin leer"
+  },
+  "panel": {
+    "title": "Chat del espacio",
+    "close": "Cerrar el chat",
+    "messages": "Mensajes",
+    "empty": "Todavía no hay mensajes. ¡Saluda al equipo!"
+  },
+  "input": {
+    "label": "Mensaje para todo el espacio",
+    "placeholder": "Escribe un mensaje…",
+    "send": "Enviar",
+    "tooLong": "El mensaje no puede superar {{max}} caracteres (tiene {{count}}).",
+    "empty": "Escribe algo antes de enviar.",
+    "counter": "{{count}} / {{max}}",
+    "failed": "No se pudo enviar: {{reason}}"
+  },
+  "author": {
+    "you": "Tú",
+    "deleted": "Usuario eliminado",
+    "unknown": "Alguien"
+  },
+  "reactions": {
+    "button": "Reaccionar",
+    "menu": "Reacciones (teclas 1 a 5)",
+    "item": "{{name}} (tecla {{key}})",
+    "names": {
+      "heart": "Corazón",
+      "thumbsUp": "Me gusta",
+      "party": "Fiesta",
+      "laugh": "Risa",
+      "wave": "Saludo"
+    }
+  }
+}

@@ -11,6 +11,10 @@ export interface AvatarProbe {
   alpha: number;
   moving: boolean;
   labelAboveArt: boolean;
+  /** Status dot (E7-S1). */
+  presence: 'available' | 'busy' | 'away';
+  /** Emoji over the avatar right now (E7-S4). */
+  reaction: string | null;
 }
 
 declare global {
@@ -20,6 +24,7 @@ declare global {
       liveGames(): number;
       listenerCount(): number;
       avatars(): AvatarProbe[];
+      cameraTarget(): string | null;
       fps(): number;
       realtime(): { connection: string; session: string };
       stress(count: number): void;

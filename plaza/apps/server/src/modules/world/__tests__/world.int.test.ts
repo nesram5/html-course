@@ -67,8 +67,12 @@ describe('world module: realtime multiplayer (E4)', () => {
     testApp = await buildTestApp({
       env: { MAX_PLAYERS_PER_SPACE: String(MAX_PLAYERS) },
       modules: [
-        ...modules.filter((module) => module.name !== 'world'),
-        createWorldModule({ timers }),
+        // `barrier()` re-joins all the time: no join rate limit here (see join-rate.int.test.ts).
+        ...modules.map((module) =>
+          module.name === 'world'
+            ? createWorldModule({ timers, joinLimit: { burst: 1_000_000, windowMs: 1000 } })
+            : module,
+        ),
         {
           name: 'capture-world',
           register({ services }) {

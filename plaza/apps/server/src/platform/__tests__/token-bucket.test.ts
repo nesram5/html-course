@@ -1,7 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
 import { InMemoryRealtimeMetrics } from '../metrics.js';
-import { TokenBucket } from '../token-bucket.js';
+import { KeyedTokenBuckets, TokenBucket } from '../token-bucket.js';
+
+describe('KeyedTokenBuckets', () => {
+  it('limits each key on its own and forgets keys once their bucket is full again', () => {
+    let now = 0;
+    const buckets = new KeyedTokenBuckets({ capacity: 2, refillPerSecond: 1, now: () => now });
+    expect([buckets.tryTake('a'), buckets.tryTake('a'), buckets.tryTake('a')]).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    expect(buckets.tryTake('b')).toBe(true);
+    expect(buckets.size).toBe(2);
+
+    now += 1000; // one token back for "a"
+    expect(buckets.tryTake('a')).toBe(true);
+    expect(buckets.tryTake('a')).toBe(false);
+
+    now += 2000; // both idle for the full refill time
+    expect(buckets.tryTake('c')).toBe(true);
+    expect(buckets.size).toBe(1);
+  });
+});
 
 describe('TokenBucket', () => {
   it('allows a burst up to capacity and refills over time', () => {

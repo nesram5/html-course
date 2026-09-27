@@ -15,6 +15,7 @@ import { installWorldDebug } from '../debug';
 import { useSpaceSession } from '../hooks/useSpaceSession';
 import { useWorldStore } from '../store/world-store';
 import { ConnectionBanner } from './ConnectionBanner';
+import { SpaceHud } from './SpaceHud';
 import { SessionNotice, SpaceNotice, isFinalError } from './SpaceNotice';
 import { WorldCanvas } from './WorldCanvas';
 import { WorldToolbar } from './WorldToolbar';
@@ -97,6 +98,7 @@ export function SpacePage() {
 
   const { map, theme } = assets.data;
   const roomName = map.rooms.find((room) => room.areaId === roomId)?.name;
+  const roomNames = Object.fromEntries(map.rooms.map((room) => [room.areaId, room.name]));
   const sprite = avatarUrls[user.avatarId] ?? avatarUrl(user.avatarId);
 
   return (
@@ -128,6 +130,8 @@ export function SpacePage() {
         <div className="absolute right-3 bottom-3">
           <WorldToolbar />
         </div>
+        {/* After the map controls: Tab goes canvas → map controls → bottom bar → panel. */}
+        <SpaceHud spaceId={detail.id} displayName={user.displayName} roomNames={roomNames} />
       </div>
     </main>
   );
