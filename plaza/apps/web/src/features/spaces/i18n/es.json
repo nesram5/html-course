@@ -51,7 +51,7 @@
   },
   "domain": {
     "title": "Dominio permitido",
-    "description": "Las personas con un email verificado de este dominio entran sin invitación.",
+    "description": "Las personas con una cuenta de Google Workspace de este dominio entran sin invitación. Una cuenta personal de Google con un email del dominio no basta.",
     "label": "Dominio",
     "placeholder": "empresa.com",
     "save": "Guardar dominio",
@@ -69,7 +69,11 @@
     "kickConfirm": "¿Expulsar a {{name}}? Perderá el acceso al instante.",
     "kicked": "{{name}} ya no es miembro del espacio.",
     "you": "(tú)",
-    "desk": "Escritorio"
+    "desk": "Escritorio",
+    "loading": "Cargando los miembros…",
+    "makeOwner": "Hacer administrador/a",
+    "makeOwnerConfirm": "¿Dar a {{name}} la administración del espacio? Podrá gestionar miembros, invitaciones, salas y estilo, y quitarte la administración.",
+    "madeOwner": "{{name}} ya administra el espacio."
   },
   "bans": {
     "title": "Personas expulsadas",
@@ -105,7 +109,7 @@
     "invalid": "Esta invitación ya no es válida",
     "invalidHint": "Pide a la administración del espacio un enlace nuevo.",
     "banned": "Ya no puedes unirte a este espacio",
-    "bannedHint": "La administración te expulsó. Si fue un error, pídele que te readmita.",
+    "bannedHint": "La administración te ha expulsado. Si ha sido un error, pídele que te readmita.",
     "goToSpaces": "Ir a mis espacios"
   },
   "confirm": {
@@ -114,6 +118,7 @@
   },
   "theme": {
     "title": "Estilo",
+    "loading": "Cargando los estilos…",
     "description": "Elige cómo se ve la oficina. La distribución no cambia y todas las personas conectadas verán el nuevo estilo al instante.",
     "membersReadOnly": "Este es el estilo de la oficina. Solo la administración del espacio puede cambiarlo.",
     "legend": "Estilos de la oficina",

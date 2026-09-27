@@ -2,6 +2,7 @@ import {
   MEDIA_TOKEN_REFRESH_MARGIN_SECONDS,
   MEDIA_TOKEN_TTL_SECONDS,
   type MediaTokenResponse,
+  type SpaceSnapshot,
 } from '@plaza/shared';
 import { DisconnectReason, RoomEvent, VideoQuality } from 'livekit-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -238,6 +239,20 @@ describe('MediaController: subscriptions follow media:peers (E5-S5)', () => {
     expect(eva.camera.quality).toBe(VideoQuality.HIGH);
   });
 
+  it('drops the enlarged video when that person is no longer a peer', async () => {
+    const lk = await started();
+    lk.addParticipant('user-2');
+    const eva = lk.addParticipant('user-3');
+    realtime.peers('user-2', 'user-3');
+    controller.focus('user-2');
+    expect(eva.camera.quality).toBe(VideoQuality.LOW);
+
+    realtime.peers('user-3');
+
+    expect(store.getState().focused).toBeNull();
+    expect(eva.camera.quality).toBe(VideoQuality.HIGH);
+  });
+
   it('records the time from media:peers to the first frame of each new peer', async () => {
     const lk = await started();
     lk.addParticipant('user-2');
@@ -291,7 +306,7 @@ describe('MediaController: reconnection and tokens', () => {
     expect(lk.remoteParticipants.get('user-2')?.subscribed).toBe(true);
   });
 
-  it('does not reconnect when removed from the room or replaced by another tab', async () => {
+  it('does not reconnect when removed from the room', async () => {
     const lk = await started();
 
     lk.emit(RoomEvent.Disconnected, DisconnectReason.PARTICIPANT_REMOVED);
@@ -299,6 +314,68 @@ describe('MediaController: reconnection and tokens', () => {
 
     expect(store.getState().connection).toBe('disconnected');
     expect(lk.connects).toHaveLength(1);
+  });
+
+  it('takes the media back after DUPLICATE_IDENTITY while this tab still holds the avatar', async () => {
+    // A stale tab that came back online reconnected to LiveKit on its own and bumped this one.
+    const lk = await started();
+
+    lk.emit(RoomEvent.Disconnected, DisconnectReason.DUPLICATE_IDENTITY);
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0]);
+    await settle();
+
+    expect(lk.connects).toHaveLength(2);
+    expect(store.getState().connection).toBe('connected');
+  });
+
+  it('reconnects fully only once this tab holds the avatar again (never from a replaced tab)', async () => {
+    let joined = true;
+    controller.stop();
+    controller = new MediaController({
+      realtime: realtime.asRealtime(),
+      events,
+      store,
+      fetchToken,
+      createRoom: (options) => {
+        const created = new FakeRoom(options);
+        rooms.push(created);
+        return created.asRoom();
+      },
+      now: () => clock,
+      realtimeJoined: () => joined,
+    });
+    const lk = await started();
+
+    // Offline: LiveKit gives up, and so does the realtime connection.
+    joined = false;
+    lk.emit(RoomEvent.Disconnected, DisconnectReason.SIGNAL_CLOSE);
+    realtime.reconnect();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(lk.connects).toHaveLength(1);
+
+    // The realtime join succeeds: this tab still holds the avatar.
+    joined = true;
+    events.emit('world:snapshot', {} as SpaceSnapshot);
+    await settle();
+
+    expect(lk.connects).toHaveLength(2);
+    expect(store.getState().connection).toBe('connected');
+  });
+
+  it('reconnects at once when the realtime connection comes back, even after a failed attempt', async () => {
+    const lk = await started();
+    lk.emit(RoomEvent.Disconnected, DisconnectReason.SIGNAL_CLOSE);
+    // Still offline at the first backoff attempt: the token request fails.
+    fetchToken.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0]);
+    await settle();
+    expect(lk.connects).toHaveLength(1);
+
+    realtime.reconnect();
+    await settle();
+
+    expect(lk.connects).toHaveLength(2);
+    expect(store.getState().connection).toBe('connected');
   });
 
   it('refreshes the 10 min token before it expires', async () => {
@@ -357,24 +434,34 @@ describe('MediaController: away and leaving', () => {
   it('mutes the microphone and camera while away and restores what was on', async () => {
     const lk = await started({ ...DEFAULT_MEDIA_CHOICES, videoEnabled: false });
 
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
 
-    events.emit('presence:self-away', { away: true }); // repeated: still remembers "mic on"
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: true }); // repeated: still remembers "mic on"
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, awayMuted: false });
     expect(lk.localParticipant.calls.at(-2)).toBe('mic:true');
   });
 
-  it('a manual toggle while away wins over the restore', async () => {
+  it('does not touch the media when the person is only idle (away without a hidden tab)', async () => {
+    // Ten minutes talking face to face in the hallway without mouse or keyboard (RN-05).
     await started();
+
     events.emit('presence:self-away', { away: true });
     await settle();
 
+    expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
+  });
+
+  it('a manual toggle while away wins over the restore', async () => {
+    await started();
+    events.emit('presence:self-hidden', { hidden: true });
+    await settle();
+
     await controller.setMicEnabled(true);
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
 
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: false, awayMuted: false });
@@ -406,17 +493,17 @@ describe('MediaController: away and leaving', () => {
     await started();
 
     events.emit('media:self-in-room', { inRoom: true });
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     events.emit('media:self-in-room', { inRoom: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, awayMuted: true });
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await vi.advanceTimersByTimeAsync(ROOM_EXIT_SETTLE_MS);
     expect(store.getState()).toMatchObject({ micOn: true, cameraOn: true, awayMuted: false });
 
-    events.emit('presence:self-away', { away: true });
+    events.emit('presence:self-hidden', { hidden: true });
     events.emit('media:self-in-room', { inRoom: true });
-    events.emit('presence:self-away', { away: false });
+    events.emit('presence:self-hidden', { hidden: false });
     await settle();
     expect(store.getState()).toMatchObject({ micOn: false, cameraOn: false, roomMuted: true });
     // A manual toggle neither turns anything on inside the room nor forgets what to restore.

@@ -102,6 +102,7 @@ describe('world module: realtime multiplayer (E4)', () => {
     testApp.media.mutes.length = 0;
     testApp.media.removals.length = 0;
     testApp.media.permissions.length = 0;
+    testApp.media.connected.clear();
     ana = await signIn(testApp.app, 'ana@acme.com', { displayName: 'Ana' });
     luis = await signIn(testApp.app, 'luis@acme.com', { displayName: 'Luis' });
     eva = await signIn(testApp.app, 'eva@acme.com', { displayName: 'Eva' });
@@ -322,6 +323,66 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(runtime().socketOf(ana.user.id)).toBe(second.client.id);
     });
 
+    it('an automatic rejoin of another tab never takes the avatar from the live one (E4-S6)', async () => {
+      // Tab A was replaced by tab B while A was offline (the kick never reached it); A comes
+      // back online and rejoins on its own.
+      const live = await open(ana);
+      const joined = await live.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-live-0001',
+        takeover: true,
+      });
+      expect(joined.ok).toBe(true);
+      const stale = await open(ana);
+
+      const rejoin = await stale.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-stale-0002',
+        takeover: false,
+      });
+
+      expect(rejoin).toMatchObject({ ok: false, error: { code: 'SESSION_REPLACED' } });
+      expect(inbox(live).kicked).toEqual([]);
+      expect(runtime().socketOf(ana.user.id)).toBe(live.id);
+
+      // "Usar Plaza aquí" in the stale tab is an explicit takeover: it does replace the live one.
+      const takeover = await stale.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-stale-0002',
+        takeover: true,
+      });
+      expect(takeover.ok).toBe(true);
+      await vi.waitFor(() => {
+        expect(inbox(live).kicked).toEqual([{ reason: 'SESSION_REPLACED' }]);
+      });
+      expect(runtime().socketOf(ana.user.id)).toBe(stale.id);
+    });
+
+    it('an automatic rejoin of the same tab replaces its own older connection', async () => {
+      // The server has not noticed yet that the old connection of this tab is gone.
+      const old = await open(ana);
+      await old.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-same-0001',
+        takeover: true,
+      });
+      const reconnected = await open(ana);
+
+      const rejoin = await reconnected.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-same-0001',
+        takeover: false,
+      });
+
+      expect(rejoin.ok).toBe(true);
+      expect(runtime().socketOf(ana.user.id)).toBe(reconnected.id);
+    });
+
     it('answers player:move before space:join with NOT_IN_SPACE', async () => {
       const client = await open(ana);
 
@@ -535,6 +596,25 @@ describe('world module: realtime multiplayer (E4)', () => {
       });
     });
 
+    it('a new connection in the hallway lifts a revoke the media server kept (app restarted)', async () => {
+      // The app restarted while Ana stood in a room: LiveKit, a separate process, still has her
+      // with canPublish=false, and the new runtime puts her in the hallway.
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      testApp.media.connected.set(`${target.roomName}:${target.identity}`, false);
+
+      await enter(ana);
+
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: true }]);
+      });
+      // Nothing to change when the media server already agrees.
+      testApp.media.permissions.length = 0;
+      const again = await open(ana);
+      await join(again);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(testApp.media.permissions).toEqual([]);
+    });
+
     it('issues media tokens that may not publish while the person is in a room (E6-S3)', async () => {
       const mover = await enter(ana);
       runtime().place(ana.user.id, { x: 27, y: 6 });
@@ -609,6 +689,28 @@ describe('world module: realtime multiplayer (E4)', () => {
       await vi.waitFor(() => {
         expect(testApp.media.permissions.at(-1)).toEqual({ ...target, canPublish: true });
       });
+    });
+
+    it('grants publishing back to someone who connects in the hallway without it', async () => {
+      // A token fetched inside a room (canPublish=false), used after walking out: the grant on
+      // exit found nobody connected to act on.
+      await enter(ana);
+      const target = { roomName: `space_${space.id}`, identity: ana.user.id };
+      const revokedJoin = await signedWebhook(keys, {
+        event: 'participant_joined',
+        room: { name: `space_${space.id}` },
+        participant: {
+          identity: ana.user.id,
+          permission: { canPublish: false, canSubscribe: true },
+        },
+      });
+
+      expect((await webhook(revokedJoin)).statusCode).toBe(204);
+
+      await vi.waitFor(() => {
+        expect(testApp.media.permissions).toEqual([{ ...target, canPublish: true }]);
+      });
+      expect(testApp.media.mutes).toEqual([]);
     });
 
     it('does nothing for people in the hallway, other events or rooms that are not a space', async () => {
@@ -830,12 +932,12 @@ describe('world module: realtime multiplayer (E4)', () => {
           moved: [],
           joined: [],
           left: [],
-          changed: [{ userId: luis.user.id, reconnecting: true }],
+          // The conversation ends with the connection (E5-S2): only the avatar waits.
+          changed: [{ ...alone(luis), reconnecting: true }, alone(ana)],
         },
       ]);
       expect(inbox(staying.client).deltas.slice(1)).toEqual([
-        // Ana's only hallway peer left: she is no longer in a conversation (E5-S2).
-        { moved: [], joined: [], left: [luis.user.id], changed: [alone(ana)] },
+        { moved: [], joined: [], left: [luis.user.id], changed: [] },
       ]);
       expect(runtime().has(luis.user.id)).toBe(false);
     });
@@ -901,7 +1003,11 @@ describe('world module: realtime multiplayer (E4)', () => {
           moved: [],
           joined: [],
           left: [],
-          changed: [{ userId: luis.user.id, reconnecting: false }],
+          // Back within reach of Ana: their conversation starts again (E5-S2).
+          changed: [
+            { userId: luis.user.id, reconnecting: false, inConversation: true },
+            { userId: ana.user.id, inConversation: true },
+          ],
         },
       ]);
     });

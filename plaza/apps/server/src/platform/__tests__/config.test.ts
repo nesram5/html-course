@@ -30,6 +30,11 @@ describe('loadConfig', () => {
     expect(config.realtime).toEqual({ maxPlayersPerSpace: null });
   });
 
+  it('reports the image tag as the version when the build sets PLAZA_VERSION', () => {
+    expect(loadConfig(testEnv({ PLAZA_VERSION: 'v0.3.0' })).version).toBe('v0.3.0');
+    expect(loadConfig(testEnv({ PLAZA_VERSION: '' })).version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
   it('reads an optional cap of people per space (tests and load tests)', () => {
     expect(loadConfig(testEnv({ MAX_PLAYERS_PER_SPACE: '2' })).realtime.maxPlayersPerSpace).toBe(2);
     expect(loadConfig(testEnv({ MAX_PLAYERS_PER_SPACE: '' })).realtime.maxPlayersPerSpace).toBe(

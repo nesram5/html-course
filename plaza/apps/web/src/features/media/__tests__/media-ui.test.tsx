@@ -316,23 +316,50 @@ describe('MediaControls inside a meeting room (E6-S2)', () => {
 
     const mic = await screen.findByRole('button', { name: 'Activar micrófono' });
     const camera = screen.getByRole('button', { name: 'Encender cámara' });
-    expect(mic).toBeDisabled();
-    expect(camera).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent(
+    // aria-disabled, not disabled: a focused button keeps the focus (WCAG 2.4.3).
+    expect(mic).toHaveAttribute('aria-disabled', 'true');
+    expect(camera).toHaveAttribute('aria-disabled', 'true');
+    expect(mic).toHaveAttribute(
+      'title',
       'En la sala tu micrófono y tu cámara de Plaza están apagados: la reunión es en Meet',
     );
+    await user.click(mic);
     await user.keyboard('{Control>}d{/Control}');
     expect(room().localParticipant.isMicrophoneEnabled).toBe(false);
 
     act(() => {
       events.emit('media:self-in-room', { inRoom: false });
     });
-    expect(await screen.findByRole('button', { name: 'Silenciar micrófono' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Apagar cámara' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Silenciar micrófono' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
+    expect(screen.getByRole('button', { name: 'Apagar cámara' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
+  });
+
+  it('keeps the focus on the microphone button when walking into a room', async () => {
+    await renderOffice();
+    const mic = await screen.findByRole('button', { name: 'Silenciar micrófono' });
+    mic.focus();
+
+    act(() => {
+      events.emit('media:self-in-room', { inRoom: true });
+    });
+
+    await screen.findByRole('button', { name: 'Activar micrófono' });
+    expect(document.activeElement).toBe(mic);
   });
 });
 
 describe('HallwayNotice (RN-12)', () => {
+  it('waits while the person is inside a meeting room (the room card takes the top)', () => {
+    const view = render(wrap(<HallwayNotice inRoom />));
+    expect(screen.queryByRole('note')).toBeNull();
+    view.rerender(wrap(<HallwayNotice inRoom={false} />));
+    expect(screen.getByRole('note')).toBeInTheDocument();
+  });
+
   it('warns on first use that the hallway is not private, until acknowledged', async () => {
     const user = userEvent.setup();
     const first = render(wrap(<HallwayNotice />));

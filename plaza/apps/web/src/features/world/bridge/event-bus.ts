@@ -37,17 +37,20 @@ export interface WorldEvents {
   'camera:locate': { readonly userId: string };
   /** A reaction (E7-S4): the emoji floats over the avatar of this person for 3 s. */
   'avatar:reaction': { readonly userId: string; readonly emoji: ReactionEmoji };
-  /**
-   * The local person became away (hidden tab, 10 min idle) or came back (RN-05). Emitted by the
-   * presence feature; the media feature mutes microphone and camera, remembering what was on,
-   * and restores exactly that when `away` is `false` again.
-   */
+  /** The local person became away (hidden tab, 10 min idle) or came back (RN-05). */
   'presence:self-away': { readonly away: boolean };
+  /**
+   * The tab of the local person was hidden or shown again (RN-05, RF-11). Emitted by the
+   * presence feature; the media feature mutes microphone and camera, remembering what was on,
+   * and restores exactly that when `hidden` is `false` again. Only a hidden tab mutes: 10 min
+   * without mouse or keyboard (someone talking face to face) only makes the person *Ausente*.
+   */
+  'presence:self-hidden': { readonly hidden: boolean };
   /**
    * The local person walked into a meeting room or back out to the hallway (E6-S2). Emitted by
    * the rooms feature; the media feature turns microphone and camera off while inside (the room
    * meets in Google Meet, and the server does not let them publish there, E6-S3) and restores
-   * exactly what was on when they walk out, unless they are still away (`presence:self-away`).
+   * exactly what was on when they walk out, unless their tab is hidden (`presence:self-hidden`).
    */
   'media:self-in-room': { readonly inRoom: boolean };
   /**

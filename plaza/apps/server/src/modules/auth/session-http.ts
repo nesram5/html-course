@@ -16,7 +16,7 @@ declare module 'fastify' {
   }
 }
 
-/** `plaza_sid`: `HttpOnly`, `Secure`, `SameSite=Lax`, 30 days sliding (architecture §11.1). */
+/** `__Host-plaza_sid`: `HttpOnly`, `Secure`, `SameSite=Lax`, 30 days sliding (architecture §11.1). */
 export function setSessionCookie(reply: FastifyReply, token: string): void {
   reply.setCookie(SESSION_COOKIE_NAME, token, {
     path: '/',

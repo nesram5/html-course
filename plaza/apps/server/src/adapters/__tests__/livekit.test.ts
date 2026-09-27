@@ -1,6 +1,7 @@
 import { MEDIA_TOKEN_TTL_SECONDS } from '@plaza/shared';
 import {
   ParticipantInfo,
+  ParticipantPermission,
   TokenVerifier,
   TrackInfo,
   TrackType,
@@ -21,11 +22,21 @@ class FakeRoomService implements LiveKitRoomService {
   readonly updated: { room: string; identity: string; options: unknown }[] = [];
   failWith: Error | null = null;
 
-  constructor(private readonly tracks: TrackInfo[]) {}
+  constructor(
+    private readonly tracks: TrackInfo[],
+    private readonly permission?: ParticipantPermission,
+  ) {}
 
   getParticipant: RoomServiceClient['getParticipant'] = (room, identity) => {
     if (this.failWith !== null) return Promise.reject(this.failWith);
-    return Promise.resolve(new ParticipantInfo({ identity, tracks: this.tracks, name: room }));
+    return Promise.resolve(
+      new ParticipantInfo({
+        identity,
+        tracks: this.tracks,
+        name: room,
+        ...(this.permission && { permission: this.permission }),
+      }),
+    );
   };
 
   mutePublishedTrack: RoomServiceClient['mutePublishedTrack'] = (
@@ -235,5 +246,39 @@ describe('LiveKitMediaProvider.setCanPublish (E6-S3)', () => {
     await expect(
       provider.setCanPublish({ roomName: 'space_abc', identity: 'user-1', canPublish: false }),
     ).rejects.toMatchObject({ code: 'MEDIA_PROVIDER_ERROR', httpStatus: 502 });
+  });
+});
+
+describe('LiveKitMediaProvider.participantCanPublish (E6-S3)', () => {
+  const target = { roomName: 'space_abc', identity: 'user-1' };
+
+  it('reports the permission the media server holds for the participant', async () => {
+    const revoked = new FakeRoomService([], new ParticipantPermission({ canPublish: false }));
+    const granted = new FakeRoomService([], new ParticipantPermission({ canPublish: true }));
+
+    expect(
+      await new LiveKitMediaProvider(config, { roomService: revoked }).participantCanPublish(
+        target,
+      ),
+    ).toBe(false);
+    expect(
+      await new LiveKitMediaProvider(config, { roomService: granted }).participantCanPublish(
+        target,
+      ),
+    ).toBe(true);
+  });
+
+  it('answers null when the participant is not connected, and reports other failures', async () => {
+    const absent = new FakeRoomService([]);
+    absent.failWith = new ServerError('ServerError', 'participant not found', 404, 'not_found');
+    const broken = new FakeRoomService([]);
+    broken.failWith = new Error('connect ECONNREFUSED');
+
+    expect(
+      await new LiveKitMediaProvider(config, { roomService: absent }).participantCanPublish(target),
+    ).toBeNull();
+    await expect(
+      new LiveKitMediaProvider(config, { roomService: broken }).participantCanPublish(target),
+    ).rejects.toMatchObject({ code: 'MEDIA_PROVIDER_ERROR' });
   });
 });

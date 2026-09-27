@@ -131,6 +131,23 @@ describe('PreJoin (E5-S4)', () => {
     expect(screen.getByRole('button', { name: 'Entrar' })).toHaveFocus();
   });
 
+  it('is a real modal: Tab stays inside and keys do not reach the map behind it', async () => {
+    const user = userEvent.setup();
+    const worldKeys = vi.fn();
+    window.addEventListener('keydown', worldKeys);
+    renderPreJoin();
+    const dialog = screen.getByRole('dialog', { name: 'Antes de entrar' });
+    await screen.findByRole('combobox', { name: 'Cámara' });
+
+    for (let i = 0; i < 12; i++) await user.tab();
+    await user.keyboard('{ArrowDown}{Escape}');
+
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    expect(worldKeys).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+    window.removeEventListener('keydown', worldKeys);
+  });
+
   it('switches the preview to another camera and releases the previous one', async () => {
     const user = userEvent.setup();
     renderPreJoin();

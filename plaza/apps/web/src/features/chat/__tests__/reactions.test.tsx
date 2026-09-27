@@ -32,6 +32,26 @@ describe('ReactionPicker (E7-S4)', () => {
     expect(screen.getByRole('button', { name: 'Reaccionar' })).toHaveFocus();
   });
 
+  it('moves with the arrows inside the toolbar and closes when Tab leaves it', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <ReactionPicker react={vi.fn()} />
+        <button type="button">Después</button>
+      </>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Reaccionar' }));
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('button', { name: 'Saludo (tecla 5)' })).toHaveFocus();
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    expect(screen.getByRole('button', { name: 'Me gusta (tecla 2)' })).toHaveFocus();
+    await user.tab();
+
+    expect(screen.queryByRole('toolbar')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Después' })).toHaveFocus();
+  });
+
   it('reacts with the keys 1 to 5, but not while typing or with modifiers', () => {
     const react = vi.fn();
     renderWithProviders(

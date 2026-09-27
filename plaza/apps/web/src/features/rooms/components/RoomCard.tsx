@@ -82,10 +82,10 @@ export function RoomCard({
       aria-label={t('card.label')}
       data-testid="room-card"
       data-room={roomId}
-      className="pointer-events-auto absolute top-3 left-1/2 z-10 flex w-max max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white/95 px-4 py-3 text-sm text-slate-800 shadow-lg"
+      className="pointer-events-auto absolute top-3 left-1/2 z-10 flex w-max max-w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white/95 px-4 py-3 text-sm text-slate-800 shadow-lg"
     >
       <span aria-hidden="true">📹</span>
-      <p role="status" className="font-medium">
+      <p className="font-medium">
         {t('card.inRoom', { name: roomName })}
         <span aria-hidden="true"> · </span>
         <span className="font-normal text-slate-600">{t('card.people', { count: people })}</span>

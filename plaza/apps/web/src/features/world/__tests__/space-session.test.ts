@@ -50,7 +50,14 @@ beforeEach(() => {
   events = new EventBus();
   world = createWorldStore();
   store = createSessionStore();
-  session = new SpaceSession({ spaceId: 'space-1', client, events, world, store });
+  session = new SpaceSession({
+    spaceId: 'space-1',
+    client,
+    events,
+    world,
+    store,
+    tabId: 'tab-test-1',
+  });
   snapshots = [];
   events.on('world:snapshot', (snapshot) => {
     snapshots.push(snapshot);
@@ -72,6 +79,8 @@ describe('SpaceSession: joining (E4-S1)', () => {
     expect(socket.lastAck('space:join').payload).toEqual({
       v: PROTOCOL_VERSION,
       spaceId: 'space-1',
+      tabId: 'tab-test-1',
+      takeover: true,
     });
     socket.lastAck('space:join').resolve({ ok: true, data: testSnapshot() });
     await flush();
@@ -234,6 +243,31 @@ describe('SpaceSession: reconnection (E4-S6)', () => {
     expect(joins()).toBe(2);
     expect(session.state).toEqual({ kind: 'joined' });
     expect(snapshots.at(-1)).toEqual(fresh);
+  });
+
+  it('rejoins without taking over, and steps aside when another tab holds the avatar', async () => {
+    await joined();
+
+    // Offline long enough for the person to open the space in another tab.
+    socket.drop();
+    socket.accept();
+    const rejoin = socket.lastAck('space:join');
+    expect(rejoin.payload).toEqual({
+      v: PROTOCOL_VERSION,
+      spaceId: 'space-1',
+      tabId: 'tab-test-1',
+      takeover: false,
+    });
+    rejoin.resolve({ ok: false, error: { code: 'SESSION_REPLACED', message: 'other tab' } });
+    await flush();
+
+    expect(session.state).toEqual({ kind: 'kicked', reason: 'SESSION_REPLACED' });
+    expect(socket.active).toBe(false);
+
+    // "Usar Plaza aquí": an explicit takeover.
+    session.retry();
+    socket.accept();
+    expect(socket.lastAck('space:join').payload).toMatchObject({ takeover: true });
   });
 
   it('ignores the answer of a join sent before the connection dropped', async () => {

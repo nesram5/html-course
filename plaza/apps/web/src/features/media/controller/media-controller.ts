@@ -40,20 +40,33 @@ export const PUBLISH_RETRY_MS = 1000;
 /** Publish failures in a row of one device before giving up on it and saying so. */
 export const PUBLISH_ATTEMPTS = 3;
 
-/** Disconnections after which reconnecting makes no sense. */
+/**
+ * Disconnections after which reconnecting makes no sense. `DUPLICATE_IDENTITY` (the same person
+ * connected from elsewhere) is not one of them: it may come from a stale tab that came back
+ * online and reconnected on its own. Every full reconnection waits until this tab holds the
+ * avatar in the space again (`realtimeJoined`), so the tab the person is using takes its media
+ * back, while a replaced tab never does (its office closes with `SESSION_REPLACED`).
+ */
 const FINAL_DISCONNECTS: ReadonlySet<DisconnectReason> = new Set([
   DisconnectReason.CLIENT_INITIATED,
-  // Removed from the space (kick) or the same person joined from another tab.
+  // Removed from the space (kick).
   DisconnectReason.PARTICIPANT_REMOVED,
-  DisconnectReason.DUPLICATE_IDENTITY,
   DisconnectReason.ROOM_DELETED,
 ]);
 
 export interface MediaControllerDeps {
   /** Source of `media:peers` and of realtime reconnections (the world `RealtimeClient`). */
   readonly realtime: Pick<RealtimeClient, 'on' | 'onConnect'>;
-  /** Source of `presence:self-away` and `media:self-in-room` (the world `EventBus`). */
+  /**
+   * Source of `presence:self-hidden`, `media:self-in-room` and `world:snapshot` (a realtime join
+   * of this tab) (the world `EventBus`).
+   */
   readonly events: Pick<EventBus, 'on'>;
+  /**
+   * `true` while this tab holds the person's avatar in the space (realtime connected and
+   * joined). Full reconnections to LiveKit wait for it; always `true` by default.
+   */
+  readonly realtimeJoined?: () => boolean;
   readonly store: MediaStore;
   readonly fetchToken: (spaceId: string) => Promise<MediaTokenResponse>;
   /** Builds the LiveKit room (tests pass a fake). */
@@ -134,8 +147,9 @@ class StaleRun extends Error {}
  *   reconnection; a `NOT_A_MEMBER` answer (removed from the space) ends the media.
  * - LiveKit resumes short cuts by itself; after a full disconnection it reconnects with a fresh
  *   token and backoff. Either way the last `media:peers` is applied again.
- * - `presence:self-away` and `media:self-in-room` turn the microphone and camera off and, once
- *   the person is neither away nor in a meeting room, restore exactly what was on. Inside a room
+ * - `presence:self-hidden` (hidden tab) and `media:self-in-room` turn the microphone and camera
+ *   off and, once the tab is visible and the person is not in a meeting room, restore exactly
+ *   what was on. Being idle for 10 min only changes the status (RN-05), never the media. Inside a room
  *   the server revokes the permission to publish (E6-S3): the restore waits until LiveKit grants
  *   it back and the person has stayed out of the room for {@link ROOM_EXIT_SETTLE_MS}; a
  *   publication LiveKit fails is published again, never taken for a device problem.
@@ -161,10 +175,12 @@ export class MediaController {
   #reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   #reconnectAttempt = 0;
   #reconnecting = false;
+  /** A full reconnection is waiting for this tab to join the space again (`world:snapshot`). */
+  #connectOnJoin = false;
   /** Wanted state of the local devices (what the person chose). */
   #wantMic = false;
   #wantCamera = false;
-  /** Why the devices are held off: away (E7) and / or in a meeting room (E6-S2). */
+  /** Why the devices are held off: hidden tab (E7) and / or in a meeting room (E6-S2). */
   #holds = { away: false, room: false };
   /** What was on before the first hold, restored when every hold is gone. */
   #restore: { mic: boolean; camera: boolean } | null = null;
@@ -204,8 +220,13 @@ export class MediaController {
       realtime.onConnect(() => {
         this.#onRealtimeReconnect(run);
       }),
-      events.on('presence:self-away', ({ away }) => {
-        this.#setHold('away', away);
+      events.on('world:snapshot', () => {
+        if (run !== this.#run || !this.#connectOnJoin) return;
+        this.#connectOnJoin = false;
+        void this.#connect(run);
+      }),
+      events.on('presence:self-hidden', ({ hidden }) => {
+        this.#setHold('away', hidden);
       }),
       events.on('media:self-in-room', ({ inRoom }) => {
         this.#setHold('room', inRoom);
@@ -242,6 +263,7 @@ export class MediaController {
     this.#publishFailures = { mic: 0, camera: 0 };
     this.#reconnectAttempt = 0;
     this.#reconnecting = false;
+    this.#connectOnJoin = false;
     this.#deps.store.getState().reset();
   }
 
@@ -406,17 +428,36 @@ export class MediaController {
     }
   }
 
-  /** The realtime socket (re)connected: fresh token, and reconnect now if media is down. */
+  /**
+   * The realtime socket (re)connected. Media down: reconnect now (with a fresh token) instead of
+   * waiting for the backoff, as soon as this tab is back in the space. Media up: fetch a fresh
+   * token for the next full reconnection.
+   */
   #onRealtimeReconnect(run: number): void {
-    if (run !== this.#run || this.#token === null) return;
-    // The first connection of the visit races with the first token: no need for another one.
-    if (!this.#reconnecting && this.#now() - this.#tokenAt < TOKEN_FRESH_MS) return;
-    void this.#refreshToken(run).then(() => {
-      if (run !== this.#run || !this.#reconnecting) return;
+    if (run !== this.#run) return;
+    if (this.#reconnecting) {
       if (this.#reconnectTimer !== null) clearTimeout(this.#reconnectTimer);
       this.#reconnectTimer = null;
+      this.#token = null;
+      this.#connectWhenJoined(run);
+      return;
+    }
+    // The first connection of the visit races with the first token: no need for another one.
+    if (this.#token === null || this.#now() - this.#tokenAt < TOKEN_FRESH_MS) return;
+    void this.#refreshToken(run);
+  }
+
+  /**
+   * Full reconnection, only while this tab holds the avatar: a tab replaced while it was offline
+   * must not take the media connection of the person's current tab (`DUPLICATE_IDENTITY`).
+   */
+  #connectWhenJoined(run: number): void {
+    if (this.#deps.realtimeJoined?.() ?? true) {
+      this.#connectOnJoin = false;
       void this.#connect(run);
-    });
+    } else {
+      this.#connectOnJoin = true;
+    }
   }
 
   #scheduleReconnect(run: number): void {
@@ -431,7 +472,7 @@ export class MediaController {
       if (run !== this.#run) return;
       // A token about to expire is replaced first.
       this.#token = null;
-      void this.#connect(run);
+      this.#connectWhenJoined(run);
     }, delay);
   }
 
@@ -442,6 +483,7 @@ export class MediaController {
   /** Media over for good (removed from the space): release everything, keep the state. */
   #end(): void {
     this.#run++;
+    this.#connectOnJoin = false;
     this.#clearTimers();
     const room = this.#room;
     this.#room = null;
@@ -542,8 +584,16 @@ export class MediaController {
       if (!next.has(userId)) this.#pendingFrames.delete(userId);
     }
     this.#peers = next;
-    this.#deps.store.getState().patch({ peers: [...next].sort() });
+    const { focused } = this.#deps.store.getState();
+    // An enlarged video whose person is no longer a peer has no tile to click any more: without
+    // this every other video would stay capped at the low layer.
+    const lostFocus = focused !== null && !next.has(focused);
+    this.#deps.store.getState().patch({
+      peers: [...next].sort(),
+      ...(lostFocus && { focused: null }),
+    });
     this.#applySubscriptions();
+    if (lostFocus) this.#applyVideoQuality();
   }
 
   /** Subscribes to every track of the peers and to nothing else (`autoSubscribe: false`). */

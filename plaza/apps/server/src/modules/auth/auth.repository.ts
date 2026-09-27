@@ -8,6 +8,8 @@ export interface IdentityUpsert {
   /** Used only when the user is created: later logins never overwrite the chosen name. */
   displayName: string;
   pictureUrl: string | null;
+  /** `hd` claim of this sign-in (lower case), or null for a personal Google account. */
+  hostedDomain: string | null;
 }
 
 export type SessionWithUser = Session & { user: User };
@@ -25,8 +27,13 @@ export class AuthRepository {
         email: input.email,
         displayName: input.displayName,
         pictureUrl: input.pictureUrl,
+        hostedDomain: input.hostedDomain,
       },
-      update: { email: input.email, pictureUrl: input.pictureUrl },
+      update: {
+        email: input.email,
+        pictureUrl: input.pictureUrl,
+        hostedDomain: input.hostedDomain,
+      },
     });
   }
 

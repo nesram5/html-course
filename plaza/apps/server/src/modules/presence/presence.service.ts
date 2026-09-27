@@ -1,6 +1,7 @@
 import type { PresenceStatus } from '@plaza/shared';
 
 import { AppError } from '../../platform/errors.js';
+import { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { PlazaSocket } from '../../platform/socket.js';
 import type { WorldService } from '../world/index.js';
 import type { PresenceRepository } from './presence.repository.js';
@@ -21,14 +22,23 @@ export interface PresenceServiceDeps {
  * `world:delta.changed` (the hallway media exclude busy people, RN-04).
  */
 export class PresenceService {
+  /** Status writes, one at a time per `spaceId:userId`, in the order they arrived. */
+  readonly #saves = new KeyedSerial();
+
   constructor(private readonly deps: PresenceServiceDeps) {}
 
-  /** `player:status`: available / busy, for everyone and for the next visits. */
+  /**
+   * `player:status`: available / busy, for everyone and for the next visits. The runtime takes
+   * it at once (synchronously, so the last request wins, like the client's menu), and the
+   * writes are queued per person: two quick changes can never end in the opposite order in the
+   * runtime or in the database.
+   */
   async setStatus(socket: PlazaSocket, status: PresenceStatus): Promise<void> {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
-    await this.deps.repository.saveStatus(runtime.spaceId, userId, status);
-    // The person may have left while saving.
-    if (runtime.has(userId)) runtime.update(userId, { status });
+    runtime.update(userId, { status });
+    await this.#saves.run(`${runtime.spaceId}:${userId}`, () =>
+      this.deps.repository.saveStatus(runtime.spaceId, userId, status),
+    );
   }
 
   /** `player:away`: hidden tab or inactivity (RN-05). Not persisted. */

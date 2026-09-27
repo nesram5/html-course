@@ -30,13 +30,13 @@ export function ReactionPicker({ react = defaultReact }: ReactionPickerProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const firstRef = useRef<HTMLButtonElement>(null);
+  const itemsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   useReactionKeys(react);
 
   useEffect(() => {
     if (!open) return undefined;
-    firstRef.current?.focus();
+    itemsRef.current[0]?.focus();
     const onPointerDown = (event: PointerEvent) => {
       if (
         !(event.target instanceof Node) ||
@@ -51,24 +51,42 @@ export function ReactionPicker({ react = defaultReact }: ReactionPickerProps) {
     };
   }, [open]);
 
+  // Toolbar pattern: one Tab stop, arrows (and Home / End) move between the emojis.
   const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       setOpen(false);
       buttonRef.current?.focus();
+      return;
     }
+    const count = REACTION_EMOJIS.length;
+    const current = itemsRef.current.findIndex((item) => item === document.activeElement);
+    let next: number | null = null;
+    if (event.key === 'ArrowRight') next = (current + 1) % count;
+    else if (event.key === 'ArrowLeft') next = (current - 1 + count) % count;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = count - 1;
+    if (next === null) return;
+    event.preventDefault();
+    itemsRef.current[next]?.focus();
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+      // Tab out of the picker closes it, like a click outside.
+      onBlur={(event) => {
+        if (open && !event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
       <button
         ref={buttonRef}
         type="button"
-        aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         aria-label={t('reactions.button')}
-        className="rounded-md px-2 py-1.5 text-lg leading-none hover:bg-white/10"
+        className="rounded-md px-2 py-1.5 text-lg leading-none hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         onClick={() => {
           setOpen((value) => !value);
         }}
@@ -86,8 +104,11 @@ export function ReactionPicker({ react = defaultReact }: ReactionPickerProps) {
           {REACTION_EMOJIS.map((emoji, index) => (
             <button
               key={emoji}
-              ref={index === 0 ? firstRef : undefined}
+              ref={(element) => {
+                itemsRef.current[index] = element;
+              }}
               type="button"
+              tabIndex={index === 0 ? 0 : -1}
               aria-label={t('reactions.item', {
                 name: t(`reactions.names.${NAMES[emoji]}`),
                 key: index + 1,

@@ -4,6 +4,7 @@ import {
   apiPath,
   CONVERSATION_MIN_MS,
   PROTOCOL_VERSION,
+  SESSION_COOKIE_NAME,
   SpaceResponseSchema,
   TELEMETRY_RATE_PER_MINUTE,
   type ErrorResponse,
@@ -363,7 +364,10 @@ describe('per-session limits cannot be dodged with made-up cookies (E8-S2)', () 
           method: 'POST',
           url,
           // A different made-up session token each time: it used to get a budget of its own.
-          headers: { 'x-plaza-client': 'test', cookie: `plaza_sid=forged-${String(i)}` },
+          headers: {
+            'x-plaza-client': 'test',
+            cookie: `${SESSION_COOKIE_NAME}=forged-${String(i)}`,
+          },
           payload: { samples: [], message: 'x' },
         });
         statuses.push(response.statusCode);

@@ -91,7 +91,7 @@ test.describe('access to a space (E1-S3, E2-S4, E2-S6)', () => {
 
     // space:kicked (E4): out of the office at once, with an explanation.
     await expect(page).toHaveURL(/\/spaces$/);
-    await expect(page.getByText('Te han quitado de este espacio.')).toBeVisible();
+    await expect(page.getByText('Te han expulsado de este espacio.')).toBeVisible();
     await page.goto(`/s/${owner.space.slug}`);
 
     await expect(page.getByRole('alert')).toHaveText('No eres miembro de este espacio.');
@@ -142,7 +142,9 @@ test.describe('access to a space (E1-S3, E2-S4, E2-S6)', () => {
     await page.goto('/api/auth/google/callback?error=access_denied');
 
     await expect(page).toHaveURL(/\/login\?error=cancelled&next=%2Fspaces%2Fnew$/);
-    await expect(page.getByRole('alert')).toContainText('No se completó el inicio de sesión.');
+    await expect(page.getByRole('alert')).toContainText(
+      'Has cancelado el inicio de sesión con Google.',
+    );
     await expect(page.getByRole('link', { name: 'Entrar con Google' })).toHaveAttribute(
       'href',
       '/api/auth/google?next=%2Fspaces%2Fnew',

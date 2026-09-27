@@ -77,11 +77,14 @@ export async function buildApp(
   });
 
   // CSRF defence (architecture §11.1): SameSite=Lax cookie + mandatory custom header.
+  // Decided on the MATCHED route (Fastify routes before `onRequest`), never on the raw URL: the
+  // router percent-decodes the path, so `/%61pi/...` reaches `/api/...` handlers while a raw
+  // `startsWith('/api/')` test would let it through without the header.
   app.addHook('onRequest', (request, _reply, done) => {
+    const route = request.routeOptions.url;
     const missingHeader =
       STATE_CHANGING_METHODS.has(request.method) &&
-      request.url.startsWith('/api/') &&
-      !CSRF_EXEMPT_PATHS.has(request.url) &&
+      !(route !== undefined && CSRF_EXEMPT_PATHS.has(route)) &&
       request.headers[CLIENT_HEADER] === undefined;
     done(missingHeader ? new AppError('FORBIDDEN', 'Missing X-Plaza-Client header') : undefined);
   });

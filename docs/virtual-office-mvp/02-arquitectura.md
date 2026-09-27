@@ -274,7 +274,7 @@ Un estilo es una **piel** sobre la misma geometría: cambia el arte, nunca las c
 packages/maps/templates/<id>/
 ├── map.tmj                      # única fuente de la geometría
 └── themes/
-    ├── pixel/                   # generado desde las capas de tiles con tmxrasterizer en el build
+    ├── pixel/                   # generado desde las capas de tiles (generador propio de @plaza/maps, en lugar de tmxrasterizer)
     │   ├── below.png  above.png  thumbnail.png  theme.json
     └── watercolor/              # arte pintado sobre la misma base
         ├── below.png  above.png  thumbnail.png  theme.json   # theme.json: name, author, license
@@ -395,8 +395,8 @@ sequenceDiagram
 | Tema | Decisión |
 |---|---|
 | Login | OAuth 2.0 *authorization code* + PKCE + `state` con `@fastify/oauth2`; `id_token` verificado con `google-auth-library` (audiencia, emisor, caducidad). *Scopes*: `openid email profile`. |
-| Sesión | Cookie `plaza_sid` con token aleatorio de 32 bytes; en BD se guarda su hash. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
-| Dominio | Si el espacio tiene `allowedDomain`, se comprueba el claim `hd`/`email_verified` del `id_token`. |
+| Sesión | Cookie `__Host-plaza_sid` (el prefijo impide que otro subdominio la plante) con token aleatorio de 32 bytes; en BD se guarda su hash. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
+| Dominio | Si el espacio tiene `allowedDomain`, entra quien tiene el claim `hd` (guardado en `User.hostedDomain` en cada login) igual a ese dominio y `email_verified`; el dominio del e-mail no basta. |
 | CSRF | `SameSite=Lax` + cabecera `X-Plaza-Client` obligatoria en peticiones que modifican. |
 | Validación | zod en **todas** las entradas REST y de socket. |
 | Rate limit | *Token bucket* por socket para `player:move`, `chat:send`, `reaction`, `ring:send`. |

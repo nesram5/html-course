@@ -31,6 +31,8 @@
     "slotWith": "Hueco {{n}}: {{name}}",
     "clear": "Vaciar hueco {{n}}",
     "catalog": "Objetos para el hueco {{n}}",
+    "catalogLoading": "Cargando los objetos…",
+    "catalogError": "No se pudieron cargar los objetos.",
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "Tu escritorio está decorado.",

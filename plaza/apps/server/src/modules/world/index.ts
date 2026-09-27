@@ -56,9 +56,10 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
       });
       // Media tokens issued inside a meeting room do not allow publishing (E6-S3).
       media.trackMeetingRooms((spaceId, userId) => world.inMeetingRoom(spaceId, userId));
-      // Someone who connects to the media server from inside a room is isolated again (E6-S3).
-      media.onParticipantActive((spaceId, userId) => {
-        world.mediaParticipantActive(spaceId, userId);
+      // Someone who connects to the media server from inside a room is isolated again, and
+      // someone in the hallway who connects without the permission to publish gets it (E6-S3).
+      media.onParticipantActive((spaceId, userId, canPublish) => {
+        world.mediaParticipantActive(spaceId, userId, canPublish);
       });
       registerWorldSocket(io, socketDeps, world, () => timers.now(), options.joinLimit);
       registerDeskGoto(io, socketDeps, world, repository, () => timers.now());

@@ -184,10 +184,17 @@ test.describe('office personalization (E9)', () => {
     await menu.getByRole('button', { name: 'Reclamar este escritorio' }).click();
     await expect(luis.page.getByText('Este escritorio ya es tuyo.')).toBeVisible();
 
-    // Ana sees Luis's name over the desk.
+    // Ana sees Luis's name over the desk, and finds it from "Personas" (E9-S2).
     await expect
       .poll(async () => (await office(ana.page))?.desks)
       .toEqual([{ deskId, label: 'Luis', items: [] }]);
+    await ana.page
+      .getByRole('group', { name: 'Tus controles' })
+      .getByRole('button', { name: /Personas/ })
+      .click();
+    await ana.page.getByRole('button', { name: 'Ir al escritorio de Luis' }).click();
+    await expect.poll(async () => (await office(ana.page))?.shownDesk).toBe(deskId);
+    await ana.page.getByRole('button', { name: 'Cerrar la lista de personas' }).click();
 
     // Luis decorates it with the keyboard: X → "Decorar", a plant in slot 1, a lamp in slot 2.
     await luis.page.getByTestId('world-canvas').focus();

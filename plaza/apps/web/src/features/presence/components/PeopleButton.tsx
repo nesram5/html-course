@@ -28,7 +28,7 @@ export function PeopleButton({
       aria-expanded={expanded}
       aria-controls={expanded ? controls : undefined}
       aria-label={t('people.buttonLabel', { count })}
-      className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-white hover:bg-white/10 aria-expanded:bg-white/15"
+      className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-white hover:bg-white/10 aria-expanded:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       onClick={onToggle}
     >
       <span aria-hidden="true">👥</span>

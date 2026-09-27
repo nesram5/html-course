@@ -8,12 +8,14 @@ import { useTestLogin } from '../hooks/useSession';
 function TestLoginForm() {
   const { t } = useTranslation('auth');
   const emailId = useId();
+  const domainId = useId();
   const [email, setEmail] = useState('');
+  const [hostedDomain, setHostedDomain] = useState('');
   const login = useTestLogin();
 
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
-    login.mutate(email.trim());
+    login.mutate({ email: email.trim(), hostedDomain: hostedDomain.trim() });
   };
 
   return (
@@ -33,6 +35,18 @@ function TestLoginForm() {
         value={email}
         onChange={(event) => {
           setEmail(event.target.value);
+        }}
+        className="rounded-md border border-slate-300 px-3 py-2"
+      />
+      <label htmlFor={domainId} className="text-sm">
+        {t('testLogin.hostedDomain')}
+      </label>
+      <input
+        id={domainId}
+        type="text"
+        value={hostedDomain}
+        onChange={(event) => {
+          setHostedDomain(event.target.value);
         }}
         className="rounded-md border border-slate-300 px-3 py-2"
       />

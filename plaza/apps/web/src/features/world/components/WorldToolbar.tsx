@@ -39,7 +39,11 @@ export function WorldToolbar({ events = worldEvents, store = worldStore }: World
       >
         −
       </button>
-      <output aria-live="polite" className="min-w-12 text-center text-sm font-medium text-white">
+      <output
+        aria-live="polite"
+        // Its own dark pill: the map floor behind it can be as light as the text.
+        className="min-w-12 rounded-md bg-slate-900/85 px-2 py-1 text-center text-sm font-medium text-white"
+      >
         {t('toolbar.zoom', { zoom: zoom.toLocaleString('es-ES') })}
       </output>
       <button

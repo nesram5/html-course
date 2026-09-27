@@ -33,3 +33,11 @@ export type MembersResponse = z.infer<typeof MembersResponseSchema>;
  */
 export const MemberParamsSchema = z.object({ spaceId: IdSchema, userId: IdSchema });
 export type MemberParams = z.infer<typeof MemberParamsSchema>;
+
+/**
+ * `PATCH /api/spaces/:spaceId/members/:userId` (owner) → 204. `OWNER` hands the administration
+ * to a member too (so the creator can leave or delete their account, E8-S6); `MEMBER` takes it
+ * back from another owner. The last owner cannot stop being one → 409 `LAST_OWNER`.
+ */
+export const UpdateMemberBodySchema = z.object({ role: RoleSchema });
+export type UpdateMemberBody = z.infer<typeof UpdateMemberBodySchema>;

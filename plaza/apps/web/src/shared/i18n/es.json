@@ -1,5 +1,19 @@
 {
   "appName": "Plaza",
+  "docTitle": {
+    "login": "Entrar",
+    "spaces": "Mis espacios",
+    "newSpace": "Crear espacio",
+    "settings": "Ajustes de {{name}}",
+    "profile": "Mi perfil",
+    "join": "Invitación a {{name}}",
+    "invite": "Invitación",
+    "notFound": "Página no encontrada",
+    "privacy": "Tus datos",
+    "feedback": "Enviar comentarios",
+    "metrics": "Métricas",
+    "error": "Algo ha fallado"
+  },
   "home": {
     "title": "Plaza",
     "tagline": "La oficina virtual de tu equipo: acércate a alguien y hablad, como en la oficina.",
@@ -36,7 +50,7 @@
     "intro": "Plaza es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
     "stored": {
       "title": "Qué guardamos",
-      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil y el identificador de tu cuenta. También el nombre visible y el avatar que elijas.",
+      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil, el identificador de tu cuenta y, si es de Google Workspace, el dominio de tu empresa. También el nombre visible y el avatar que elijas.",
       "spaces": "Los espacios a los que perteneces: tu rol, el estado que elijas (Disponible u Ocupado), tu escritorio y su decoración.",
       "chat": "Los mensajes del chat de cada espacio (los últimos 100).",
       "feedback": "Los comentarios que nos envías desde la aplicación, con tu nombre y tu correo para poder responderte.",
@@ -60,7 +74,7 @@
     },
     "rights": {
       "title": "Tus derechos",
-      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil»: se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
+      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil» (si eres la única persona que administra un espacio con más miembros, antes pasa la administración a otra persona desde «Miembros»): se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
       "profile": "Ir a Mi perfil",
       "feedback": "Escribir al equipo de Plaza"
     }

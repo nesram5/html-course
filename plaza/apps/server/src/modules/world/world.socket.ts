@@ -52,7 +52,10 @@ export function registerWorldSocket(
         if (!joins.tryTake(socketUserId(socket))) {
           throw new AppError('RATE_LIMITED', 'Too many space:join, wait a few seconds');
         }
-        return world.join(socket, payload.spaceId);
+        return world.join(socket, payload.spaceId, {
+          ...(payload.tabId !== undefined && { tabId: payload.tabId }),
+          takeover: payload.takeover ?? true,
+        });
       }),
     );
     socket.on(

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  canAskNotificationPermission,
   requestNotificationPermissionOnce,
   showRingAlert,
   type RingAlertEnv,
@@ -108,5 +109,12 @@ describe('requestNotificationPermissionOnce', () => {
     requestNotificationPermissionOnce(env('granted'));
     requestNotificationPermissionOnce(env('denied'));
     expect(FakeNotification.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('can ask only while the browser supports it and the person has not decided', () => {
+    expect(canAskNotificationPermission(env('default'))).toBe(true);
+    expect(canAskNotificationPermission(env('granted'))).toBe(false);
+    expect(canAskNotificationPermission(env('denied'))).toBe(false);
+    expect(canAskNotificationPermission({ focusWindow: () => undefined })).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { scrubString } from '@plaza/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import { pino, type LoggerOptions } from 'pino';
 
@@ -23,9 +24,13 @@ export const REDACTED_PATHS = [
   '*.password',
 ];
 
-/** Strips the query string: OAuth callbacks carry one-time codes in it. */
-function pathOnly(url: string | undefined): string | undefined {
-  return url?.split('?')[0];
+/**
+ * Strips the query string (OAuth callbacks carry one-time codes in it) and redacts secrets in
+ * the path: invite links carry their long-lived token (`/api/join/<token>`, security review).
+ */
+export function loggedUrl(url: string | undefined): string | undefined {
+  const path = url?.split('?')[0];
+  return path === undefined ? undefined : scrubString(path);
 }
 
 export function loggerOptions(
@@ -37,7 +42,7 @@ export function loggerOptions(
     redact: { paths: REDACTED_PATHS, censor: '[redacted]' },
     serializers: {
       req(req: { method?: string; url?: string; id?: string }) {
-        return { id: req.id, method: req.method, url: pathOnly(req.url) };
+        return { id: req.id, method: req.method, url: loggedUrl(req.url) };
       },
     },
     ...(config.env === 'development'

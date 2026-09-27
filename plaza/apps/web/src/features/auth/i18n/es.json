@@ -4,7 +4,7 @@
     "title": "Entra en Plaza",
     "subtitle": "La oficina virtual de tu equipo. Entra con tu cuenta de Google, sin contraseñas nuevas.",
     "google": "Entrar con Google",
-    "cancelled": "No se completó el inicio de sesión.",
+    "cancelled": "Has cancelado el inicio de sesión con Google.",
     "failed": "No se completó el inicio de sesión.",
     "retryHint": "Puedes volver a intentarlo cuando quieras.",
     "privacy": "Qué datos guardamos"
@@ -12,6 +12,7 @@
   "testLogin": {
     "title": "Entrada de prueba (solo desarrollo)",
     "email": "Email de prueba",
+    "hostedDomain": "Dominio de Google Workspace (opcional, vacío = cuenta personal)",
     "submit": "Entrar como prueba"
   },
   "menu": {
@@ -50,14 +51,14 @@
     "blocked_one": "Todavía no puedes borrar tu cuenta: eres la única persona administradora de un espacio con más miembros.",
     "blocked_other": "Todavía no puedes borrar tu cuenta: eres la única persona administradora de {{count}} espacios con más miembros.",
     "blockedSpace": "Ajustes de «{{name}}»",
-    "blockedHint": "Sin ti, nadie podría gestionarlos. Expulsa antes al resto de miembros desde los ajustes (el espacio se borrará con tu cuenta) o escríbenos desde «Enviar comentarios» para pasar la administración a otra persona.",
+    "blockedHint": "Sin ti, nadie podría gestionarlos. Antes, en «Miembros» de sus ajustes, pulsa «Hacer administrador/a» en otra persona (o expulsa al resto de miembros: el espacio se borrará con tu cuenta).",
     "open": "Borrar mi cuenta…",
     "previewFailed": "No se pudo comprobar si puedes borrar tu cuenta. Recarga la página.",
     "confirmTitle": "¿Borrar tu cuenta para siempre?",
     "confirmText": "Saldrás de todos tus espacios y se borrarán tus datos. Tus mensajes del chat aparecerán como «Usuario eliminado».",
     "spacesDeleted_one": "También se borrará este espacio, en el que no hay nadie más:",
     "spacesDeleted_other": "También se borrarán estos {{count}} espacios, en los que no hay nadie más:",
-    "soleOwner": "Ahora eres la única persona administradora de un espacio con más miembros. Revisa tus espacios e inténtalo de nuevo.",
+    "soleOwner": "Ahora eres la única persona administradora de un espacio con más miembros. Haz administrador/a a otra persona en sus ajustes e inténtalo de nuevo.",
     "cancel": "Cancelar",
     "confirm": "Sí, borrar mi cuenta",
     "deleting": "Borrando…",

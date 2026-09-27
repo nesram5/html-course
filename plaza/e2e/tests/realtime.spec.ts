@@ -168,14 +168,14 @@ test.describe('multiplayer in real time (E4)', () => {
     await openOffice(second, space.slug);
 
     await expect(
-      ana.page.getByRole('heading', { name: 'Abriste Plaza en otra pestaña' }),
+      ana.page.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
     ).toBeVisible();
     await ana.page.getByRole('button', { name: 'Usar Plaza aquí' }).click();
     await expect(ana.page.getByTestId('world-canvas')).toHaveAttribute('data-tile-x', /^\d+$/, {
       timeout: 30_000,
     });
     await expect(
-      second.getByRole('heading', { name: 'Abriste Plaza en otra pestaña' }),
+      second.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
     ).toBeVisible();
 
     await ana.context.close();
@@ -215,7 +215,7 @@ test.describe('multiplayer in real time (E4)', () => {
     expect(removed.status()).toBe(204);
 
     await expect(luis.page).toHaveURL(/\/spaces$/);
-    await expect(luis.page.getByText('Te han quitado de este espacio.')).toBeVisible();
+    await expect(luis.page.getByText('Te han expulsado de este espacio.')).toBeVisible();
     // Ana sees Luis fade out and disappear.
     await expect.poll(async () => remoteAvatar(ana.page, luis.userId)).toBeUndefined();
 

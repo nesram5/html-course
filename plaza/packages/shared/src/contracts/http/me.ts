@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { DISPLAY_NAME_MAX_LEN } from '../../constants.js';
-import { AvatarIdSchema, IdSchema } from './common.js';
+import { AvatarIdSchema, IdSchema, nameSchema } from './common.js';
 
-export const DisplayNameSchema = z.string().trim().min(1).max(DISPLAY_NAME_MAX_LEN);
+export const DisplayNameSchema = nameSchema(DISPLAY_NAME_MAX_LEN);
 
 /** The signed-in user (`GET /api/me`). */
 export const MeSchema = z.object({

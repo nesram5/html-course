@@ -8,6 +8,7 @@ import { useEscapeKey } from '@/shared/ui';
 import { sendChatMessage } from '../hooks/useChatSession';
 import { chatStore, useChatStore, type ChatStore } from '../store/chat-store';
 import { MessageBody } from './MessageBody';
+import { messageTime } from '../lib/message-time';
 
 export interface ChatPanelProps {
   /** Display name of each author by userId (connected people and members). */
@@ -17,8 +18,6 @@ export interface ChatPanelProps {
   readonly send?: (body: string) => Promise<void>;
   readonly store?: ChatStore;
 }
-
-const TIME = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' });
 
 /**
  * Chat of the space (E7-S3): the last 100 messages and a text box. While the box has the focus,
@@ -132,7 +131,7 @@ export function ChatPanel({
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-semibold">{authorOf(message)}</span>
               <time dateTime={message.createdAt} className="text-xs text-slate-600">
-                {TIME.format(new Date(message.createdAt))}
+                {messageTime(new Date(message.createdAt), (time) => t('panel.yesterday', { time }))}
               </time>
             </div>
             <MessageBody body={message.body} />

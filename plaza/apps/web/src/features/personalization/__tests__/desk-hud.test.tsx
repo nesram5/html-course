@@ -1,6 +1,7 @@
 import type { DecorItemDto, DeskState, WorldMap } from '@plaza/shared';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { I18nextProvider } from 'react-i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -10,11 +11,13 @@ import {
   type OfficeStore,
   type WorldStore,
 } from '@/features/world';
+import { createI18n } from '@/shared/i18n';
 import { useToastStore } from '@/shared/ui';
 import { mockApi, type MockRoute } from '@/test/mock-api';
 import { renderApp } from '@/test/render';
 
 import { DeskHud } from '../components/DeskHud';
+import { DeskMenu } from '../components/DeskMenu';
 
 const ITEMS = [
   'plant',
@@ -117,6 +120,18 @@ describe('desk menu with X (E9-S2)', () => {
     expect(within(menu).getByRole('button', { name: 'Reclamar este escritorio' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('gives the focus back to the hint button after a menu it opened closes', async () => {
+    setup();
+    const user = userEvent.setup();
+    standAt(2, 2);
+
+    await user.click(screen.getByRole('button', { name: /^Escritorio \(tecla X\)/ }));
+    expect(screen.getByRole('dialog', { name: 'Escritorio libre' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('button', { name: /^Escritorio \(tecla X\)/ })).toHaveFocus();
   });
 
   it('leaves X and its hint to a meeting room that outranks the desk (E6)', async () => {
@@ -316,5 +331,37 @@ describe('"Decorar" (E9-S3)', () => {
 
     expect(walked).not.toHaveBeenCalled();
     window.removeEventListener('keydown', walked);
+  });
+});
+
+describe('DeskMenu while a request is in flight', () => {
+  it('keeps the focus on the pressed button and ignores more presses', async () => {
+    const i18n = createI18n();
+    const onClaim = vi.fn();
+    const menu = (busy: boolean) => (
+      <I18nextProvider i18n={i18n}>
+        <DeskMenu
+          deskId="desk-1"
+          holder={null}
+          myDeskId={null}
+          busy={busy}
+          onClaim={onClaim}
+          onRelease={vi.fn()}
+          onDecorate={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </I18nextProvider>
+    );
+    const view = render(menu(false));
+    const claim = screen.getByRole('button', { name: 'Reclamar este escritorio' });
+    const user = userEvent.setup();
+    await user.click(claim);
+
+    view.rerender(menu(true));
+
+    expect(claim).toHaveAttribute('aria-disabled', 'true');
+    expect(document.activeElement).toBe(claim);
+    await user.click(claim);
+    expect(onClaim).toHaveBeenCalledOnce();
   });
 });

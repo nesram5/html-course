@@ -36,6 +36,13 @@ export interface MediaProvider {
    */
   setCanPublish(input: { roomName: string; identity: string; canPublish: boolean }): Promise<void>;
   /**
+   * The participant's current permission to publish as the media server reports it, or `null`
+   * when the person is not connected. The media server keeps it across restarts of the app, so
+   * the app reconciles with it instead of trusting its own memory (E6-S3). Rejects with
+   * `AppError('MEDIA_PROVIDER_ERROR')` when the media server fails.
+   */
+  participantCanPublish(input: { roomName: string; identity: string }): Promise<boolean | null>;
+  /**
    * Disconnects the participant from the media room (a member removed from the space, E2-S6):
    * they stop hearing and seeing the hallway at once, even with a misbehaving client. Resolves
    * without doing anything when the person is not connected; rejects with

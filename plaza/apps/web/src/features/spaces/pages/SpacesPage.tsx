@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { PageLoading, UserMenu } from '@/features/auth';
+import { LoadError } from '@/shared/ui';
 
 import { useMySpaces } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const primaryLink = 'rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700';
 
@@ -47,12 +49,23 @@ function SpaceCard({ space }: { space: SpaceSummaryDto }) {
 /** `/spaces`: my spaces with thumbnail and "Entrar", or an empty state (E2-S3). */
 export function SpacesPage() {
   const { t } = useTranslation('spaces');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.spaces'));
   const spaces = useMySpaces();
 
   let content;
   if (spaces.isPending) content = <PageLoading />;
-  else if (spaces.isError) content = <p role="alert">{t('list.loadError')}</p>;
-  else if (spaces.data.length === 0) {
+  else if (spaces.isError) {
+    content = (
+      <LoadError
+        error={spaces.error}
+        message={t('list.loadError')}
+        onRetry={() => {
+          void spaces.refetch();
+        }}
+      />
+    );
+  } else if (spaces.data.length === 0) {
     content = (
       <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-slate-300 p-8">
         <h2 className="text-xl font-semibold">{t('list.emptyTitle')}</h2>

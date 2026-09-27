@@ -15,13 +15,14 @@ import { installWorldDebug } from '../debug';
 import { useSpaceExtensions, type SpaceInfo } from '../extensions';
 import { useDecorCatalog } from '../hooks/useDecorCatalog';
 import { useSpaceSession } from '../hooks/useSpaceSession';
-import { sidePanelStore } from '../store/side-panel-store';
+import { sidePanelStore, useSidePanel } from '../store/side-panel-store';
 import { useWorldStore } from '../store/world-store';
 import { ConnectionBanner } from './ConnectionBanner';
 import { SessionNotice, SpaceNotice, isFinalError } from './SpaceNotice';
 import { SpaceBottomBar } from './SpaceBottomBar';
 import { WorldCanvas } from './WorldCanvas';
 import { WorldToolbar } from './WorldToolbar';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 /**
  * `/s/:slug`: the office of a space (E3, E4). Mounted inside `RequireAuth` + `RequireAvatar`, so
@@ -41,6 +42,7 @@ export function SpacePage() {
   const { user } = useSession();
   const avatars = useAvatars();
   const detail = space.data?.space;
+  useDocumentTitle(detail?.name ?? null);
   // The style the office is first drawn with. Later changes (E9-S1) are applied live by the
   // scene, so a refetched space with another theme must not reload (and redraw) the office.
   const [firstTheme, setFirstTheme] = useState<{ spaceId: string; themeId: string } | null>(null);
@@ -79,6 +81,7 @@ export function SpacePage() {
   const entered = gatesPassed >= gates.length;
   const { session, connection, retry } = useSpaceSession(entered ? detail?.id : undefined);
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
+  const sidePanelOpen = useSidePanel((state) => state.open !== null);
   const avatarUrls = useMemo(
     () => Object.fromEntries((avatars.data ?? []).map((avatar) => [avatar.id, avatar.spriteUrl])),
     [avatars.data],
@@ -173,7 +176,7 @@ export function SpacePage() {
         </div>
         <Link
           to={WEB_PATHS.spaces}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-white/10"
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           {t('page.leave')}
         </Link>
@@ -203,7 +206,10 @@ export function SpacePage() {
             {extensions.map(({ id, Overlay }) =>
               Overlay === undefined ? null : <Overlay key={id} space={info} />,
             )}
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-3">
+            {/* With a side panel open (w-80 at right-3), the bar stays left of it on wide screens. */}
+            <div
+              className={`pointer-events-none absolute bottom-3 left-3 flex flex-wrap items-end justify-between gap-3 ${sidePanelOpen ? 'right-3 md:right-[21.5rem]' : 'right-3'}`}
+            >
               <div className="pointer-events-auto">
                 <SpaceBottomBar space={info} avatar={avatar} extensions={extensions} />
               </div>

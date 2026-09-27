@@ -26,7 +26,7 @@ declare module '../types.js' {
 }
 
 /**
- * Auth module (E1-S2): Google sign-in (PKCE + state), `plaza_sid` sessions with sliding expiry,
+ * Auth module (E1-S2): Google sign-in (PKCE + state), `__Host-plaza_sid` sessions with sliding expiry,
  * logout, test sign-in and the Socket.IO handshake authentication. Must be registered before any
  * module with protected routes or socket handlers.
  */

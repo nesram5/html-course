@@ -1,4 +1,4 @@
-import { realtimeClient, worldEvents } from '@/features/world';
+import { realtimeClient, sessionStore, worldEvents } from '@/features/world';
 
 import { fetchMediaToken } from '../api/media-api';
 import { mediaStore } from '../store/media-store';
@@ -10,4 +10,6 @@ export const mediaController = new MediaController({
   events: worldEvents,
   store: mediaStore,
   fetchToken: fetchMediaToken,
+  realtimeJoined: () =>
+    realtimeClient.connected && sessionStore.getState().session.kind === 'joined',
 });

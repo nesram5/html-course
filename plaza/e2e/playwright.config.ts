@@ -1,11 +1,24 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 
 import { defineConfig, devices } from '@playwright/test';
 
-const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5173);
+/** `plaza/.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
+function dotEnv(): Record<string, string | undefined> {
+  const file = join(dirname(fileURLToPath(import.meta.url)), '..', '.env');
+  return existsSync(file) ? parseEnv(readFileSync(file, 'utf8')) : {};
+}
+
+// Not 5173/3000: a running `pnpm dev` would otherwise be reused, with its database and limits.
+const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5174);
 const API_PORT = Number(process.env.E2E_API_PORT ?? 3100);
 const DATABASE_URL =
-  process.env.E2E_DATABASE_URL ?? 'postgresql://postgres@localhost:5432/plaza_e2e';
+  process.env.E2E_DATABASE_URL ??
+  dotEnv().E2E_DATABASE_URL ??
+  'postgresql://postgres:postgres@localhost:5432/plaza_e2e';
 
 /**
  * E2E tests (standards §7): real server + Vite dev server, fake media devices and the

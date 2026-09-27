@@ -54,6 +54,32 @@ describe('StatusMenu (E7-S1)', () => {
     expect(onSelect).toHaveBeenCalledWith('busy');
   });
 
+  it('offers to turn call notifications on while the browser has not asked (E7-S5)', async () => {
+    const user = userEvent.setup();
+    const askNotifications = vi.fn();
+    let canAsk = true;
+    renderWithProviders(
+      <StatusMenu
+        store={store}
+        onSelect={vi.fn()}
+        canAskNotifications={() => canAsk}
+        askNotifications={askNotifications}
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Estado: Disponible' });
+
+    button.focus();
+    await user.keyboard('{Enter}{ArrowDown}{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: /Activar avisos de llamadas/ })).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    expect(askNotifications).toHaveBeenCalledOnce();
+    expect(button).toHaveFocus();
+    canAsk = false;
+    await user.click(button);
+    expect(screen.queryByRole('menuitem', { name: /Activar avisos/ })).toBeNull();
+  });
+
   it('shows "Ausente" while away, keeping the chosen status checked', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StatusMenu store={store} onSelect={vi.fn()} />);

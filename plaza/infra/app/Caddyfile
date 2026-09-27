@@ -12,10 +12,18 @@
 
 {
 	admin off
-	# Access logs go to stdout (docker compose logs web); the server logs every API request.
+	# Caddy's own logs go to stdout (docker compose logs web); no access log: the server logs every
+	# API request. Error entries (e.g. a 502 while the server restarts) carry the request URI:
+	# invite tokens (/join/<token>) and OAuth codes are redacted from it (security review H-15).
 	log {
 		output stdout
-		format json
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp "(/join/)[^/?#]+|([?&](?:code|state)=)[^&#]*" "${1}${2}[redacted]"
+				request>headers>Cookie delete
+			}
+		}
 	}
 }
 

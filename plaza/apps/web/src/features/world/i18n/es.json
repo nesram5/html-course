@@ -30,10 +30,10 @@
     "reconnecting": "Reconectando…"
   },
   "session": {
-    "replacedTitle": "Abriste Plaza en otra pestaña",
+    "replacedTitle": "Has abierto Plaza en otra pestaña",
     "replacedBody": "Solo puedes estar en la oficina desde una pestaña a la vez. Puedes seguir en la otra o usar Plaza aquí.",
     "takeOver": "Usar Plaza aquí",
-    "removed": "Te han quitado de este espacio.",
-    "accountDeleted": "Tu cuenta se ha eliminado."
+    "removed": "Te han expulsado de este espacio.",
+    "accountDeleted": "Tu cuenta se ha borrado."
   }
 }

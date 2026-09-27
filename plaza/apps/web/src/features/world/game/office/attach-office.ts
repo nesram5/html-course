@@ -25,6 +25,8 @@ export interface OfficeProbe {
   /** Styles loaded ahead, ready to be shown without loading. */
   readonly preloaded: readonly string[];
   readonly desks: readonly DeskProbe[];
+  /** Last desk the camera was asked to show (`camera:desk`, E9-S2), `null` if none. */
+  readonly shownDesk: string | null;
 }
 
 export interface OfficeDeps {
@@ -77,6 +79,7 @@ export function attachOffice(scene: Phaser.Scene, deps: OfficeDeps): OfficeAttac
     .catch((error: unknown) => {
       reportError(error);
     });
+  let shownDesk: string | null = null;
   const cleanups = [
     office.subscribe((state, previous) => {
       if (state.desks !== previous.desks || state.preview !== previous.preview) drawDesks();
@@ -85,6 +88,7 @@ export function attachOffice(scene: Phaser.Scene, deps: OfficeDeps): OfficeAttac
     events.on('camera:desk', ({ deskId }) => {
       const area = map.desks.find((desk) => desk.deskId === deskId);
       if (area === undefined) return;
+      shownDesk = deskId;
       const { x, y } = deskCenter(area);
       const camera = scene.cameras.main;
       camera.stopFollow();
@@ -99,6 +103,7 @@ export function attachOffice(scene: Phaser.Scene, deps: OfficeDeps): OfficeAttac
       styleTextures: scene.textures.getTextureKeys().filter((key) => key.startsWith('theme')),
       preloaded: loader.preloaded,
       desks: layer.probe(),
+      shownDesk,
     }),
     dispose: () => {
       for (const dispose of cleanups.splice(0)) dispose();

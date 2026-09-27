@@ -1,6 +1,7 @@
 import { RoomsSetupResultSchema, WEB_PATHS } from '@plaza/shared';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
 import { PageLoading, UserMenu } from '@/features/auth';
 import { errorMessageKey } from '@/shared/api';
@@ -12,6 +13,7 @@ import { MembersPanel } from '../components/MembersPanel';
 import { RoomsSettings } from '../components/RoomsSettings';
 import { ThemeSettings } from '../components/ThemeSettings';
 import { useSpace } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const RESULT_TONE = {
   created: 'border-green-300 bg-green-50',
@@ -29,7 +31,26 @@ export function SpaceSettingsPage() {
   const { spaceId = '' } = useParams();
   const [params] = useSearchParams();
   const space = useSpace(spaceId);
+  useDocumentTitle(
+    space.data === undefined ? null : tc('docTitle.settings', { name: space.data.name }),
+  );
   const roomsResult = RoomsSetupResultSchema.safeParse(params.get('rooms'));
+  const { hash } = useLocation();
+  const loaded = space.isSuccess;
+  // `#salas` (the room card's "Añadir el enlace de Meet"): the section only exists once the space
+  // is loaded, after the browser's own jump to the anchor. Scroll to it and move the focus to its
+  // heading.
+  useEffect(() => {
+    if (!loaded || hash.length < 2) return;
+    const section = document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (section === null) return;
+    section.scrollIntoView({ block: 'start' });
+    const heading = section.querySelector<HTMLElement>('h2');
+    if (heading !== null) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [loaded, hash]);
 
   let content;
   if (space.isPending) content = <PageLoading />;

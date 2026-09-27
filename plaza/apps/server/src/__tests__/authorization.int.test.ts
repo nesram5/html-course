@@ -78,6 +78,13 @@ const ENDPOINTS: Endpoint[] = [
     expected: { anonymous: 401, outsider: 404, member: 403, owner: 204 },
   },
   {
+    name: 'PATCH member role',
+    method: 'PATCH',
+    url: (s, ids) => apiPath(API_PATHS.member, { spaceId: s.id, userId: ids.member }),
+    payload: { role: 'OWNER' },
+    expected: { anonymous: 401, outsider: 404, member: 403, owner: 204 },
+  },
+  {
     name: 'GET rooms',
     method: 'GET',
     url: (s) => apiPath(API_PATHS.rooms, { spaceId: s.id }),

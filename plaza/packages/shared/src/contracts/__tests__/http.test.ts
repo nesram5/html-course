@@ -23,6 +23,10 @@ import {
   UpdateRoomBodySchema,
   UpdateSpaceBodySchema,
   apiPath,
+  ChatBodySchema,
+  DisplayNameSchema,
+  SpaceNameSchema,
+  stripNameControls,
 } from '../http/index.js';
 
 describe('apiPath', () => {
@@ -272,5 +276,20 @@ describe('telemetry, admin metrics and account deletion (E8-S6, E8-S7)', () => {
     };
     expect(MeResponseSchema.parse({ user: { ...user, isAdmin: true } }).user.isAdmin).toBe(true);
     expect(MeResponseSchema.parse({ user }).user.isAdmin).toBeUndefined();
+  });
+});
+
+describe('control characters in names and texts (a NUL reaches PostgreSQL as a 500)', () => {
+  it('refuses them with a validation error, keeping new lines in texts', () => {
+    expect(ChatBodySchema.safeParse('a\u0000').success).toBe(false);
+    expect(ChatBodySchema.safeParse('a\u001b[31m').success).toBe(false);
+    expect(ChatBodySchema.parse('línea 1\nlínea 2\tfin')).toBe('línea 1\nlínea 2\tfin');
+    expect(FeedbackBodySchema.safeParse({ message: 'x\u0000' }).success).toBe(false);
+    expect(DisplayNameSchema.safeParse('Ana\u0000').success).toBe(false);
+    expect(DisplayNameSchema.safeParse('Ana\nLuis').success).toBe(false);
+    expect(DisplayNameSchema.safeParse('\u202eanA').success).toBe(false);
+    expect(SpaceNameSchema.safeParse('Oficina\u0007').success).toBe(false);
+    expect(DisplayNameSchema.parse('  José Ñúñez ')).toBe('José Ñúñez');
+    expect(stripNameControls('A\u0000n\u202ea')).toBe('Ana');
   });
 });

@@ -83,6 +83,24 @@ describe('"Borrar mi cuenta" (E8-S6)', () => {
     expect(await db().space.count()).toBe(1);
   });
 
+  it('lets the only owner delete the account once another member administers the space', async () => {
+    const promote = await harness.testApp.app.inject({
+      method: 'PATCH',
+      url: apiPath(API_PATHS.member, { spaceId: acme.id, userId: luis.user.id }),
+      headers: ana.headers,
+      payload: { role: 'OWNER' },
+    });
+    expect(promote.statusCode).toBe(204);
+
+    const response = await deleteAccount(ana);
+
+    expect(response.statusCode).toBe(204);
+    // The space goes on, recorded as Luis's.
+    expect(await db().space.findUnique({ where: { id: acme.id } })).toMatchObject({
+      ownerId: luis.user.id,
+    });
+  });
+
   it('needs a session and the client header', async () => {
     expect((await deleteAccount(luis, { cookie: luis.cookie })).statusCode).toBe(403);
     expect((await deleteAccount(luis, { 'x-plaza-client': 'test' })).statusCode).toBe(401);

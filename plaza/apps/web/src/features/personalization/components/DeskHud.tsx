@@ -1,5 +1,5 @@
 import { deskNear, type WorldMap } from '@plaza/shared';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -62,6 +62,15 @@ export function DeskHud({
   const nearbyId = nearby?.deskId ?? null;
   const myDesk = deskOfUser({ desks }, selfUserId);
   const panelOpen = menuDeskId !== null || decorating !== null;
+  // Opened with the on-map hint button: it unmounts while the panel is open, so the dialog
+  // cannot give the focus back to it. Do it here once every panel is closed (or to the map).
+  const hintRef = useRef<HTMLButtonElement>(null);
+  const refocusHint = useRef(false);
+  useEffect(() => {
+    if (panelOpen || !refocusHint.current) return;
+    refocusHint.current = false;
+    (hintRef.current ?? document.querySelector<HTMLElement>('[role="application"]'))?.focus();
+  }, [panelOpen]);
 
   // Walking away from the desk closes its menu.
   if (menuDeskId !== null && menuDeskId !== nearbyId) setMenuDeskId(null);
@@ -86,11 +95,13 @@ export function DeskHud({
     <div className="pointer-events-none absolute inset-x-0 bottom-24 flex flex-col items-center gap-2 px-4">
       {nearbyId !== null && !panelOpen && (
         <button
+          ref={hintRef}
           type="button"
           aria-keyshortcuts={xOpensMenu ? 'x' : undefined}
           aria-label={xOpensMenu ? t('hint.deskLabel') : t('hint.deskLabelNoKey')}
           className="pointer-events-auto rounded-full bg-slate-900/85 px-4 py-1.5 text-sm text-white shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
           onClick={() => {
+            refocusHint.current = true;
             setMenuDeskId(nearbyId);
           }}
         >
@@ -138,6 +149,10 @@ export function DeskHud({
             deskId={decorating}
             decor={desks[decorating]?.decor ?? null}
             catalog={catalog.data ?? []}
+            catalogState={catalog.isPending ? 'loading' : catalog.isError ? 'error' : 'ready'}
+            onRetryCatalog={() => {
+              void catalog.refetch();
+            }}
             saving={save.isPending}
             office={office}
             onClose={() => {

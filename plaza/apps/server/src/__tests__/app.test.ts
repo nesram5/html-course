@@ -1,3 +1,4 @@
+import { API_PATHS, CLIENT_HEADER } from '@plaza/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../test/app.js';
@@ -22,6 +23,31 @@ describe('app platform plugins', () => {
       const response = await testApp.app.inject({ method: 'GET', url });
       expect(response.statusCode, url).toBe(404);
     }
+  });
+
+  it('requires X-Plaza-Client on state-changing requests, even with a percent-encoded /api prefix', async () => {
+    for (const url of [API_PATHS.authLogout, '/%61pi/auth/logout', '/%61%70%69/auth/logout']) {
+      const response = await testApp.app.inject({ method: 'POST', url });
+      expect(response.statusCode, url).toBe(403);
+      expect(response.json<{ error: { code: string } }>().error.code, url).toBe('FORBIDDEN');
+    }
+    // The encoded path does reach the /api route: only the missing header stops it above.
+    const withHeader = await testApp.app.inject({
+      method: 'POST',
+      url: '/%61pi/auth/logout',
+      headers: { [CLIENT_HEADER]: 'test' },
+    });
+    expect(withHeader.statusCode).toBe(204);
+  });
+
+  it('keeps the signed LiveKit webhook exempt from the X-Plaza-Client header', async () => {
+    const response = await testApp.app.inject({
+      method: 'POST',
+      url: API_PATHS.mediaWebhook,
+      headers: { 'content-type': 'application/webhook+json' },
+      payload: '{}',
+    });
+    expect(response.statusCode).not.toBe(403);
   });
 
   it('rate-limits HTTP requests with RATE_LIMITED', async () => {

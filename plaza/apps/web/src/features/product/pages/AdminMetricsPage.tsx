@@ -9,6 +9,7 @@ import { errorMessageKey, isApiError } from '@/shared/api';
 import { fetchAdminMetrics, productKeys } from '../api/product-api';
 import { MetricCards } from '../components/MetricCards';
 import { formatDecimal } from '../lib/metric-status';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 const PERIODS = [7, 14, 28, 56, 91] as const;
 const DATE = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' });
@@ -96,6 +97,7 @@ function FeedbackList({ metrics }: { readonly metrics: AdminMetricsResponse }) {
 export function AdminMetricsPage() {
   const { t } = useTranslation('product');
   const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.metrics'));
   const periodId = useId();
   const [days, setDays] = useState<number>(28);
   const metrics = useQuery({

@@ -3,16 +3,28 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { UserMenu } from '@/features/auth';
+import { PageLoading, UserMenu } from '@/features/auth';
+import { LoadError } from '@/shared/ui';
 
 import { CreateSpaceForm } from '../components/CreateSpaceForm';
 import { RoomsSettings } from '../components/RoomsSettings';
 import { useSpace } from '../hooks/useSpaces';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 function RoomsStep({ spaceId }: { spaceId: string }) {
   const { t } = useTranslation('spaces');
   const space = useSpace(spaceId);
-  if (!space.isSuccess) return null;
+  if (space.isPending) return <PageLoading />;
+  if (space.isError) {
+    return (
+      <LoadError
+        error={space.error}
+        onRetry={() => {
+          void space.refetch();
+        }}
+      />
+    );
+  }
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl font-semibold">{t('wizard.roomsTitle')}</h2>
@@ -37,6 +49,8 @@ function RoomsStep({ spaceId }: { spaceId: string }) {
 /** `/spaces/new`: two-step wizard — name and template, then "Crear salas de reunión" (E2-S3). */
 export function CreateSpacePage() {
   const { t } = useTranslation('spaces');
+  const { t: tc } = useTranslation();
+  useDocumentTitle(tc('docTitle.newSpace'));
   const [spaceId, setSpaceId] = useState<string | null>(null);
 
   return (

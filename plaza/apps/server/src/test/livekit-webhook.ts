@@ -6,7 +6,7 @@ import { AccessToken } from 'livekit-server-sdk';
 export interface WebhookEventJson {
   event: 'participant_joined' | 'track_published' | 'participant_left' | 'room_started';
   room: { name: string };
-  participant?: { identity: string };
+  participant?: { identity: string; permission?: { canPublish: boolean; canSubscribe: boolean } };
 }
 
 /**

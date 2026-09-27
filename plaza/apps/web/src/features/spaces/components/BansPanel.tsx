@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarSprite, useAvatars } from '@/features/auth';
-import { toast } from '@/shared/ui';
+import { LoadError, toast } from '@/shared/ui';
 
 import { useBans, useUnbanMember } from '../hooks/useSpaces';
 
@@ -21,6 +21,21 @@ export function BansPanel({ spaceId }: { spaceId: string }) {
   const unban = useUnbanMember(spaceId);
   const avatarById = new Map((avatars.data ?? []).map((avatar) => [avatar.id, avatar]));
 
+  if (bans.isError) {
+    return (
+      <section aria-labelledby={titleId} className="flex flex-col gap-3">
+        <h2 id={titleId} className="text-lg font-semibold">
+          {t('bans.title')}
+        </h2>
+        <LoadError
+          error={bans.error}
+          onRetry={() => {
+            void bans.refetch();
+          }}
+        />
+      </section>
+    );
+  }
   if (bans.data === undefined || bans.data.length === 0) return null;
 
   return (

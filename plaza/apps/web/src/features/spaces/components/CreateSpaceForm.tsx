@@ -3,6 +3,7 @@ import { useId, useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PageLoading } from '@/features/auth';
+import { LoadError } from '@/shared/ui';
 
 import { useCreateSpace, useMapTemplates } from '../hooks/useSpaces';
 import { FormError } from './FormError';
@@ -24,6 +25,16 @@ export function CreateSpaceForm({ onCreated }: { onCreated: (space: SpaceDetailD
   };
 
   if (templates.isPending) return <PageLoading />;
+  if (templates.isError) {
+    return (
+      <LoadError
+        error={templates.error}
+        onRetry={() => {
+          void templates.refetch();
+        }}
+      />
+    );
+  }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
@@ -45,11 +56,9 @@ export function CreateSpaceForm({ onCreated }: { onCreated: (space: SpaceDetailD
       </div>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 font-medium">{t('wizard.template')}</legend>
-        {(templates.data ?? []).length === 0 && (
-          <p className="text-slate-600">{t('wizard.noTemplates')}</p>
-        )}
+        {templates.data.length === 0 && <p className="text-slate-600">{t('wizard.noTemplates')}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
-          {(templates.data ?? []).map((template) => (
+          {templates.data.map((template) => (
             <label
               key={template.id}
               className={`flex cursor-pointer flex-col gap-2 rounded-lg border-2 p-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-600 ${

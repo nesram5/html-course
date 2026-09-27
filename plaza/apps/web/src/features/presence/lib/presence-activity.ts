@@ -15,6 +15,8 @@ export interface PresenceActivityOptions {
   readonly window: Window;
   /** Called every time the computed away flag changes. */
   readonly onChange: (away: boolean) => void;
+  /** Called every time the tab is hidden or shown (only this mutes the media, RN-05). */
+  readonly onHiddenChange?: (hidden: boolean) => void;
   /** Inactivity before becoming away (default `AWAY_IDLE_MS`, 10 min). */
   readonly idleMs?: number;
   readonly now?: () => number;
@@ -55,7 +57,10 @@ export class PresenceActivity {
       this.options.window.addEventListener(event, this.onActivity, { passive: true });
     }
     this.schedule(this.idleMs);
-    if (this.hidden) this.options.onChange(true);
+    if (this.hidden) {
+      this.options.onChange(true);
+      this.options.onHiddenChange?.(true);
+    }
   }
 
   stop(): void {
@@ -75,6 +80,7 @@ export class PresenceActivity {
     // Coming back to the tab is an interaction.
     if (!hidden) this.markActive();
     this.notify(before);
+    this.options.onHiddenChange?.(hidden);
   };
 
   private readonly onActivity = (): void => {

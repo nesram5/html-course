@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { useDocumentTitle } from '@/shared/lib/useDocumentTitle';
 
 export function NotFoundPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('docTitle.notFound'));
   return (
     <main className="mx-auto flex max-w-lg flex-col items-center gap-4 p-8 text-center">
       <p className="text-6xl font-bold text-brand-600" aria-hidden="true">

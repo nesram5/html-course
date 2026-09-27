@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { realtimeClient, sessionStore, worldEvents } from '@/features/world';
 import { toast } from '@/shared/ui';
 
-import { showRingAlert } from '../lib/ring-alert';
+import {
+  canAskNotificationPermission,
+  requestNotificationPermissionOnce,
+  showRingAlert,
+} from '../lib/ring-alert';
 import { PresenceSession } from '../realtime/presence-session';
 import { presenceStore } from '../store/presence-store';
 import { usePresenceActivity } from './usePresenceActivity';
@@ -38,7 +42,19 @@ export function usePresenceSession(spaceId: string): void {
       isJoined: () => sessionStore.getState().session.kind === 'joined',
       onRing: (ring) => {
         const title = translate.current('ring.incoming', { name: ring.fromDisplayName });
-        toast.info(title);
+        // Not asked yet: this ring gets no browser notification; offer to turn them on for the
+        // next ones (a click is the gesture browsers require).
+        toast.info(
+          title,
+          canAskNotificationPermission()
+            ? {
+                action: {
+                  label: translate.current('notifications.enable'),
+                  run: requestNotificationPermissionOnce,
+                },
+              }
+            : undefined,
+        );
         showRingAlert(ring, { title, body: translate.current('ring.notificationBody') });
       },
     });
@@ -55,5 +71,8 @@ export function usePresenceSession(spaceId: string): void {
   const onAway = useCallback((away: boolean) => {
     sessionRef.current?.setAway(away);
   }, []);
-  usePresenceActivity(onAway);
+  const onHidden = useCallback((hidden: boolean) => {
+    sessionRef.current?.setHidden(hidden);
+  }, []);
+  usePresenceActivity(onAway, { onHiddenChange: onHidden });
 }

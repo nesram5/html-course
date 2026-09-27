@@ -34,18 +34,29 @@ import type { WorldRepository } from './world.repository.js';
 
 /**
  * Disconnect reasons of a connection ended on purpose, not by the network: by the client
- * ("Salir", leaving the page) or by the server (logout; kicked and replaced sockets have left
- * the runtime already).
+ * ("Salir", leaving the office for another page of the app) or by the server (logout; kicked and
+ * replaced sockets have left the runtime already). Closing the tab or the browser is a
+ * "transport close", like a network cut: the avatar waits out the grace, but it has no hallway
+ * peers meanwhile (`computePeers` skips `reconnecting` people), so conversations end at once.
  */
 const DELIBERATE_REASONS: readonly DisconnectReason[] = [
   'client namespace disconnect',
   'server namespace disconnect',
 ];
 
+/** How a `space:join` treats another connection of the person that holds the avatar. */
+export interface JoinOptions {
+  /** The page visit of the joining connection (the same across its reconnections). */
+  readonly tabId?: string;
+  /** `false` for an automatic rejoin: another tab's live connection is not replaced. */
+  readonly takeover: boolean;
+}
+
 /** A `space:join` in progress; `kickedFor` is set when the person is removed meanwhile. */
 interface PendingJoin {
   readonly spaceId: string;
   readonly userId: string;
+  readonly options: JoinOptions;
   kickedFor: KickReason | null;
 }
 
@@ -138,12 +149,17 @@ export class WorldService {
   /**
    * Enters the space: members only (`NOT_A_MEMBER`), at most `maxPlayersPerSpace` people
    * (`SPACE_FULL`), one avatar per person (a second tab replaces the first with
-   * `space:kicked { SESSION_REPLACED }`), and someone reconnecting within the grace period gets
-   * their avatar back where it was (E4-S6). Returns the `space:snapshot`.
+   * `space:kicked { SESSION_REPLACED }`; an automatic rejoin never replaces another tab, see
+   * {@link JoinOptions}), and someone reconnecting within the grace period gets their avatar
+   * back where it was (E4-S6). Returns the `space:snapshot`.
    */
-  async join(socket: PlazaSocket, spaceId: string): Promise<SpaceSnapshot> {
+  async join(
+    socket: PlazaSocket,
+    spaceId: string,
+    options: JoinOptions = { takeover: true },
+  ): Promise<SpaceSnapshot> {
     const userId = socketUserId(socket);
-    const pending: PendingJoin = { spaceId, userId, kickedFor: null };
+    const pending: PendingJoin = { spaceId, userId, options, kickedFor: null };
     this.#pendingJoins.add(pending);
     try {
       return await this.#join(socket, pending);
@@ -205,8 +221,15 @@ export class WorldService {
       // A new visit of the map (not a reconnection nor a second tab): O2 days of use, O1 people.
       this.deps.events.record('space_joined', { spaceId, userId });
     }
-    if (previousSocketId !== socket.id) this.#hallway(runtime).resend(userId);
+    if (previousSocketId !== socket.id) {
+      this.#hallway(runtime).resend(userId);
+      // The media server keeps a participant's permission across app restarts and lost
+      // updates: a new connection brings it in line with where the person is (E6-S3).
+      this.#reconcilePublishing(spaceId, userId);
+    }
     socket.data.spaceId = spaceId;
+    if (pending.options.tabId === undefined) delete socket.data.tabId;
+    else socket.data.tabId = pending.options.tabId;
     void socket.join(spaceRoom(spaceId));
     this.#updateConnected(runtime);
 
@@ -243,6 +266,19 @@ export class WorldService {
     }
     if (!runtime.has(pending.userId) && runtime.size >= this.deps.maxPlayersPerSpace) {
       throw new AppError('SPACE_FULL', 'The space is full');
+    }
+    if (!pending.options.takeover) {
+      const holder = this.socketOf(runtime, pending.userId);
+      if (
+        holder !== undefined &&
+        holder.id !== socket.id &&
+        holder.connected &&
+        (pending.options.tabId === undefined || holder.data.tabId !== pending.options.tabId)
+      ) {
+        // The person is using the office in another tab: this one came back online after being
+        // replaced while offline (the kick never reached it). It must not take the office back.
+        throw new AppError('SESSION_REPLACED', 'Another tab holds the avatar');
+      }
     }
   }
 
@@ -325,22 +361,23 @@ export class WorldService {
   }
 
   /**
-   * The media server says the person connected or published (its webhook, E6-S3). Muting and
-   * revoking on room entry act only on a participant who is connected at that moment; someone
-   * who connects afterwards with a token fetched in the hallway could publish. If they stand in a
-   * meeting room now, their tracks are muted and publishing revoked again, in the same queue as
-   * every other permission change of the person, so it never overtakes a later exit.
+   * The media server says the person connected or published (its webhook, E6-S3), with the
+   * permission to publish it reports for them. Muting and revoking on room entry, and granting on
+   * exit, act only on a participant who is connected at that moment:
+   * - someone who connects afterwards from inside a meeting room with a token fetched in the
+   *   hallway could publish: their tracks are muted and publishing revoked again;
+   * - someone who connects in the hallway with a token fetched inside a room (or whose grant was
+   *   lost) could not publish: it is granted back.
+   * Both run in the same queue as every other permission change of the person, so they never
+   * overtake a later move.
    */
-  mediaParticipantActive(spaceId: string, userId: string): void {
+  mediaParticipantActive(spaceId: string, userId: string, canPublish?: boolean): void {
     const key = `${spaceId}:${userId}`;
     void this.#publishing.run(key, async () => {
-      if (!this.inMeetingRoom(spaceId, userId)) return;
-      this.#revoked.add(key);
-      try {
-        await this.deps.media.enterMeetingRoom(spaceId, userId);
-      } catch (error) {
-        this.deps.logger.warn({ err: error, spaceId }, 'World media isolation on connect failed');
-        this.deps.reporter.captureException(error, { spaceId });
+      if (this.inMeetingRoom(spaceId, userId)) {
+        await this.#applyPublishing(spaceId, userId, true);
+      } else if (canPublish === false) {
+        await this.#applyPublishing(spaceId, userId, false);
       }
     });
   }
@@ -355,29 +392,62 @@ export class WorldService {
     void this.#publishing.run(key, async () => {
       const inRoom = this.inMeetingRoom(spaceId, userId);
       if (inRoom === this.#revoked.has(key)) return;
-      if (inRoom) this.#revoked.add(key);
-      else this.#revoked.delete(key);
-      try {
-        await (inRoom
-          ? this.deps.media.enterMeetingRoom(spaceId, userId)
-          : this.deps.media.leaveMeetingRoom(spaceId, userId));
-      } catch (error) {
-        this.deps.logger.warn(
-          { err: error, spaceId },
-          `World ${inRoom ? 'media isolation on room entry' : 'media release on room exit'} failed`,
-        );
-        this.deps.reporter.captureException(error, { spaceId });
-      }
+      await this.#applyPublishing(spaceId, userId, inRoom);
     });
+  }
+
+  /**
+   * Like {@link #syncPublishing}, but compares with the permission the media server REPORTS,
+   * not with `#revoked`: that memory is empty after a restart of the app, while the media server
+   * still holds a revoked permission from before it.
+   */
+  #reconcilePublishing(spaceId: string, userId: string): void {
+    const key = `${spaceId}:${userId}`;
+    void this.#publishing.run(key, async () => {
+      let reported: boolean | null;
+      try {
+        reported = await this.deps.media.participantCanPublish(spaceId, userId);
+      } catch (error) {
+        this.deps.logger.warn({ err: error, spaceId }, 'World media permission check failed');
+        this.deps.reporter.captureException(error, { spaceId });
+        return;
+      }
+      if (reported === null) return;
+      const inRoom = this.inMeetingRoom(spaceId, userId);
+      if (reported === !inRoom) {
+        if (inRoom) this.#revoked.add(key);
+        else this.#revoked.delete(key);
+        return;
+      }
+      await this.#applyPublishing(spaceId, userId, inRoom);
+    });
+  }
+
+  /** Revokes (in a room) or grants (in the hallway) publishing; failures are only reported. */
+  async #applyPublishing(spaceId: string, userId: string, inRoom: boolean): Promise<void> {
+    const key = `${spaceId}:${userId}`;
+    if (inRoom) this.#revoked.add(key);
+    else this.#revoked.delete(key);
+    try {
+      await (inRoom
+        ? this.deps.media.enterMeetingRoom(spaceId, userId)
+        : this.deps.media.leaveMeetingRoom(spaceId, userId));
+    } catch (error) {
+      this.deps.logger.warn(
+        { err: error, spaceId },
+        `World ${inRoom ? 'media isolation in a room' : 'media release in the hallway'} failed`,
+      );
+      this.deps.reporter.captureException(error, { spaceId });
+    }
   }
 
   // ── Disconnection and kicks (E4-S6, E2-S6) ──────────────────────────────
 
   /**
-   * Connection lost: the avatar stays, flagged `reconnecting`, and leaves only if the person
-   * does not come back within {@link RECONNECT_GRACE_MS}. A deliberate leave (the client closed
-   * the socket itself: "Salir", leaving the page; or the server did: logout) is not a network
-   * cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
+   * Connection lost: the avatar stays, flagged `reconnecting` (out of every hallway conversation),
+   * and leaves only if the person does not come back within {@link RECONNECT_GRACE_MS}. A
+   * deliberate leave (the client closed the socket itself: "Salir"; or the server did: logout) is
+   * not a network cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
    */
   disconnected(socket: PlazaSocket, reason?: DisconnectReason): void {
     const { spaceId, userId } = socket.data;

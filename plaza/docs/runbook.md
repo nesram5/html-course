@@ -35,13 +35,13 @@ Carga de la beta: ~50 personas por espacio, hasta ~150 conectadas, conversacione
 (como máximo 8 _peers_, RN-07). Cada persona publica micro y cámara con _simulcast_ (180p y 360p
 sobre 540p) y solo recibe a sus _peers_; _dynacast_ deja de enviar las capas que nadie mira.
 
-| Recurso | Especificación                                                          |
-| ------- | ----------------------------------------------------------------------- |
-| Máquina | VM optimizada para cómputo, **4 vCPU**, 8 GB RAM, dedicada a LiveKit    |
-| Red     | IP pública, puerto ≥ 1 Gbps, **tráfico incluido ≥ 2 TB/mes**            |
-| Disco   | 20 GB (sistema, imágenes Docker y certificados; LiveKit no graba nada)  |
-| SO      | Ubuntu 24.04 LTS con Docker Engine y el _plugin_ `compose`              |
-| Coste   | ~20–40 US$/mes según proveedor (frente a ~240 US$/mes en LiveKit Cloud) |
+| Recurso | Especificación                                                                                                                                            |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Máquina | VM optimizada para cómputo, **4 vCPU**, 8 GB RAM, dedicada a LiveKit                                                                                      |
+| Red     | IP pública, puerto ≥ 1 Gbps, **tráfico incluido ≥ 5 TB/mes** (o sin límite; estimación en [load-test.md](./load-test.md#dimensionado-de-la-vm-de-medios)) |
+| Disco   | 20 GB (sistema, imágenes Docker y certificados; LiveKit no graba nada)                                                                                    |
+| SO      | Ubuntu 24.04 LTS con Docker Engine y el _plugin_ `compose`                                                                                                |
+| Coste   | ~20–40 US$/mes según proveedor (frente a ~240 US$/mes en LiveKit Cloud)                                                                                   |
 
 **Decisión de proveedor (rellenar al contratar):** proveedor ·
 tipo de máquina · región (la más cercana a los pilotos) · tráfico incluido · coste mensual real ·
@@ -116,12 +116,28 @@ Anotar cada actualización (fecha, versión, incidencias) al final de esta secci
 
 Solo se pierde el audio y el vídeo del pasillo; el mapa, el chat y las salas de Meet siguen.
 
-1. Si no vuelve en 10 min: crear (o reactivar) el proyecto de LiveKit Cloud en plan de pago.
-2. En el servidor de la app: `LIVEKIT_URL=wss://<proyecto>.livekit.cloud`, `LIVEKIT_API_KEY` y
-   `LIVEKIT_API_SECRET` del proyecto; reiniciar el servidor.
-3. Los navegadores abiertos reintentan con un _token_ nuevo, que ya trae la URL nueva: se
-   conectan a LiveKit Cloud sin recargar.
-4. Al recuperar la VM, repetir el paso 2 con sus valores.
+**Preparar antes de la beta** (para que el cambio sea rápido):
+
+- Proyecto de LiveKit Cloud creado, con su clave (_Settings → Keys_) guardada en el gestor de
+  secretos.
+- En ese proyecto, _Settings → Webhooks_: URL `https://<dominio>/api/media/livekit-webhook`
+  firmada con **esa** clave. Sin el _webhook_ se pierden en silencio dos protecciones: volver a
+  aislar a quien se conecta ya dentro de una sala (H-12) y sacar a quien fue expulsado y reutiliza
+  su _token_ (H-13) ([security-review.md](./security-review.md)).
+- `CSP_CONNECT_SRC` del `.env` de la app con los orígenes de LiveKit Cloud **ya incluidos**:
+  `wss://*.livekit.cloud https://*.livekit.cloud` (el SDK también prueba otros servidores
+  regionales `*.livekit.cloud` si el primero falla, así que un único origen no basta).
+
+**Si la VM de medios no vuelve en 10 min:**
+
+1. Reactivar el plan de pago del proyecto de LiveKit Cloud y comprobar que el _webhook_ está
+   configurado (arriba).
+2. En `/opt/plaza/.env`: `LIVEKIT_URL=wss://<proyecto>.livekit.cloud`, `LIVEKIT_API_KEY` y
+   `LIVEKIT_API_SECRET` del proyecto; si `CSP_CONNECT_SRC` no tenía los orígenes de LiveKit
+   Cloud, añadirlos. `docker compose up -d` (recrea `server` y, si cambió la CSP, `web`).
+3. La CSP de una página se fija al cargarla: **las pestañas abiertas antes del cambio no pueden
+   conectarse a LiveKit Cloud hasta recargar**. Avisar a los pilotos: «recargad Plaza».
+4. Al recuperar la VM, repetir el paso 2 con sus valores (y avisar de nuevo si cambió la CSP).
 
 ### Seguridad de los medios
 
@@ -186,7 +202,7 @@ Imágenes (GHCR, construidas por [`plaza-deploy.yml`](../../.github/workflows/pl
 | `ghcr.io/<owner>/plaza-server` | [`apps/server/Dockerfile`](../apps/server/Dockerfile) | `node dist/main.js` como usuario `node`, dependencias de producción, Prisma CLI para las migraciones |
 | `ghcr.io/<owner>/plaza-web`    | [`apps/web/Dockerfile`](../apps/web/Dockerfile)       | Caddy + el _build_ de Vite (`VITE_APP_VERSION`, `VITE_SENTRY_DSN` fijados al construir)              |
 
-Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta` (cada etiqueta).
+Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` (cada etiqueta) y `beta` (la última versión desplegada con éxito en beta).
 
 ### Preparar una VM de app (una vez por entorno)
 
@@ -201,7 +217,9 @@ Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta
    Secretos nuevos para cada entorno: `SESSION_SECRET`, `HEALTH_TOKEN`, `POSTGRES_PASSWORD`,
    cliente OAuth de Google del proyecto de producción, claves de la VM de medios de ese entorno.
    `COMPOSE_PROFILES=db` en el `.env` para usar el Postgres incluido (o `DATABASE_URL` de uno
-   gestionado, sin perfil).
+   gestionado, sin perfil). **`ADMIN_EMAILS`**: los e-mails del equipo de producto (separados por
+   comas); solo ellos abren el panel `/admin/metricas` (O1–O6 y comentarios de los pilotos,
+   E8-S7). Vacío = nadie lo ve.
 5. GitHub → Settings → Environments: `staging` (sin revisores) y `beta` (**revisores
    obligatorios** = aprobación manual). Secretos de cada uno, solo por nombre en el _workflow_:
    `APP_SSH_HOST`, `APP_SSH_USER`, `APP_SSH_KEY`, `APP_SSH_KNOWN_HOSTS`
@@ -220,19 +238,34 @@ Etiquetas: `sha-<commit>` y `main` (cada _merge_ con CI verde), `v0.x.y` y `beta
 
 ## Desplegar — E8-S5
 
-| Entorno   | Cuándo                                                                         | Cómo                                                                                                 |
-| --------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| _staging_ | Cada _merge_ en `main` cuyo CI («Plaza CI») pasa                               | Automático: _build_ → GHCR (`sha-<commit>`) → `deploy.sh` en la VM de _staging_                      |
-| beta      | Al publicar una etiqueta `v0.x.y` (`git tag v0.3.0 && git push origin v0.3.0`) | _Build_ → GHCR (`v0.3.0`) → el _job_ espera la **aprobación** del _environment_ `beta` → `deploy.sh` |
+| Entorno   | Cuándo                                                                                                                                                            | Cómo                                                                                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _staging_ | Cada _merge_ en `main` cuyo CI («Plaza CI») pasa                                                                                                                  | Automático: _build_ → GHCR (`sha-<commit>`) → `deploy.sh` en la VM de _staging_                                                                       |
+| beta      | Al publicar una etiqueta `v0.x.y` (`git tag v0.3.0 && git push origin v0.3.0`) sobre un commit de `main` cuyo CI («Plaza CI») pasó; si no, el _workflow_ se niega | _Build_ → GHCR (`v0.3.0`) → el _job_ espera la **aprobación** del _environment_ `beta` → `deploy.sh` → la etiqueta flotante `beta` pasa a esa versión |
 
 Qué hace [`infra/app/deploy.sh`](../infra/app/deploy.sh) en la VM (el _workflow_ lo copia junto
 al `docker-compose.yml` de esa versión):
 
 1. `docker compose pull` de las imágenes nuevas.
-2. `docker compose up -d --wait`: **`migrate`** aplica las migraciones pendientes
-   (`prisma migrate deploy`); solo si termina bien se recrean `server` y `web`, y se espera a que
-   el _healthcheck_ del servidor pase.
-3. Anota las imágenes en `.env` y en `deployed-versions.log` (para revertir).
+2. `docker compose run --rm migrate`: **`migrate`** aplica las migraciones pendientes
+   (`prisma migrate deploy`) con la imagen nueva, **sin tocar** `server` ni `web`. Si falla, el
+   _script_ se para aquí: la versión anterior sigue sirviendo y `.env` no cambia.
+3. Solo si terminó bien, `docker compose up -d --wait`: se recrean `server` y `web` y se espera a
+   que el _healthcheck_ del servidor pase. (No basta con `up` solo: `up` para y recrea los
+   contenedores **antes** de ejecutar `migrate`, y si la migración fallara dejaría la app entera
+   caída.)
+4. Anota las imágenes en `.env` y en `deployed-versions.log` (para revertir).
+
+**Si el despliegue falla:**
+
+- **Falla la migración** (paso 2): la app sigue con la versión anterior. Leer el error
+  (`docker compose logs migrate` o la salida del _workflow_), corregir y volver a desplegar. Si la
+  migración se aplicó a medias, restaurar la copia (ver
+  [Copias](#copias-y-restauración-de-la-base-de-datos--e8-s5)) antes de reintentar.
+- **Falla el arranque o el _healthcheck_** (paso 3): `server`/`web` ya tienen la imagen nueva y
+  `.env` sigue con la anterior. Volver a la anterior con
+  `docker compose up -d --wait --remove-orphans` (usa las imágenes de `.env`) o con
+  `./deploy.sh <imágenes anteriores>` (última línea de `deployed-versions.log`).
 
 **Reinicio sin cortes largos:** al parar el contenedor, el servidor recibe `SIGTERM`, cierra las
 conexiones de tiempo real **sin terminar las sesiones de Socket.IO** y sale con código 0 en menos
@@ -249,7 +282,7 @@ cumple esto, hacer una copia manual justo antes (ver [Copias](#copias-y-restaura
 **Comprobar tras desplegar:**
 
 ```bash
-curl -s https://<dominio>/api/health                      # {"status":"ok","version":"<la nueva>"}
+curl -s https://<dominio>/api/health                      # {"status":"ok","version":"<la etiqueta desplegada, p. ej. v0.3.0>"}
 curl -s -H "X-Health-Token: $HEALTH_TOKEN" https://<dominio>/api/health   # figuras de tiempo real
 docker compose ps                                          # server healthy, migrate Exited (0)
 docker compose logs --since 10m server | grep -i error
@@ -261,8 +294,12 @@ y entrar a un espacio con dos personas (se ven, se oyen, el chat funciona).
 
 1. Ver la versión anterior en `/opt/plaza/deployed-versions.log` (o en GHCR).
 2. GitHub → Actions → «Plaza deploy» → _Run workflow_: entorno y etiqueta anterior
-   (`v0.2.1`, `sha-abc1234`). En beta pide la aprobación.
-   Sin GitHub: en la VM, `./deploy.sh ghcr.io/<owner>/plaza-server:v0.2.1 ghcr.io/<owner>/plaza-web:v0.2.1`
+   (`v0.2.1`, `sha-abc1234`). En beta pide la aprobación. El _workflow_ copia a la VM el
+   `docker-compose.yml` y los _scripts_ **de esa versión** (su etiqueta o su commit de `main`), no
+   los actuales de `main`.
+   Sin GitHub: en la VM, poner antes el `docker-compose.yml`, `backup.sh` y `deploy.sh` de esa
+   versión (`git show v0.2.1:plaza/infra/app/docker-compose.yml`) y ejecutar
+   `./deploy.sh ghcr.io/<owner>/plaza-server:v0.2.1 ghcr.io/<owner>/plaza-web:v0.2.1`
    (tras `docker login ghcr.io` con un _token_ de solo lectura).
 3. Si la versión revertida incluía una migración **no** compatible hacia atrás: restaurar la
    copia de antes del despliegue (siguiente sección) y después revertir la imagen.
@@ -272,7 +309,12 @@ y entrar a un espacio con dos personas (se ven, se oyen, el chat funciona).
 - **Postgres incluido** (perfil `db`): el servicio `backup` hace `pg_dump` (formato _custom_)
   cada día a las `BACKUP_HOUR` UTC en `BACKUP_DIR` (`/opt/plaza/backups`) y borra las de más de
   `BACKUP_KEEP_DAYS` días. **Copiarlas fuera de la VM** (instantáneas del proveedor o
-  `rclone copy /opt/plaza/backups remoto:plaza-backups` en un `cron` diario).
+  `rclone copy /opt/plaza/backups remoto:plaza-backups` en un `cron` diario). Las copias contienen
+  la base entera (e-mails, nombres, chat, comentarios): se crean legibles solo por su dueño
+  (`umask 077`, carpeta `700`) y así deben quedarse también fuera de la VM.
+- **RGPD:** quien borra su cuenta sigue en las copias hasta que caducan (`BACKUP_KEEP_DAYS`, 14
+  días por defecto, y lo que retengan las copias externas). Si hay que restaurar una copia
+  anterior a un borrado de cuenta, volver a borrar esa cuenta después.
 - **Postgres gestionado**: copias diarias y recuperación a un instante del proveedor, con
   retención ≥ 7 días. `pg_dump` manual antes de migraciones delicadas.
 - Copia manual en cualquier momento:
@@ -302,16 +344,16 @@ Generar valores con `node -e "console.log(require('node:crypto').randomBytes(32)
 guardarlos en el gestor de secretos del equipo, editar `/opt/plaza/.env` y aplicar con
 `docker compose up -d` (solo recrea lo que cambió). Un entorno cada vez: primero _staging_.
 
-| Secreto                    | Efecto de rotarlo                                                                                                                                                                                                                                                                                                        | Pasos                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `SESSION_SECRET`           | **Todos los enlaces de invitación cambian** (son un HMAC del secreto): los antiguos dejan de funcionar y cada _owner_ debe copiar el nuevo en Ajustes del espacio. Los inicios de sesión con Google en curso (10 min) fallan y hay que repetirlos. Las sesiones abiertas **siguen** (su _token_ no depende del secreto). | Avisar a los _owners_ antes; cambiar `.env`; `docker compose up -d`. Solo si se sospecha que se filtró                    |
-| Cerrar todas las sesiones  | Todo el mundo vuelve a iniciar sesión                                                                                                                                                                                                                                                                                    | `docker compose exec -T postgres psql -U plaza -d plaza -c 'DELETE FROM "Session";'`                                      |
-| `GOOGLE_CLIENT_SECRET`     | Ninguno si se hace en dos pasos                                                                                                                                                                                                                                                                                          | Google Cloud → Credenciales → añadir secreto nuevo; desplegarlo; deshabilitar el antiguo                                  |
-| `LIVEKIT_API_KEY`/`SECRET` | Los medios del pasillo se cortan unos segundos; los navegadores piden _token_ nuevo y reconectan solos                                                                                                                                                                                                                   | Par nuevo en la VM de medios (`.env` de `infra/livekit`) y en la app; reiniciar ambos (sección «Seguridad de los medios») |
-| `HEALTH_TOKEN`             | El monitor con cabecera falla hasta actualizarlo                                                                                                                                                                                                                                                                         | Cambiar `.env` y el monitor                                                                                               |
-| `POSTGRES_PASSWORD`        | Ninguno si se cambia a la vez en la BD y en `.env`                                                                                                                                                                                                                                                                       | `ALTER USER plaza PASSWORD '…'` en `psql`; actualizar `POSTGRES_PASSWORD` y `DATABASE_URL`; `docker compose up -d`        |
-| DSN de Sentry (web)        | Va dentro del JavaScript: requiere construir la imagen web de nuevo                                                                                                                                                                                                                                                      | Cambiar la variable `VITE_SENTRY_DSN` y desplegar una versión nueva                                                       |
-| Clave SSH de despliegue    | Ninguno                                                                                                                                                                                                                                                                                                                  | Clave nueva en `authorized_keys` y en `APP_SSH_KEY`; quitar la antigua                                                    |
+| Secreto                    | Efecto de rotarlo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Pasos                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`           | **Todos los enlaces de invitación cambian** (son un HMAC del secreto): los antiguos dejan de funcionar y cada _owner_ debe copiar el nuevo en Ajustes del espacio. Los inicios de sesión con Google en curso (10 min) fallan y hay que repetirlos. Las sesiones abiertas **siguen** (su _token_ no depende del secreto). Los identificadores seudónimos de las métricas de producto (HMAC del secreto) **cambian**: la semana de la rotación cada persona cuenta dos veces en O1 (personas con conversaciones) y O2 (días de uso), anotarlo al leer el panel. | Avisar a los _owners_ antes; cambiar `.env`; `docker compose up -d`. Solo si se sospecha que se filtró                    |
+| Cerrar todas las sesiones  | Todo el mundo vuelve a iniciar sesión                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `docker compose exec -T postgres psql -U plaza -d plaza -c 'DELETE FROM "Session";'`                                      |
+| `GOOGLE_CLIENT_SECRET`     | Ninguno si se hace en dos pasos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Google Cloud → Credenciales → añadir secreto nuevo; desplegarlo; deshabilitar el antiguo                                  |
+| `LIVEKIT_API_KEY`/`SECRET` | Los medios del pasillo se cortan unos segundos; los navegadores piden _token_ nuevo y reconectan solos                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Par nuevo en la VM de medios (`.env` de `infra/livekit`) y en la app; reiniciar ambos (sección «Seguridad de los medios») |
+| `HEALTH_TOKEN`             | El monitor con cabecera falla hasta actualizarlo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Cambiar `.env` y el monitor                                                                                               |
+| `POSTGRES_PASSWORD`        | Ninguno si se cambia a la vez en la BD y en `.env`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `ALTER USER plaza PASSWORD '…'` en `psql`; actualizar `POSTGRES_PASSWORD` y `DATABASE_URL`; `docker compose up -d`        |
+| DSN de Sentry (web)        | Va dentro del JavaScript: requiere construir la imagen web de nuevo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Cambiar la variable `VITE_SENTRY_DSN` y desplegar una versión nueva                                                       |
+| Clave SSH de despliegue    | Ninguno                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Clave nueva en `authorized_keys` y en `APP_SSH_KEY`; quitar la antigua                                                    |
 
 ## Monitorización de la app — E8-S1
 
@@ -327,8 +369,8 @@ guardarlos en el gestor de secretos del equipo, editar `/opt/plaza/.env` y aplic
   - `https://<dominio>/` espera `200` (Caddy y la web);
   - los dos de la VM de medios (sección «Monitorización y alertas» de LiveKit).
 - **Figuras de tiempo real:** `GET /api/health` con la cabecera `X-Health-Token` añade
-  `realtime.connectedBySpace`, `realtime.inConversationBySpace` (personas con _peers_ de medios,
-  incluye a quien está en los 30 s de reconexión), `avgTickMs`, `avgMediaPeersPerTick` y
+  `realtime.connectedBySpace`, `realtime.inConversationBySpace` (personas con _peers_ de medios;
+  quien está en los 30 s de reconexión no tiene _peers_), `avgTickMs`, `avgMediaPeersPerTick` y
   `process.rssMb`/`heapUsedMb`. Referencia con 50 personas moviéndose: _tick_ 1–2 ms, ~130 MB
   de RSS estables ([load-test.md](./load-test.md)). Investigar si `avgTickMs` pasa de 20 ms de
   forma sostenida o la memoria sube sin parar. Si el monitor admite cabeceras, un segundo
@@ -339,10 +381,10 @@ guardarlos en el gestor de secretos del equipo, editar `/opt/plaza/.env` y aplic
 
 ## Contingencias — E8-S5
 
-| Qué cae                | Efecto                                                                                                                                     | Qué hacer                                                                                                                                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VM de medios (LiveKit) | Sin audio/vídeo del pasillo; mapa, chat y salas de Meet siguen                                                                             | Sección [Contingencia: la VM de medios cae](#contingencia-la-vm-de-medios-cae): pasar a LiveKit Cloud cambiando `LIVEKIT_URL`/`KEY`/`SECRET` en `/opt/plaza/.env`, `docker compose up -d`, y añadir su origen a `CSP_CONNECT_SRC` |
-| Google (login u OAuth) | Nadie puede **iniciar** sesión; las sesiones abiertas (30 días deslizantes) siguen. Si cae Meet, las salas no abren pero el resto funciona | Esperar y avisar a los pilotos (status.cloud.google.com). **Nunca** activar `AUTH_TEST_LOGIN` como atajo: el servidor no arranca con él en producción                                                                             |
-| Servidor de la app     | «Reconectando…» en todos los navegadores                                                                                                   | `docker compose ps` / `logs server`; `docker compose up -d`; si una versión nueva falla, [revertir](#revertir--e8-s5)                                                                                                             |
-| Base de datos          | La API responde 500 (Sentry avisa); el tiempo real no deja entrar                                                                          | `docker compose logs postgres`; espacio en disco (`df -h`); restaurar la última copia si está dañada                                                                                                                              |
-| VM de app completa     | Todo                                                                                                                                       | VM nueva ([Preparar](#preparar-una-vm-de-app-una-vez-por-entorno)), restaurar la última copia externa, apuntar el DNS, desplegar la última versión                                                                                |
+| Qué cae                | Efecto                                                                                                                                     | Qué hacer                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VM de medios (LiveKit) | Sin audio/vídeo del pasillo; mapa, chat y salas de Meet siguen                                                                             | Sección [Contingencia: la VM de medios cae](#contingencia-la-vm-de-medios-cae): pasar a LiveKit Cloud (con su _webhook_ configurado) cambiando `LIVEKIT_URL`/`KEY`/`SECRET` y `CSP_CONNECT_SRC` en `/opt/plaza/.env`, `docker compose up -d`, y pedir a los pilotos que recarguen |
+| Google (login u OAuth) | Nadie puede **iniciar** sesión; las sesiones abiertas (30 días deslizantes) siguen. Si cae Meet, las salas no abren pero el resto funciona | Esperar y avisar a los pilotos (status.cloud.google.com). **Nunca** activar `AUTH_TEST_LOGIN` como atajo: el servidor no arranca con él en producción                                                                                                                             |
+| Servidor de la app     | «Reconectando…» en todos los navegadores                                                                                                   | `docker compose ps` / `logs server`; `docker compose up -d`; si una versión nueva falla, [revertir](#revertir--e8-s5)                                                                                                                                                             |
+| Base de datos          | La API responde 500 (Sentry avisa); el tiempo real no deja entrar                                                                          | `docker compose logs postgres`; espacio en disco (`df -h`); restaurar la última copia si está dañada                                                                                                                                                                              |
+| VM de app completa     | Todo                                                                                                                                       | VM nueva ([Preparar](#preparar-una-vm-de-app-una-vez-por-entorno)), restaurar la última copia externa, apuntar el DNS, desplegar la última versión                                                                                                                                |

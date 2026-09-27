@@ -7,6 +7,7 @@ import { mediaController } from '../controller/media-instance';
 import { installMediaDebug } from '../debug';
 import { useMediaShortcuts } from '../hooks/useMediaShortcuts';
 import { loadMediaChoices } from '../lib/media-prefs';
+import { useMediaStore } from '../store/media-store';
 import { HallwayNotice } from './HallwayNotice';
 import { VideoStrip } from './VideoStrip';
 
@@ -41,11 +42,12 @@ export function MediaLayer({ space, controller = mediaController }: MediaLayerPr
     [controller],
   );
   useMediaShortcuts(shortcuts);
+  const inRoom = useMediaStore((state) => state.roomMuted, controller.store);
 
   return (
     <>
       <VideoStrip controller={controller} />
-      <HallwayNotice />
+      <HallwayNotice inRoom={inRoom} />
     </>
   );
 }

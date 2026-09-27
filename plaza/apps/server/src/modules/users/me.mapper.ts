@@ -1,4 +1,4 @@
-import { DISPLAY_NAME_MAX_LEN, type Me } from '@plaza/shared';
+import { DISPLAY_NAME_MAX_LEN, stripNameControls, type Me } from '@plaza/shared';
 import type { User } from '@prisma/client';
 
 /** `User` row → `Me` DTO (`GET /api/me`, test login). */
@@ -13,11 +13,14 @@ export function toMeDto(user: User): Me {
   };
 }
 
-/** Display name of a new user: the Google name, trimmed to the allowed length (E1-S2). */
+/**
+ * Display name of a new user: the Google name without control characters, trimmed to the
+ * allowed length (E1-S2), so it always passes `DisplayNameSchema`.
+ */
 export function initialDisplayName(name: string, email: string): string {
-  const trimmed = name.trim().slice(0, DISPLAY_NAME_MAX_LEN).trim();
+  const trimmed = stripNameControls(name).trim().slice(0, DISPLAY_NAME_MAX_LEN).trim();
   if (trimmed !== '') return trimmed;
-  const local = (email.split('@')[0] ?? '').slice(0, DISPLAY_NAME_MAX_LEN);
+  const local = stripNameControls(email.split('@')[0] ?? '').slice(0, DISPLAY_NAME_MAX_LEN);
   return local === '' ? 'Plaza' : local;
 }
 

@@ -23,7 +23,9 @@ const BUTTON =
 /**
  * Microphone and camera buttons of the bottom bar (E5-S6). Their label says what a click does;
  * Ctrl+D and Ctrl+E do the same from anywhere in the office. Inside a meeting room (E6-S2) they
- * are off and disabled: the meeting is in Google Meet. Then the speaker switch.
+ * are off and do nothing (`aria-disabled`, so a focused button keeps the focus): the meeting is in
+ * Google Meet, which the room card and the rooms live region say. Then the speaker switch, and a
+ * live region, always mounted, for the away and permission notes.
  */
 export function MediaControls({ controller = mediaController, devices }: MediaControlsProps) {
   const { t } = useTranslation('media');
@@ -32,6 +34,13 @@ export function MediaControls({ controller = mediaController, devices }: MediaCo
   const awayMuted = useMediaStore((state) => state.awayMuted, controller.store);
   const roomMuted = useMediaStore((state) => state.roomMuted, controller.store);
   const problem = useMediaStore((state) => state.deviceProblem, controller.store);
+  const note = roomMuted
+    ? ''
+    : awayMuted
+      ? t('controls.awayMuted')
+      : problem === 'denied'
+        ? t('controls.deviceDenied')
+        : '';
 
   return (
     <div className="flex items-center gap-2" data-testid="media-controls">
@@ -39,13 +48,17 @@ export function MediaControls({ controller = mediaController, devices }: MediaCo
         type="button"
         aria-label={t(micOn ? 'controls.micOn' : 'controls.micOff')}
         aria-keyshortcuts="Control+D Meta+D"
-        title={`${t(micOn ? 'controls.micOn' : 'controls.micOff')} (${t('controls.shortcutMic')})`}
+        title={
+          roomMuted
+            ? t('controls.roomMuted')
+            : `${t(micOn ? 'controls.micOn' : 'controls.micOff')} (${t('controls.shortcutMic')})`
+        }
         data-state={micOn ? 'on' : 'off'}
-        disabled={roomMuted}
+        aria-disabled={roomMuted || undefined}
         onClick={() => {
-          void controller.toggleMic();
+          if (!roomMuted) void controller.toggleMic();
         }}
-        className={`${BUTTON} ${micOn ? 'bg-white/15 hover:bg-white/25' : 'bg-red-600 hover:bg-red-500'} disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`${BUTTON} ${micOn ? 'bg-white/15 hover:bg-white/25' : 'bg-red-600 hover:bg-red-500'} aria-disabled:cursor-not-allowed aria-disabled:opacity-60`}
       >
         {micOn ? <MicIcon /> : <MicOffIcon />}
       </button>
@@ -53,26 +66,27 @@ export function MediaControls({ controller = mediaController, devices }: MediaCo
         type="button"
         aria-label={t(cameraOn ? 'controls.cameraOn' : 'controls.cameraOff')}
         aria-keyshortcuts="Control+E Meta+E"
-        title={`${t(cameraOn ? 'controls.cameraOn' : 'controls.cameraOff')} (${t('controls.shortcutCamera')})`}
+        title={
+          roomMuted
+            ? t('controls.roomMuted')
+            : `${t(cameraOn ? 'controls.cameraOn' : 'controls.cameraOff')} (${t('controls.shortcutCamera')})`
+        }
         data-state={cameraOn ? 'on' : 'off'}
-        disabled={roomMuted}
+        aria-disabled={roomMuted || undefined}
         onClick={() => {
-          void controller.toggleCamera();
+          if (!roomMuted) void controller.toggleCamera();
         }}
-        className={`${BUTTON} ${cameraOn ? 'bg-white/15 hover:bg-white/25' : 'bg-red-600 hover:bg-red-500'} disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`${BUTTON} ${cameraOn ? 'bg-white/15 hover:bg-white/25' : 'bg-red-600 hover:bg-red-500'} aria-disabled:cursor-not-allowed aria-disabled:opacity-60`}
       >
         {cameraOn ? <CameraIcon /> : <CameraOffIcon />}
       </button>
       <SpeakerControl controller={controller} {...(devices !== undefined && { devices })} />
-      {(roomMuted || awayMuted || problem === 'denied') && (
-        <span role="status" className="text-xs text-slate-300">
-          {roomMuted
-            ? t('controls.roomMuted')
-            : awayMuted
-              ? t('controls.awayMuted')
-              : t('controls.deviceDenied')}
-        </span>
-      )}
+      {/* Always mounted: a live region inserted with its text is often not announced. The room
+          note is left to the rooms overlay (and the buttons' tooltip): here it would stretch
+          the bar under the side panels. */}
+      <span role="status" className={note === '' ? 'sr-only' : 'text-xs text-slate-300'}>
+        {note}
+      </span>
     </div>
   );
 }

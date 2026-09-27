@@ -47,6 +47,7 @@ function settingsApi(overrides: Parameters<typeof mockApi>[0] = {}) {
       },
     },
     'GET /api/spaces/space-1/bans': { body: { bans: [] } },
+    'GET /api/map-templates': { body: { templates: [] } },
     'POST /api/spaces/space-1/invite-link': () => {
       inviteUrl = NEW_URL;
       return { body: { url: NEW_URL } };
@@ -72,6 +73,20 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
 
     expect(await navigator.clipboard.readText()).toBe(OLD_URL);
     expect(await screen.findByText('Enlace copiado.')).toBeInTheDocument();
+  });
+
+  it('opened with #salas (the room card link), scrolls to the rooms and focuses their heading', async () => {
+    settingsApi();
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    renderApp({ route: '/spaces/space-1/settings#salas' });
+
+    const heading = await screen.findByRole('heading', { name: 'Salas de reunión' });
+
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    expect(scrolled).toHaveBeenCalledOnce();
   });
 
   it('regenerates the link only after confirming', async () => {
@@ -127,10 +142,50 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
     expect(within(anaRow as HTMLElement).queryByRole('button', { name: 'Expulsar' })).toBeNull();
 
     await user.click(within(luis).getByRole('button', { name: 'Expulsar' }));
+    // The focus follows the question (RNF-07): on "Cancelar", then back on "Expulsar".
+    expect(document.activeElement).toBe(within(luis).getByRole('button', { name: 'Cancelar' }));
+    await user.keyboard('{Enter}');
+    expect(document.activeElement).toBe(within(luis).getByRole('button', { name: 'Expulsar' }));
+    await user.keyboard('{Enter}');
     await user.click(within(luis).getByRole('button', { name: 'Confirmar' }));
 
+    // The row goes away: the focus waits on the section heading, not on <body>.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Miembros' }));
     expect(await screen.findByText('Luis ya no es miembro del espacio.')).toBeInTheDocument();
     expect(api.callsTo('DELETE /api/spaces/space-1/members/user-luis')).toHaveLength(1);
+  });
+
+  it('hands the administration to a member after confirming (E8-S6)', async () => {
+    const api = settingsApi({ 'PATCH /api/spaces/space-1/members/user-luis': { status: 204 } });
+    const user = userEvent.setup();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    const luis = (await screen.findByText('luis@acme.com')).closest('tr');
+    if (luis === null) throw new Error('row not found');
+    await user.click(within(luis).getByRole('button', { name: 'Hacer administrador/a' }));
+    await user.click(within(luis).getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByText('Luis ya administra el espacio.')).toBeInTheDocument();
+    expect(api.callsTo('PATCH /api/spaces/space-1/members/user-luis')[0]?.body).toEqual({
+      role: 'OWNER',
+    });
+  });
+
+  it('says when the members could not be loaded, and retries', async () => {
+    let fail = true;
+    settingsApi({
+      'GET /api/spaces/space-1/members': () =>
+        fail ? apiError(500, 'INTERNAL') : { body: { members: [member({})] } },
+    });
+    const user = userEvent.setup();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 5000 });
+    expect(screen.queryByRole('table')).toBeNull();
+    fail = false;
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('ana@acme.com')).toBeInTheDocument();
   });
 
   it('lists removed people and readmits them with "Readmitir"', async () => {

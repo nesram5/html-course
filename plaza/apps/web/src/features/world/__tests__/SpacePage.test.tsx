@@ -335,7 +335,7 @@ describe('SpacePage realtime (E4)', () => {
     });
 
     expect(
-      screen.getByRole('heading', { name: 'Abriste Plaza en otra pestaña' }),
+      screen.getByRole('heading', { name: 'Has abierto Plaza en otra pestaña' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('world-canvas')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Usar Plaza aquí' }));
@@ -357,7 +357,7 @@ describe('SpacePage realtime (E4)', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/spaces');
     });
-    expect(await screen.findByText('Te han quitado de este espacio.')).toBeInTheDocument();
+    expect(await screen.findByText('Te han expulsado de este espacio.')).toBeInTheDocument();
   });
 
   it('shows why the join was refused, with retry only when it can help', async () => {

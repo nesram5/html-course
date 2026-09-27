@@ -348,6 +348,25 @@ describe('hallway media: media:peers and inConversation (E5-S2)', () => {
     ]);
   });
 
+  it('ends the conversation when the other connection drops: the grace keeps only the avatar', async () => {
+    const a = await enter(ana, { x: 5, y: ROW });
+    const l = await enter(luis, { x: 6, y: ROW });
+    await tick(a, l);
+    clearInboxes();
+
+    // A network cut or a closed tab ("transport close"), not a deliberate leave.
+    l.io.engine.close();
+    await vi.waitFor(() => {
+      expect(runtime().get(luis.user.id)?.reconnecting).toBe(true);
+    });
+    await tick(a);
+
+    expect(runtime().has(luis.user.id)).toBe(true);
+    expect(inbox(a).peers).toEqual([{ peers: [] }]);
+    expect(runtime().get(ana.user.id)?.inConversation).toBe(false);
+    expect(runtime().get(luis.user.id)?.inConversation).toBe(false);
+  });
+
   it('sends the current list again to a person who reconnects, even when it did not change', async () => {
     const a = await enter(ana, { x: 5, y: ROW });
     const first = await enter(luis, { x: 6, y: ROW });

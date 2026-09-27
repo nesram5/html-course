@@ -132,6 +132,22 @@ export class LiveKitMediaProvider implements MediaProvider {
     }
   }
 
+  /** Current `canPublish` of the participant; `null` when they are not connected. */
+  async participantCanPublish(input: {
+    roomName: string;
+    identity: string;
+  }): Promise<boolean | null> {
+    try {
+      const participant = await this.#rooms.getParticipant(input.roomName, input.identity);
+      return participant.permission?.canPublish ?? true;
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw new AppError('MEDIA_PROVIDER_ERROR', 'Could not read the participant permission', {
+        cause: error,
+      });
+    }
+  }
+
   /**
    * Removes the participant from the room (a member kicked out of the space, E2-S6). The token
    * they hold is still valid for its remaining lifetime (at most `MEDIA_TOKEN_TTL_SECONDS`,

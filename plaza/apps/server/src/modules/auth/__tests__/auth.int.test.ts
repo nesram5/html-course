@@ -87,7 +87,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
       expect(flowCookie).not.toContain(location.searchParams.get('state'));
     });
 
-    it('comes back with a plaza_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
+    it('comes back with a __Host-plaza_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
       testApp.identity.willAuthenticate('good-code', {
         sub: 'google-sub-ana',
         email: 'ana@acme.com',
@@ -107,6 +107,8 @@ describe('auth module (E1-S1, E1-S2)', () => {
         path: '/',
         maxAge: SESSION_TTL_MS / 1000,
       });
+      expect(session?.name.startsWith('__Host-')).toBe(true);
+      expect(session?.domain).toBeUndefined();
       // PKCE: the verifier sent to Google hashes to the challenge of the redirect.
       const verifier = testApp.identity.exchanges.at(-1)?.codeVerifier ?? '';
       expect(createHash('sha256').update(verifier).digest('base64url')).toBe(
@@ -173,6 +175,25 @@ describe('auth module (E1-S1, E1-S2)', () => {
       });
     });
 
+    it('stores the Workspace domain (hd claim) of every sign-in, and clears it when it goes', async () => {
+      testApp.identity.willAuthenticate('workspace', {
+        sub: 'sub-hd',
+        email: 'ana@acme.com',
+        hostedDomain: 'ACME.com',
+      });
+      testApp.identity.willAuthenticate('personal', { sub: 'sub-hd', email: 'ana@acme.com' });
+
+      const first = await startLogin();
+      await callback({ code: 'workspace', state: first.state }, first.flowCookie);
+      const workspace = await testApp.container.db.user.findFirstOrThrow();
+      const second = await startLogin();
+      await callback({ code: 'personal', state: second.state }, second.flowCookie);
+      const personal = await testApp.container.db.user.findFirstOrThrow();
+
+      expect(workspace.hostedDomain).toBe('acme.com');
+      expect(personal.hostedDomain).toBeNull();
+    });
+
     it('stores no Google token: only the subject, e-mail, name and the hash of the session token', async () => {
       testApp.identity.willAuthenticate('code', { sub: 'sub-9', email: 'bob@acme.com' });
       const { state, flowCookie } = await startLogin();
@@ -192,6 +213,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
         'displayName',
         'email',
         'googleSub',
+        'hostedDomain',
         'id',
         'pictureUrl',
       ]);

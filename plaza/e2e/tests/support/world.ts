@@ -40,6 +40,7 @@ declare global {
         styleTextures: string[];
         preloaded: string[];
         desks: { deskId: string; label: string; items: string[] }[];
+        shownDesk: string | null;
       } | null;
       /** Meeting rooms and whether they are drawn as occupied (E6-S4). */
       rooms(): { areaId: string; occupied: boolean; people: number }[];

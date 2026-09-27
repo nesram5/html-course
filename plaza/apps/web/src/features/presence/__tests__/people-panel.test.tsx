@@ -3,7 +3,12 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EventBus, RealtimeRequestError } from '@/features/world';
+import {
+  createOfficeStore,
+  EventBus,
+  RealtimeRequestError,
+  type OfficeStore,
+} from '@/features/world';
 import { mockApi } from '@/test/mock-api';
 import { renderWithProviders } from '@/test/providers';
 
@@ -13,7 +18,7 @@ import { createPresenceStore, type PresenceStore } from '../store/presence-store
 import { createRingStore } from '../store/ring-store';
 import { player, snapshot } from './fixtures';
 
-function member(userId: string, displayName: string) {
+function member(userId: string, displayName: string, deskId: string | null = null) {
   return {
     userId,
     displayName,
@@ -21,17 +26,19 @@ function member(userId: string, displayName: string) {
     email: null,
     role: 'MEMBER',
     status: 'available',
-    deskId: null,
+    deskId,
     joinedAt: '2026-09-01T10:00:00.000Z',
   };
 }
 
 let store: PresenceStore;
 let events: EventBus;
+let office: OfficeStore;
 
 beforeEach(() => {
   store = createPresenceStore();
   events = new EventBus();
+  office = createOfficeStore();
   store.getState().applySnapshot(
     snapshot({
       players: [
@@ -49,7 +56,7 @@ beforeEach(() => {
           member('user-2', 'Luis'),
           member('user-3', 'Mary'),
           member('user-4', 'Óscar'),
-          member('user-5', 'Zoe'),
+          member('user-5', 'Zoe', 'desk-05'),
           member('user-6', 'Carla'),
         ],
       },
@@ -70,6 +77,7 @@ function renderPanel(onClose = vi.fn()) {
       onClose={onClose}
       store={store}
       events={events}
+      office={office}
     />,
   );
 }
@@ -94,7 +102,7 @@ describe('PeoplePanel (E7-S2)', () => {
     expect(within(connected!).getByTestId('person-user-3')).toHaveTextContent('Mary Ausente');
     expect(within(connected!).getByTestId('person-user-4')).toHaveTextContent('Óscar Ocupado');
     await waitFor(() => {
-      expect(names(disconnected!)).toEqual(['CarlaDesconectado', 'ZoeDesconectado']);
+      expect(names(disconnected!)).toEqual(['CarlaDesconectado', 'ZoeDesconectadoEscritorio']);
     });
   });
 
@@ -125,10 +133,32 @@ describe('PeoplePanel (E7-S2)', () => {
     expect(located).toEqual(['user-3']);
   });
 
+  it('"Escritorio" shows the desk of connected and disconnected people who have one (E9-S2)', async () => {
+    const user = userEvent.setup();
+    const shown: string[] = [];
+    events.on('camera:desk', ({ deskId }) => shown.push(deskId));
+    act(() => {
+      office
+        .getState()
+        .applySnapshot('pixel', [
+          { deskId: 'desk-03', userId: 'user-3', displayName: 'Mary', decor: null },
+        ]);
+    });
+    renderPanel();
+
+    await user.click(screen.getByRole('button', { name: 'Ir al escritorio de Mary' }));
+    await user.click(await screen.findByRole('button', { name: 'Ir al escritorio de Zoe' }));
+
+    expect(shown).toEqual(['desk-03', 'desk-05']);
+    expect(screen.queryByRole('button', { name: 'Ir al escritorio de Luis' })).toBeNull();
+  });
+
   it('offers "Llamar" to everyone but me', () => {
     renderPanel();
 
-    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
     expect(screen.queryByRole('button', { name: 'Llamar a Ana' })).toBeNull();
   });
 
@@ -158,8 +188,12 @@ describe('RingButton (E7-S5, RN-11)', () => {
     const button = await screen.findByRole('button', {
       name: 'Podrás volver a llamar a Mary en 30 s',
     });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveTextContent('Llamar (30 s)');
+    // The button keeps the focus (Escape still closes the panel) and does nothing meanwhile.
+    expect(document.activeElement).toBe(button);
+    await user.click(button);
+    expect(ring).toHaveBeenCalledOnce();
     expect(screen.getByRole('status')).toHaveTextContent('Has llamado a Mary.');
 
     act(() => {
@@ -170,7 +204,9 @@ describe('RingButton (E7-S5, RN-11)', () => {
     act(() => {
       vi.advanceTimersByTime(RING_COOLDOWN_MS - 10_000);
     });
-    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Llamar a Mary' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('asks for the notification permission on the first use only', async () => {
@@ -199,6 +235,9 @@ describe('RingButton (E7-S5, RN-11)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Espera un poco antes de volver a llamar.',
     );
-    expect(screen.getByRole('button', { name: /Podrás volver a llamar a Luis/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Podrás volver a llamar a Luis/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 });

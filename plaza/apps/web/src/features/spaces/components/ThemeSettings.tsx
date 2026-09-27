@@ -3,7 +3,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errorMessageKey } from '@/shared/api';
-import { toast } from '@/shared/ui';
+import { LoadError, toast } from '@/shared/ui';
 
 import { useMapTemplates, useUpdateSpace } from '../hooks/useSpaces';
 
@@ -29,6 +29,19 @@ export function ThemeSettings({ space }: { space: SpaceDetailDto }) {
       <p className="text-sm text-slate-600">
         {isOwner ? t('theme.description') : t('theme.membersReadOnly')}
       </p>
+      {templates.isError && (
+        <LoadError
+          error={templates.error}
+          onRetry={() => {
+            void templates.refetch();
+          }}
+        />
+      )}
+      {templates.isPending && (
+        <p role="status" className="text-sm text-slate-600">
+          {t('theme.loading')}
+        </p>
+      )}
       <form
         className="flex flex-col gap-3"
         onSubmit={(event) => {

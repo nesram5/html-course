@@ -1,10 +1,26 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 
 import { loadConfig, type AppConfig } from '../platform/config.js';
 
-/** Per-run test database (created and migrated by `global-setup.ts`). */
+/** `plaza/.env` (the README's setup), read without touching `process.env`; `{}` when absent. */
+function dotEnv(): Record<string, string | undefined> {
+  const file = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', '.env');
+  return existsSync(file) ? parseEnv(readFileSync(file, 'utf8')) : {};
+}
+
+/**
+ * Per-run test database (created and migrated by `global-setup.ts`): `TEST_DATABASE_URL` from
+ * the environment, else from `plaza/.env`, else the database of `pnpm infra:up` (whose postgres
+ * user has the password `postgres`; a trust-auth server ignores it).
+ */
 export const TEST_DATABASE_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgresql://postgres@localhost:5432/plaza_test';
+  process.env.TEST_DATABASE_URL ??
+  dotEnv().TEST_DATABASE_URL ??
+  'postgresql://postgres:postgres@localhost:5432/plaza_test';
 
 export function testEnv(
   overrides: Record<string, string | undefined> = {},

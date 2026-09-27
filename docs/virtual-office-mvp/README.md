@@ -16,6 +16,7 @@ Los documentos se escribieron en este orden y cada uno se apoya en los anteriore
 | 3 | [03-estandares-codigo.md](./03-estandares-codigo.md) | ¿Cómo escribimos el código? (convenciones, testing, git, CI) |
 | 4 | [04-plan-desarrollo.md](./04-plan-desarrollo.md) | ¿En qué orden y en cuánto tiempo? (etapas, sprints, hitos, riesgos) |
 | 5 | [historias/](./historias/) | Historias de usuario y tareas técnicas de cada etapa |
+| 6 | [estado-implementacion.md](./estado-implementacion.md) | ¿Qué está hecho y probado, qué falta verificar con medios reales y cómo se ejecuta y despliega? |
 
 ### Historias por etapa
 

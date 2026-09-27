@@ -5,12 +5,13 @@ import {
   IdSchema,
   IsoDateTimeSchema,
   MapTemplateIdSchema,
+  nameSchema,
   RoleSchema,
   ThemeIdSchema,
 } from './common.js';
 import { MeetingRoomDtoSchema } from './rooms.js';
 
-export const SpaceNameSchema = z.string().trim().min(1).max(SPACE_NAME_MAX_LEN);
+export const SpaceNameSchema = nameSchema(SPACE_NAME_MAX_LEN);
 
 /** A lowercase e-mail domain such as `acme.com` (E2-S4). */
 export const AllowedDomainSchema = z

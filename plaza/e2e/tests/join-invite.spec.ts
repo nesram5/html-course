@@ -142,6 +142,8 @@ test.describe('invitation link (E2-S5, brief flow 2)', () => {
     await page.goto(`/s/${space.slug}`);
     await expect(page).toHaveURL(/\/login\?next=/);
     await page.getByLabel('Email de prueba').fill(`luis@${domain}`);
+    // A Google Workspace account of the domain (hd claim): the e-mail domain alone is not enough.
+    await page.getByLabel(/Dominio de Google Workspace/).fill(domain);
     await page.getByRole('button', { name: 'Entrar como prueba' }).click();
     await page.getByRole('radio', { name: 'Menta' }).click();
     await page.getByRole('button', { name: 'Continuar' }).click();

@@ -58,10 +58,6 @@ export function freeDesk(deskId: string): DeskState {
   return { deskId, userId: null, displayName: null, decor: null };
 }
 
-function emailDomain(email: string): string {
-  return (email.split('@').pop() ?? '').toLowerCase();
-}
-
 /**
  * Spaces, memberships and access (E2-S2..S6). Guards: `assertMember` (non-members get 404
  * `NOT_A_MEMBER`, so existence is not leaked) and `assertOwner` (members get 403).
@@ -173,8 +169,10 @@ export class SpacesService {
   }
 
   /**
-   * `/s/:slug`: members enter; people whose verified e-mail belongs to `allowedDomain` become
-   * members first (E2-S4). Everyone else gets 404.
+   * `/s/:slug`: members enter; people whose Google Workspace account belongs to `allowedDomain`
+   * (the `hd` claim of their last sign-in) become members first (E2-S4). The e-mail domain alone
+   * is not enough: a personal Google account can be registered with a corporate address, and it
+   * stays verified after the person leaves the company. Everyone else gets 404.
    */
   async enterBySlug(slug: string, userId: string): Promise<EnterSpaceResponse> {
     const space = await this.#repository.findSpaceBySlug(slug);
@@ -187,7 +185,7 @@ export class SpacesService {
     if (
       space.allowedDomain === null ||
       user === null ||
-      emailDomain(user.email) !== space.allowedDomain
+      user.hostedDomain !== space.allowedDomain
     ) {
       throw new AppError('NOT_A_MEMBER', 'Space not found');
     }
@@ -270,6 +268,25 @@ export class SpacesService {
     // E9-S2: the membership (and its desk) is gone, so the desk is free for everyone.
     if (target.deskId !== null)
       await this.deps.notifier.deskUpdated(spaceId, freeDesk(target.deskId));
+  }
+
+  /**
+   * Changes the role of a member (owner only): `OWNER` hands the administration over, so the
+   * creator is never locked in (E8-S6, `SOLE_OWNER` on account deletion); `MEMBER` takes it back.
+   * The last owner cannot stop being one (409 `LAST_OWNER`). Serialized per space with the other
+   * membership changes, so two owners demoting each other cannot leave the space without one.
+   */
+  setMemberRole(spaceId: string, actorId: string, targetUserId: string, role: Role): Promise<void> {
+    return this.deps.deskChanges.run(spaceId, async () => {
+      await this.assertOwner(spaceId, actorId);
+      const target = await this.#repository.findMembership(spaceId, targetUserId);
+      if (target === null) throw new AppError('NOT_FOUND', 'Member not found');
+      if (target.role === role) return;
+      if (role === 'MEMBER' && (await this.#repository.countOwners(spaceId)) <= 1) {
+        throw new AppError('LAST_OWNER');
+      }
+      await this.#repository.setRole(spaceId, targetUserId, role);
+    });
   }
 
   /** People removed from the space (owner only), newest first. */

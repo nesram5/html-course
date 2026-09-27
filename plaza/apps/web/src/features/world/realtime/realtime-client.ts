@@ -187,12 +187,18 @@ export class RealtimeClient {
     return total;
   }
 
-  /** `space:join` → the full state of the space (E4-S1). */
-  join(spaceId: string): Promise<SpaceSnapshot> {
+  /**
+   * `space:join` → the full state of the space (E4-S1). `options` (the page visit and whether
+   * this join may replace another tab) are sent as given; see `SpaceJoinSchema`.
+   */
+  join(
+    spaceId: string,
+    options: { readonly tabId?: string; readonly takeover?: boolean } = {},
+  ): Promise<SpaceSnapshot> {
     return this.request(
       'space:join',
       (socket, ms) =>
-        socket.timeout(ms).emitWithAck('space:join', { v: PROTOCOL_VERSION, spaceId }),
+        socket.timeout(ms).emitWithAck('space:join', { v: PROTOCOL_VERSION, spaceId, ...options }),
       JoinAckSchema,
     );
   }

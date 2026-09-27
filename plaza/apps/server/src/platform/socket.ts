@@ -23,6 +23,8 @@ export interface SocketData {
   userId?: string;
   sessionId?: string;
   spaceId?: string;
+  /** `tabId` of the last `space:join` of this connection (the page visit it belongs to). */
+  tabId?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- single server process (no adapter) in the MVP
