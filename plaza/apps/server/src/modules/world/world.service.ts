@@ -44,10 +44,19 @@ const DELIBERATE_REASONS: readonly DisconnectReason[] = [
   'server namespace disconnect',
 ];
 
+/** How a `space:join` treats another connection of the person that holds the avatar. */
+export interface JoinOptions {
+  /** The page visit of the joining connection (the same across its reconnections). */
+  readonly tabId?: string;
+  /** `false` for an automatic rejoin: another tab's live connection is not replaced. */
+  readonly takeover: boolean;
+}
+
 /** A `space:join` in progress; `kickedFor` is set when the person is removed meanwhile. */
 interface PendingJoin {
   readonly spaceId: string;
   readonly userId: string;
+  readonly options: JoinOptions;
   kickedFor: KickReason | null;
 }
 
@@ -140,12 +149,17 @@ export class WorldService {
   /**
    * Enters the space: members only (`NOT_A_MEMBER`), at most `maxPlayersPerSpace` people
    * (`SPACE_FULL`), one avatar per person (a second tab replaces the first with
-   * `space:kicked { SESSION_REPLACED }`), and someone reconnecting within the grace period gets
-   * their avatar back where it was (E4-S6). Returns the `space:snapshot`.
+   * `space:kicked { SESSION_REPLACED }`; an automatic rejoin never replaces another tab, see
+   * {@link JoinOptions}), and someone reconnecting within the grace period gets their avatar
+   * back where it was (E4-S6). Returns the `space:snapshot`.
    */
-  async join(socket: PlazaSocket, spaceId: string): Promise<SpaceSnapshot> {
+  async join(
+    socket: PlazaSocket,
+    spaceId: string,
+    options: JoinOptions = { takeover: true },
+  ): Promise<SpaceSnapshot> {
     const userId = socketUserId(socket);
-    const pending: PendingJoin = { spaceId, userId, kickedFor: null };
+    const pending: PendingJoin = { spaceId, userId, options, kickedFor: null };
     this.#pendingJoins.add(pending);
     try {
       return await this.#join(socket, pending);
@@ -214,6 +228,8 @@ export class WorldService {
       this.#reconcilePublishing(spaceId, userId);
     }
     socket.data.spaceId = spaceId;
+    if (pending.options.tabId === undefined) delete socket.data.tabId;
+    else socket.data.tabId = pending.options.tabId;
     void socket.join(spaceRoom(spaceId));
     this.#updateConnected(runtime);
 
@@ -250,6 +266,19 @@ export class WorldService {
     }
     if (!runtime.has(pending.userId) && runtime.size >= this.deps.maxPlayersPerSpace) {
       throw new AppError('SPACE_FULL', 'The space is full');
+    }
+    if (!pending.options.takeover) {
+      const holder = this.socketOf(runtime, pending.userId);
+      if (
+        holder !== undefined &&
+        holder.id !== socket.id &&
+        holder.connected &&
+        (pending.options.tabId === undefined || holder.data.tabId !== pending.options.tabId)
+      ) {
+        // The person is using the office in another tab: this one came back online after being
+        // replaced while offline (the kick never reached it). It must not take the office back.
+        throw new AppError('SESSION_REPLACED', 'Another tab holds the avatar');
+      }
     }
   }
 

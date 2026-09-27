@@ -323,6 +323,66 @@ describe('world module: realtime multiplayer (E4)', () => {
       expect(runtime().socketOf(ana.user.id)).toBe(second.client.id);
     });
 
+    it('an automatic rejoin of another tab never takes the avatar from the live one (E4-S6)', async () => {
+      // Tab A was replaced by tab B while A was offline (the kick never reached it); A comes
+      // back online and rejoins on its own.
+      const live = await open(ana);
+      const joined = await live.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-live-0001',
+        takeover: true,
+      });
+      expect(joined.ok).toBe(true);
+      const stale = await open(ana);
+
+      const rejoin = await stale.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-stale-0002',
+        takeover: false,
+      });
+
+      expect(rejoin).toMatchObject({ ok: false, error: { code: 'SESSION_REPLACED' } });
+      expect(inbox(live).kicked).toEqual([]);
+      expect(runtime().socketOf(ana.user.id)).toBe(live.id);
+
+      // "Usar Plaza aquí" in the stale tab is an explicit takeover: it does replace the live one.
+      const takeover = await stale.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-stale-0002',
+        takeover: true,
+      });
+      expect(takeover.ok).toBe(true);
+      await vi.waitFor(() => {
+        expect(inbox(live).kicked).toEqual([{ reason: 'SESSION_REPLACED' }]);
+      });
+      expect(runtime().socketOf(ana.user.id)).toBe(stale.id);
+    });
+
+    it('an automatic rejoin of the same tab replaces its own older connection', async () => {
+      // The server has not noticed yet that the old connection of this tab is gone.
+      const old = await open(ana);
+      await old.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-same-0001',
+        takeover: true,
+      });
+      const reconnected = await open(ana);
+
+      const rejoin = await reconnected.emitWithAck('space:join', {
+        v: PROTOCOL_VERSION,
+        spaceId: space.id,
+        tabId: 'tab-same-0001',
+        takeover: false,
+      });
+
+      expect(rejoin.ok).toBe(true);
+      expect(runtime().socketOf(ana.user.id)).toBe(reconnected.id);
+    });
+
     it('answers player:move before space:join with NOT_IN_SPACE', async () => {
       const client = await open(ana);
 

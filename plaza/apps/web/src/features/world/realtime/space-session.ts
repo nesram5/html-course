@@ -56,6 +56,14 @@ export interface SpaceSessionOptions {
   readonly store?: SessionStore;
   /** Style and desks of the space (E9); the app-wide store by default. */
   readonly office?: OfficeStore;
+  /** Id of this page visit sent with every join (tests pass a fixed one). */
+  readonly tabId?: string;
+}
+
+function randomTabId(): string {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
 /**
@@ -65,7 +73,11 @@ export interface SpaceSessionOptions {
  * - forwards local steps as `player:move`, and `world:delta` / `player:correct` to the scene,
  *   only while joined; snapshots and deltas also keep `worldStore.players` up to date (the
  *   positions React features read, e.g. the fading of hallway videos);
- * - handles `space:kicked` (no automatic reconnection) and join errors.
+ * - handles `space:kicked` (no automatic reconnection) and join errors;
+ * - only the first join of the visit and "Usar Plaza aquí" / "Reintentar" may take the avatar
+ *   from another tab (`takeover`); an automatic rejoin after a reconnection that finds another
+ *   tab in charge ends like a `SESSION_REPLACED` kick, so a tab that comes back online never
+ *   takes the office from the tab the person is using.
  *
  * Framework-free: `useSpaceSession` starts and stops it with the page.
  */
@@ -76,9 +88,13 @@ export class SpaceSession {
   private attempt = 0;
   private joined = false;
   private joining = false;
+  /** The next join may replace another tab: the first one of the visit, and after `retry()`. */
+  private takeover = true;
+  private readonly tabId: string;
 
   constructor(private readonly options: SpaceSessionOptions) {
     this.store = options.store ?? sessionStore;
+    this.tabId = options.tabId ?? randomTabId();
   }
 
   get state(): SpaceSessionState {
@@ -87,6 +103,7 @@ export class SpaceSession {
 
   start(): void {
     const { client, events, world } = this.options;
+    this.takeover = true;
     this.store.getState().set({ kind: 'idle' });
     this.cleanups.push(
       client.onConnect(() => {
@@ -157,6 +174,7 @@ export class SpaceSession {
    */
   retry(): void {
     this.invalidate();
+    this.takeover = true;
     this.store.getState().set({ kind: 'idle' });
     if (this.options.client.connected) this.maybeJoin();
     else this.options.client.connect();
@@ -180,16 +198,25 @@ export class SpaceSession {
     this.joining = true;
     const attempt = this.attempt;
     this.store.getState().set({ kind: 'joining' });
-    client.join(spaceId).then(
+    client.join(spaceId, { tabId: this.tabId, takeover: this.takeover }).then(
       (snapshot) => {
         if (attempt !== this.attempt) return;
         this.joining = false;
+        this.takeover = false;
         this.apply(snapshot);
       },
       (error: unknown) => {
         if (attempt !== this.attempt) return;
         this.joining = false;
-        this.fail(isRealtimeRequestError(error) ? error.code : 'INTERNAL');
+        const code = isRealtimeRequestError(error) ? error.code : 'INTERNAL';
+        if (code === 'SESSION_REPLACED') {
+          // Another tab is using the office: step aside as if it had just replaced this one.
+          this.invalidate();
+          this.store.getState().set({ kind: 'kicked', reason: 'SESSION_REPLACED' });
+          client.disconnect();
+          return;
+        }
+        this.fail(code);
       },
     );
   }
