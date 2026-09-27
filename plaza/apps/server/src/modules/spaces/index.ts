@@ -4,7 +4,7 @@ import { registerSpacesRoutes } from './spaces.routes.js';
 import { SpacesService } from './spaces.service.js';
 
 export type { KickListener, SpaceNotifier } from './space-notifier.js';
-export type { SpacesService } from './spaces.service.js';
+export { freeDesk, type SpacesService } from './spaces.service.js';
 export { mergeRooms } from './space-rooms.js';
 
 /** What the spaces module offers to later modules (rooms, world, desks, chat…). */

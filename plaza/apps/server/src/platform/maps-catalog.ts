@@ -11,6 +11,7 @@ import {
 import {
   parseMap,
   type AvatarDto,
+  type DecorItemDto,
   type MapTemplateDto,
   type ThemeDto,
   type WorldMap,
@@ -46,6 +47,8 @@ export interface MapsCatalog {
   worldMap(templateId: string): Promise<WorldMap>;
   listAvatars(): AvatarDto[];
   hasAvatar(avatarId: string): boolean;
+  /** Desk decoration catalog (E9-S3): ids, Spanish names and sprite URLs. */
+  listDecor(): DecorItemDto[];
 }
 
 /** Folder of the `@plaza/maps` package (manifest, templates, avatars, decor). */
@@ -211,5 +214,13 @@ export class ManifestMapsCatalog implements MapsCatalog {
 
   hasAvatar(avatarId: string): boolean {
     return this.manifest.avatars.some((avatar) => avatar.id === avatarId);
+  }
+
+  listDecor(): DecorItemDto[] {
+    return this.manifest.decor.map((item) => ({
+      id: item.id,
+      name: item.name,
+      spriteUrl: `${MAP_ASSETS_PREFIX}/decor/${item.file}`,
+    }));
   }
 }

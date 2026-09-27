@@ -353,7 +353,7 @@ describe('spaces module (E2-S2..S6)', () => {
       const url = apiPath(API_PATHS.space, { spaceId: space.id });
 
       const domain = await request(ana, 'PATCH', url, { allowedDomain: 'not a domain' });
-      const theme = await request(ana, 'PATCH', url, { themeId: 'watercolor' });
+      const theme = await request(ana, 'PATCH', url, { themeId: 'sepia' });
       const validTheme = await request(ana, 'PATCH', url, { themeId: 'night' });
 
       expect(domain.statusCode).toBe(400);

@@ -2,6 +2,7 @@ import { MAX_PLAYERS_PER_SPACE } from '@plaza/shared';
 
 import { systemTimers, type Timers } from '../../platform/timers.js';
 import type { PlazaModule } from '../types.js';
+import { registerDeskGoto } from './desk-goto.js';
 import { WorldRepository } from './world.repository.js';
 import { WorldService } from './world.service.js';
 import { registerWorldSocket } from './world.socket.js';
@@ -33,9 +34,10 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
     register({ app, io, container, services, socketDeps }) {
       const spaces = services.get('spaces');
       const timers = options.timers ?? systemTimers;
+      const repository = new WorldRepository(container.db);
       const world = new WorldService({
         io,
-        repository: new WorldRepository(container.db),
+        repository,
         spaces: spaces.service,
         maps: container.maps,
         media: services.get('media'),
@@ -49,6 +51,7 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
         ),
       });
       registerWorldSocket(io, socketDeps, world, () => timers.now());
+      registerDeskGoto(io, socketDeps, world, repository, () => timers.now());
       spaces.notifier.onKick((spaceId, userId, reason) => {
         world.kicked(spaceId, userId, reason);
       });
