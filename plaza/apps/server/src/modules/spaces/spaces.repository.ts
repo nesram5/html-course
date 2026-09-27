@@ -1,4 +1,4 @@
-import type { MeetingRoom, Membership, Prisma, Role, Space, User } from '@prisma/client';
+import type { MeetingRoom, Membership, Prisma, Role, Space, SpaceBan, User } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';
 
@@ -8,6 +8,7 @@ export type DbClient = Database | Prisma.TransactionClient;
 export type SpaceWithRooms = Space & { rooms: MeetingRoom[] };
 export type MembershipWithSpace = Membership & { space: Space };
 export type MembershipWithUser = Membership & { user: User };
+export type SpaceBanWithUser = SpaceBan & { user: User };
 
 export interface NewSpace {
   name: string;
@@ -100,5 +101,36 @@ export class SpacesRepository {
 
   findUser(id: string): Promise<User | null> {
     return this.db.user.findUnique({ where: { id } });
+  }
+
+  // ── Bans (E2-S6 follow-up) ────────────────────────────────────────────────
+
+  async isBanned(spaceId: string, userId: string): Promise<boolean> {
+    const ban = await this.db.spaceBan.findUnique({
+      where: { spaceId_userId: { spaceId, userId } },
+    });
+    return ban !== null;
+  }
+
+  async ban(spaceId: string, userId: string): Promise<void> {
+    await this.db.spaceBan.upsert({
+      where: { spaceId_userId: { spaceId, userId } },
+      create: { spaceId, userId },
+      update: {},
+    });
+  }
+
+  /** `false` when the person was not banned. */
+  async unban(spaceId: string, userId: string): Promise<boolean> {
+    const { count } = await this.db.spaceBan.deleteMany({ where: { spaceId, userId } });
+    return count > 0;
+  }
+
+  listBans(spaceId: string): Promise<SpaceBanWithUser[]> {
+    return this.db.spaceBan.findMany({
+      where: { spaceId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

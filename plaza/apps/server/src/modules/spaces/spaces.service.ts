@@ -9,6 +9,7 @@ import {
   type MeetingRoomDto,
   type MemberDto,
   type Role,
+  type SpaceBanDto,
   type SpaceDetailDto,
   type SpaceSummaryDto,
   type UpdateSpaceBody,
@@ -169,6 +170,7 @@ export class SpacesService {
     ) {
       throw new AppError('NOT_A_MEMBER', 'Space not found');
     }
+    await this.#assertNotBanned(space.id, userId);
     const joined = await this.#addMemberIdempotent(space.id, userId);
     return { space: await this.#detail(space, 'MEMBER'), joined };
   }
@@ -195,6 +197,7 @@ export class SpacesService {
     if (existing !== null) {
       return { space: this.#summary(space, existing.role), alreadyMember: true };
     }
+    await this.#assertNotBanned(space.id, userId);
     const joined = await this.#addMemberIdempotent(space.id, userId);
     return { space: this.#summary(space, 'MEMBER'), alreadyMember: !joined };
   }
@@ -218,8 +221,9 @@ export class SpacesService {
   }
 
   /**
-   * Removes a member (owner only). Access is lost at once: the membership is deleted and their
-   * sockets get `space:kicked`. The last owner cannot be removed (409 `LAST_OWNER`).
+   * Removes a member (owner only). Access is lost at once: the membership is deleted, the person
+   * is banned (invite links and the allowed domain no longer let them in) and their sockets get
+   * `space:kicked`. The last owner cannot be removed (409 `LAST_OWNER`).
    */
   async removeMember(spaceId: string, actorId: string, targetUserId: string): Promise<void> {
     await this.assertOwner(spaceId, actorId);
@@ -228,8 +232,39 @@ export class SpacesService {
     if (target.role === 'OWNER' && (await this.#repository.countOwners(spaceId)) <= 1) {
       throw new AppError('LAST_OWNER');
     }
-    await this.#repository.removeMember(spaceId, targetUserId);
+    await this.deps.db.$transaction(async (tx) => {
+      const repository = new SpacesRepository(tx);
+      await repository.removeMember(spaceId, targetUserId);
+      await repository.ban(spaceId, targetUserId);
+    });
     await this.deps.notifier.kick(spaceId, targetUserId, 'REMOVED');
+  }
+
+  /** People removed from the space (owner only), newest first. */
+  async bans(spaceId: string, actorId: string): Promise<SpaceBanDto[]> {
+    await this.assertOwner(spaceId, actorId);
+    const bans = await this.#repository.listBans(spaceId);
+    return bans.map((ban) => ({
+      userId: ban.userId,
+      displayName: ban.user.displayName,
+      avatarId: ban.user.avatarId,
+      email: ban.user.email,
+      createdAt: ban.createdAt.toISOString(),
+    }));
+  }
+
+  /** Lifts a ban (owner only): the person may join again. Not banned → 404 `NOT_FOUND`. */
+  async unban(spaceId: string, actorId: string, targetUserId: string): Promise<void> {
+    await this.assertOwner(spaceId, actorId);
+    if (!(await this.#repository.unban(spaceId, targetUserId))) {
+      throw new AppError('NOT_FOUND', 'This person is not banned');
+    }
+  }
+
+  async #assertNotBanned(spaceId: string, userId: string): Promise<void> {
+    if (await this.#repository.isBanned(spaceId, userId)) {
+      throw new AppError('BANNED_FROM_SPACE', 'You were removed from this space');
+    }
   }
 
   // ── Rooms ─────────────────────────────────────────────────────────────────

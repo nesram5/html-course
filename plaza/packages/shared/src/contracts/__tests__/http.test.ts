@@ -13,6 +13,7 @@ import {
   MapTemplateIdSchema,
   MediaTokenResponseSchema,
   MeResponseSchema,
+  SpaceBansResponseSchema,
   TrackEventBodySchema,
   UpdateMeBodySchema,
   UpdateRoomBodySchema,
@@ -29,6 +30,9 @@ describe('apiPath', () => {
       '/api/spaces/by-slug/acme/enter',
     );
     expect(apiPath(API_PATHS.health, {})).toBe('/api/health');
+    expect(apiPath(API_PATHS.ban, { spaceId: 'sp1', userId: 'u2' })).toBe(
+      '/api/spaces/sp1/bans/u2',
+    );
   });
 
   it('throws when a parameter is missing at runtime', () => {
@@ -156,5 +160,21 @@ describe('misc', () => {
         realtime: { connectedBySpace: {}, avgTickMs: null },
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('space bans (E2-S6 follow-up)', () => {
+  it('lists removed people with their profile and the date of the ban', () => {
+    const ban = {
+      userId: 'u2',
+      displayName: 'Luis',
+      avatarId: 'avatar-02',
+      email: 'luis@acme.com',
+      createdAt: '2026-09-27T10:00:00.000Z',
+    };
+    expect(SpaceBansResponseSchema.parse({ bans: [ban] }).bans).toEqual([ban]);
+    expect(SpaceBansResponseSchema.safeParse({ bans: [{ ...ban, email: 'nope' }] }).success).toBe(
+      false,
+    );
   });
 });

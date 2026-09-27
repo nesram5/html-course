@@ -23,6 +23,7 @@ describe('error codes', () => {
       'RATE_LIMITED',
       'UNKNOWN_MAP_TEMPLATE',
       'INVALID_INVITE',
+      'BANNED_FROM_SPACE',
       'INTERNAL',
     ]) {
       expect(isErrorCode(code)).toBe(true);

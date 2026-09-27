@@ -26,6 +26,7 @@ model User {
   memberships    Membership[]
   messages       ChatMessage[]
   feedback       Feedback[]
+  spaceBans      SpaceBan[]
 }
 
 model Session {
@@ -60,6 +61,7 @@ model Space {
   memberships     Membership[]
   rooms           MeetingRoom[]
   messages        ChatMessage[]
+  bans            SpaceBan[]
 
   @@index([ownerId])
 }
@@ -86,6 +88,19 @@ model Membership {
   @@id([userId, spaceId])
   @@unique([spaceId, deskId])
   @@index([spaceId])
+}
+
+/// A person removed from a space by an owner (E2-S6): invite links and the allowed domain no
+/// longer let them in until an owner lifts the ban.
+model SpaceBan {
+  spaceId   String
+  userId    String
+  createdAt DateTime @default(now())
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([spaceId, userId])
+  @@index([userId])
 }
 
 model MeetingRoom {
