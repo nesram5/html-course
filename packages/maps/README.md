@@ -1,6 +1,6 @@
-# @plaza/maps
+# @bululu/maps
 
-Map templates, avatar sprites and the desk decoration catalog of Plaza. Everything is listed in
+Map templates, avatar sprites and the desk decoration catalog of Bululu. Everything is listed in
 [`manifest.json`](./manifest.json), whose zod schema lives in [`src/manifest.ts`](./src/manifest.ts)
 (`MapsManifestSchema`). `pnpm validate:maps` (run in CI) checks the manifest and the files it references.
 
@@ -13,7 +13,7 @@ There is no hand-drawn art: **every file** (maps, themes, tileset, avatars, deco
 is produced by the deterministic generator in [`scripts/generator/`](./scripts/generator):
 
 ```bash
-pnpm --filter @plaza/maps generate   # rewrites the committed assets byte for byte
+pnpm --filter @bululu/maps generate   # rewrites the committed assets byte for byte
 pnpm validate:maps                   # checks them (also run in CI)
 ```
 
@@ -38,7 +38,7 @@ packages/maps/
 ├── decor/<file>.png         # desk decoration objects
 ├── tilesets/pixel-office.png # tileset referenced by every map.tmj (for Tiled; not served)
 └── scripts/
-    ├── generate.ts          # `pnpm --filter @plaza/maps generate`
+    ├── generate.ts          # `pnpm --filter @bululu/maps generate`
     ├── generator/           # procedural art and map layouts
     └── validate-maps.ts     # `pnpm validate:maps` (checks in lib/validate.ts)
 ```
@@ -64,7 +64,7 @@ Required layers (validated by `pnpm validate:maps`):
 | `spawns`                      | objects (points)              | Spawn points (at least 2)                                                                                               |
 | `desks`                       | objects (rectangles)          | Assignable desks over furniture that already blocks movement. Property: `deskId`; 3 decoration slots at fixed positions |
 
-`@plaza/shared` turns a `.tmj` into a `WorldMap` with `parseMap` and answers `isWalkable` / `roomAt`,
+`@bululu/shared` turns a `.tmj` into a `WorldMap` with `parseMap` and answers `isWalkable` / `roomAt`,
 identically on client and server.
 
 ## Office styles (themes, architecture §8.1 and E9)

@@ -1,4 +1,4 @@
-# 03 · Estándares de código — Plaza MVP
+# 03 · Estándares de código — Bululu MVP
 
 Estos estándares aplican a todo el monorepo descrito en la [arquitectura](./02-arquitectura.md).
 Lo que se puede automatizar **se automatiza** (lint, formato, tipos, tests en CI); el resto se revisa en los PR.
@@ -85,11 +85,11 @@ español (a través de i18n).
 ## 4. Estándares del backend
 
 - **Capas** (ver arquitectura §5.1): `routes/socket → service → repository/domain`. Un _route handler_ hace solo: validar, llamar al servicio, mapear la respuesta.
-- **Validación en el borde:** todo `body`, `params`, `query` y payload de socket pasa por su esquema zod de `@plaza/shared` antes de llegar al servicio.
+- **Validación en el borde:** todo `body`, `params`, `query` y payload de socket pasa por su esquema zod de `@bululu/shared` antes de llegar al servicio.
 - **Inyección de dependencias manual** en `container.ts`; los servicios reciben interfaces, no instancias de Prisma globales.
 - **Transacciones** con `prisma.$transaction` en el servicio, nunca en el _repository_ de forma implícita.
 - **Handlers de socket**: siempre con `try/catch` central (_wrapper_ `safeHandler`) que registra y emite `error`; un error nunca tumba el proceso.
-- **Nada de lógica en el _tick_** fuera de `@plaza/shared/world`: el _tick_ del servidor solo orquesta funciones puras y emite.
+- **Nada de lógica en el _tick_** fuera de `@bululu/shared/world`: el _tick_ del servidor solo orquesta funciones puras y emite.
 - **Logs**: usar el `logger` inyectado (pino), nunca `console.*`. Nunca registrar _tokens_ (de sesión, de Google o de LiveKit), códigos OAuth ni el cuerpo de los mensajes de chat.
 - **Servicios externos** (Google, LiveKit) solo a través de las interfaces de `adapters/`; ningún servicio importa sus SDK directamente.
 - **Tokens de Google**: se usan en memoria durante la petición y se descartan; nunca se guardan en BD ni en logs.
@@ -119,13 +119,13 @@ export function registerInvitationRoutes(
   - Estado vivo del mundo y de medios → Zustand (un _store_ por dominio: `worldStore`, `mediaStore`, `presenceStore`, `chatStore`).
   - Estado local de UI → `useState`.
 - **Phaser aislado:** solo `features/world` importa Phaser. Las escenas leen de los _stores_ con `store.subscribe` y se limpian en `shutdown`.
-- **Sin lógica de negocio en componentes**: cálculos de mundo en `@plaza/shared/world`, llamadas de red en `RealtimeClient`/`MediaController`/clientes API.
+- **Sin lógica de negocio en componentes**: cálculos de mundo en `@bululu/shared/world`, llamadas de red en `RealtimeClient`/`MediaController`/clientes API.
 - **Accesibilidad:** elementos interactivos nativos (`<button>`, no `<div onClick>`), `aria-label` en botones de icono, foco visible, orden de tabulación lógico; `eslint-plugin-jsx-a11y` activo.
 - **Textos:** siempre con `t('clave')` (i18next); nada de _strings_ de UI incrustados.
 - **Estilos:** Tailwind CSS con _tokens_ de diseño en `tailwind.config.ts`; sin estilos en línea salvo valores dinámicos.
 - **Recursos de medios** (`MediaStream`, pistas, `Room`): siempre liberados en el _cleanup_ del efecto o del controlador.
 
-## 6. Contratos compartidos (`@plaza/shared`)
+## 6. Contratos compartidos (`@bululu/shared`)
 
 - Cada evento de socket y cada endpoint REST tiene su esquema en `packages/shared/src/{http,realtime}/`.
 - Mapa tipado de eventos, usado por el servidor y el cliente de Socket.IO:
@@ -195,7 +195,7 @@ install (pnpm, caché) → lint → typecheck → test:unit → test:int (servic
 
 - [ ] Código que cumple estos estándares; lint y _typecheck_ sin errores ni `eslint-disable` injustificados.
 - [ ] Tests del nivel adecuado escritos y en verde; cobertura mínima respetada.
-- [ ] Contratos actualizados en `@plaza/shared` (y `PROTOCOL_VERSION` si hubo cambio incompatible).
+- [ ] Contratos actualizados en `@bululu/shared` (y `PROTOCOL_VERSION` si hubo cambio incompatible).
 - [ ] Textos de UI en i18n; accesibilidad básica verificada con teclado.
 - [ ] Revisión de código aprobada; CI en verde; desplegado en _staging_.
 - [ ] Criterios de aceptación verificados en _staging_ por otra persona.

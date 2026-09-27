@@ -1,12 +1,12 @@
-# Plaza · Requisitos de red para el área de TI
+# Bululu · Requisitos de red para el área de TI
 
-Plaza es una oficina virtual que funciona en el navegador. Esta guía resume qué debe permitir la
+Bululu es una oficina virtual que funciona en el navegador. Esta guía resume qué debe permitir la
 red de su empresa para que funcionen el mapa, el chat y la **charla de pasillo** (audio y vídeo
 entre personas cercanas en el mapa). Las reuniones de las salas usan Google Meet.
 
 ## Dominios y puertos a permitir (salida)
 
-Sustituya `<dominio>` por el dominio de Plaza que le indiquemos.
+Sustituya `<dominio>` por el dominio de Bululu que le indiquemos.
 
 | Destino                                          | Puerto y protocolo          | Para qué                                          | Imprescindible |
 | ------------------------------------------------ | --------------------------- | ------------------------------------------------- | -------------- |
@@ -19,7 +19,7 @@ Sustituya `<dominio>` por el dominio de Plaza que le indiquemos.
 | `accounts.google.com`, `*.googleusercontent.com` | TCP 443                     | Inicio de sesión con Google                       | Sí             |
 | `meet.google.com` y dominios de Google Meet      | Según Google Meet           | Salas de reunión                                  | Sí (salas)     |
 
-Con **solo TCP 443** abierto hacia los dominios anteriores, Plaza funciona: el audio y el vídeo
+Con **solo TCP 443** abierto hacia los dominios anteriores, Bululu funciona: el audio y el vídeo
 viajan por TURN sobre TLS en `turn.<dominio>:443`. Abrir además UDP mejora la latencia y reduce la
 carga del servidor.
 
@@ -55,4 +55,4 @@ Antes de invitar a su equipo haremos con ustedes una prueba: dos personas de su 
 espacio de prueba, se acercan en el mapa y comprueban que se ven y se oyen. Si no funciona, les
 pediremos el resultado de `chrome://webrtc-internals` para ver qué puerto está bloqueado.
 
-Contacto técnico de Plaza: el que figure en su invitación al piloto.
+Contacto técnico de Bululu: el que figure en su invitación al piloto.

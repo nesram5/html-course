@@ -30,23 +30,23 @@ suscripciones (ver [Método](#método-medios)).
 
 La prueba necesita el login de prueba (los bots no pueden pasar por Google) y el servidor se
 niega a arrancar con `AUTH_TEST_LOGIN=true` y `NODE_ENV=production` (E8-S2). Por eso se usa un
-**perfil dedicado, no productivo**: la **imagen de producción** (`plaza-server`, el mismo
+**perfil dedicado, no productivo**: la **imagen de producción** (`bululu-server`, el mismo
 `node dist/main.js` compilado, las mismas dependencias y el mismo Node 22) con `NODE_ENV=test`,
 `AUTH_TEST_LOGIN=true` y una base de datos propia. Frente a producción solo cambia que existe la
 ruta de login de prueba, que los _assets_ de mapas no se cachean y que el límite HTTP se sube
 para que 50 bots puedan iniciar sesión desde una IP; el código del tiempo real es idéntico.
 
 ```bash
-docker build -f apps/server/Dockerfile -t plaza-server:local .
-docker run --rm --network host -e DATABASE_URL=postgresql://postgres@localhost:5432/plaza_load \
-  plaza-server:local migrate
-docker run -d --name plaza-load --network host --cpus 2 \
+docker build -f apps/server/Dockerfile -t bululu-server:local .
+docker run --rm --network host -e DATABASE_URL=postgresql://postgres@localhost:5432/bululu_load \
+  bululu-server:local migrate
+docker run -d --name bululu-load --network host --cpus 2 \
   -e NODE_ENV=test -e AUTH_TEST_LOGIN=true -e PORT=3502 -e LOG_LEVEL=warn \
-  -e DATABASE_URL=postgresql://postgres@localhost:5432/plaza_load \
+  -e DATABASE_URL=postgresql://postgres@localhost:5432/bululu_load \
   -e SESSION_SECRET=<32+ caracteres> -e PUBLIC_URL=http://localhost:5502 \
   -e LIVEKIT_URL=ws://localhost:7880 -e LIVEKIT_API_KEY=devkey -e LIVEKIT_API_SECRET=secret \
-  -e RATE_LIMIT_PER_MINUTE=100000 -e HEALTH_TOKEN=<16+ caracteres> plaza-server:local
-PLAZA_HEALTH_TOKEN=<el mismo> pnpm --filter @plaza/load load \
+  -e RATE_LIMIT_PER_MINUTE=100000 -e HEALTH_TOKEN=<16+ caracteres> bululu-server:local
+BULULU_HEALTH_TOKEN=<el mismo> pnpm --filter @bululu/load load \
   --url http://127.0.0.1:3502 --bots 50 --duration 300 --sample-every 30
 ```
 
@@ -99,7 +99,7 @@ test E2E `world-performance.spec.ts` ya vigila el presupuesto por fotograma del 
   con `network_mode: host`, puertos propios y métricas Prometheus, misma versión que la VM de
   medios. La CPU se lee con `docker stats` (100 % = un núcleo) y el tráfico con los contadores
   `livekit_packet_bytes{direction}`.
-- **48 personas en UNA sala de LiveKit**, como un espacio de Plaza (`space_<id>`), repartidas en
+- **48 personas en UNA sala de LiveKit**, como un espacio de Bululu (`space_<id>`), repartidas en
   4 procesos de `@livekit/rtc-node`. Cada una publica micrófono (tono de 220 Hz, Opus sin DTX:
   siempre envía) y cámara, y se suscribe **solo** a las otras 3 de su conversación, que es lo que
   hace el navegador con `media:peers` (`autoSubscribe: false`).
@@ -107,7 +107,7 @@ test E2E `world-performance.spec.ts` ya vigila el presupuesto por fotograma del 
   LiveKit, en una sola capa. El ruido no se comprime, así que el codificador envía siempre al
   tope: el SFU reenvía tantos paquetes como con una cámara real a esa tasa, con una fracción del
   coste de codificar 540p. Equivale al caso «tira de vídeo»: con _adaptive stream_ y _dynacast_
-  (activos en Plaza) cada persona solo sube la capa que alguien mira (180p o 360p), y esta prueba
+  (activos en Bululu) cada persona solo sube la capa que alguien mira (180p o 360p), y esta prueba
   supone siempre la de 360p para cada _peer_, es decir, **por encima** de lo real. Al ampliar un
   vídeo (capa de 540p, ~800 kbps) sube el tráfico de esa persona, no la CPU de forma apreciable.
 - Los clientes corren con `nice 10` para que LiveKit tenga prioridad, pero la máquina es
@@ -117,12 +117,12 @@ test E2E `world-performance.spec.ts` ya vigila el presupuesto por fotograma del 
   se da también la CPU **por Mbps reenviado**, que es lo que escala.
 
 ```bash
-docker run -d --name plaza-livekit-load --network host \
+docker run -d --name bululu-livekit-load --network host \
   -v $PWD/livekit-load.yaml:/etc/livekit.yaml:ro livekit/livekit-server:v1.9 --config /etc/livekit.yaml
 # livekit-load.yaml: port 7980, rtc.tcp_port 7981, rtc.udp_port 7982, prometheus_port 7989, keys
-nice -n 10 pnpm --filter @plaza/load media --livekit-url ws://127.0.0.1:7980 \
+nice -n 10 pnpm --filter @bululu/load media --livekit-url ws://127.0.0.1:7980 \
   --api-key <key> --api-secret <secret> --groups 12 --size 4 --duration 600 --processes 4 \
-  --container plaza-livekit-load --metrics-url http://127.0.0.1:7989/metrics
+  --container bululu-livekit-load --metrics-url http://127.0.0.1:7989/metrics
 ```
 
 ### Resultados (10 min)

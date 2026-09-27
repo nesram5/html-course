@@ -1,8 +1,8 @@
-# @plaza/load — load tests (E8-S3)
+# @bululu/load — load tests (E8-S3)
 
 Two tools; results and method in [`docs/load-test.md`](../../docs/load-test.md).
 
-## Realtime: `pnpm --filter @plaza/load load`
+## Realtime: `pnpm --filter @bululu/load load`
 
 N bots with `socket.io-client`, signed in through the test login, in one new space: each joins with
 `space:join` and walks randomly (respecting the collisions of the parsed map) at a fixed rate. The
@@ -16,22 +16,22 @@ bot and the server `/api/health` figures (connected per space, average tick).
 # docs/load-test.md).
 AUTH_TEST_LOGIN=true RATE_LIMIT_PER_MINUTE=100000 HEALTH_TOKEN=<16+ chars> PORT=3201 … node apps/server/dist/main.js
 
-PLAZA_HEALTH_TOKEN=<same> pnpm --filter @plaza/load load --url http://127.0.0.1:3201 --bots 50 --duration 300
+BULULU_HEALTH_TOKEN=<same> pnpm --filter @bululu/load load --url http://127.0.0.1:3201 --bots 50 --duration 300
 ```
 
 Options: `--bots` (50), `--duration` seconds (60), `--steps-per-second` per bot (4; the server
 accepts 10), `--template` (`office-small@1`), `--url` (`http://localhost:3000`),
 `--sample-every` seconds (30: server memory, tick and the movement p95 of each interval, plus
-the heap trend at the end), `--health-token` (default `$PLAZA_HEALTH_TOKEN`, needed for the
+the heap trend at the end), `--health-token` (default `$BULULU_HEALTH_TOKEN`, needed for the
 figures when the server has a `HEALTH_TOKEN`).
 
 If a bot cannot connect or its `space:join` is refused (`SPACE_FULL` when `--bots` is above the
 server's `MAX_PLAYERS_PER_SPACE`, `RATE_LIMITED`...), every bot is disconnected and the script exits
 with code 1 and a message such as `Bot 51 could not join: SPACE_FULL (...)`.
 
-## Media: `pnpm --filter @plaza/load media`
+## Media: `pnpm --filter @bululu/load media`
 
-G conversations of N people (default 12 × 4) in one LiveKit room, like one Plaza space: each
+G conversations of N people (default 12 × 4) in one LiveKit room, like one Bululu space: each
 person (an `@livekit/rtc-node` client) publishes a synthetic camera and microphone and subscribes
 only to the others of its conversation, as `media:peers` would make the browser do. The people
 are spread over `--processes` client processes. Every `--sample-every` seconds it reads the
@@ -39,7 +39,7 @@ LiveKit container CPU (`docker stats`) and, with `--metrics-url`, its traffic fr
 Prometheus byte counters.
 
 ```bash
-pnpm --filter @plaza/load media --livekit-url ws://127.0.0.1:7880 --api-key devkey --api-secret secret \
+pnpm --filter @bululu/load media --livekit-url ws://127.0.0.1:7880 --api-key devkey --api-secret secret \
   --container livekit --metrics-url http://127.0.0.1:6789/metrics --duration 600
 ```
 

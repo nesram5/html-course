@@ -1,13 +1,13 @@
-# 01 · Brief del requerimiento — Plaza MVP
+# 01 · Brief del requerimiento — Bululu MVP
 
-| Campo                 | Valor                                                                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Producto              | Plaza (nombre en clave) — oficina virtual 2D con vídeo por proximidad                                                                       |
-| Referencia            | Gather Virtual Offices ([vídeo](https://youtu.be/zbllvQZRyh0), [análisis](./README.md#análisis-del-vídeo-de-referencia))                    |
-| Versión del documento | 2.2 — alcance simplificado, servidor de medios propio y personalización de la oficina (ver [historial](./README.md#historial-de-versiones)) |
-| Alcance               | Primera versión MVP (beta privada)                                                                                                          |
-| Stack obligatorio     | TypeScript en frontend y backend                                                                                                            |
-| Decisiones clave      | Login solo con Google · Charla de pasillo con LiveKit (servidor propio en la beta) · Salas de reunión con Google Meet                       |
+| Campo                 | Valor                                                                                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Producto              | Bululu — oficina virtual 2D con vídeo por proximidad                                                                                                                  |
+| Referencia            | Gather Virtual Offices ([vídeo](https://youtu.be/zbllvQZRyh0), [análisis](./README.md#análisis-del-vídeo-de-referencia))                                              |
+| Versión del documento | 2.3 — alcance simplificado, servidor de medios propio, personalización de la oficina y nombre definitivo Bululu (ver [historial](./README.md#historial-de-versiones)) |
+| Alcance               | Primera versión MVP (beta privada)                                                                                                                                    |
+| Stack obligatorio     | TypeScript en frontend y backend                                                                                                                                      |
+| Decisiones clave      | Login solo con Google · Charla de pasillo con LiveKit (servidor propio en la beta) · Salas de reunión con Google Meet                                                 |
 
 ---
 
@@ -25,7 +25,7 @@ lo que genera:
 
 > "Entra a la oficina, mira quién está y **camina hasta él para hablar**. Sin enlaces, sin agendas."
 
-Plaza ofrece un mapa 2D persistente donde cada persona es un avatar. Al acercar tu avatar al
+Bululu ofrece un mapa 2D persistente donde cada persona es un avatar. Al acercar tu avatar al
 de otra persona, el audio y el vídeo se conectan solos **dentro del mapa**; al alejarte, se desconectan.
 Para reuniones formales, cada sala del mapa tiene su propio **Google Meet** permanente: entras en la sala
 y un clic te lleva a la reunión, con la pantalla compartida, la grabación y la transcripción de Meet.
@@ -38,7 +38,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | #   | Objetivo                                           | Métrica                                                                                            | Meta en la beta                                                                                         |
 | --- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | O1  | Validar que la conversación por proximidad es útil | Conversaciones espontáneas (≥ 2 personas conectadas > 30 s en el pasillo) por usuario activo y día | ≥ 3                                                                                                     |
-| O2  | Validar la retención de un equipo real             | Equipos piloto que usan Plaza ≥ 3 días/semana durante 4 semanas                                    | ≥ 3 de 5 equipos                                                                                        |
+| O2  | Validar la retención de un equipo real             | Equipos piloto que usan Bululu ≥ 3 días/semana durante 4 semanas                                   | ≥ 3 de 5 equipos                                                                                        |
 | O3  | Calidad técnica suficiente                         | Tiempo desde "entrar en proximidad" hasta oír/ver al otro (p95)                                    | < 1,5 s                                                                                                 |
 | O4  | Estabilidad                                        | Sesiones sin errores críticos (desconexión o pérdida de A/V no recuperada)                         | ≥ 98 %                                                                                                  |
 | O5  | Onboarding simple                                  | Tiempo desde el enlace de invitación hasta estar dentro del mapa                                   | < 30 s                                                                                                  |
@@ -96,7 +96,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 | RN-06 | Máximo 50 personas conectadas por espacio.                                                                                                                                                                   |
 | RN-07 | Máximo 8 personas en una conversación de pasillo (se priorizan las más cercanas). Para grupos mayores, se usa una sala.                                                                                      |
 | RN-08 | Solo el _owner_ puede regenerar el enlace, configurar el dominio permitido, expulsar y cambiar los enlaces de Meet.                                                                                          |
-| RN-09 | Plaza nunca graba audio ni vídeo. La grabación o transcripción en las salas depende de Google Meet y de la configuración de Workspace de cada empresa.                                                       |
+| RN-09 | Bululu nunca graba audio ni vídeo. La grabación o transcripción en las salas depende de Google Meet y de la configuración de Workspace de cada empresa.                                                      |
 | RN-10 | Dos avatares pueden compartir casilla (evita bloqueos en pasillos).                                                                                                                                          |
 | RN-11 | Solo se puede llamar (_ring_) a la misma persona una vez cada 30 s.                                                                                                                                          |
 | RN-12 | Las conversaciones de pasillo **no son privadas** (como en una oficina abierta). La privacidad se ofrece en las salas (Google Meet). Esto se comunica en la interfaz.                                        |
@@ -106,18 +106,18 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 
 ## 7. Requisitos no funcionales
 
-| ID     | Categoría      | Requisito                                                                                                                                                                                                                                      |
-| ------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RNF-01 | Rendimiento    | Latencia del movimiento de otros usuarios p95 < 200 ms. 60 fps en un portátil medio con 50 avatares.                                                                                                                                           |
-| RNF-02 | Rendimiento    | Conexión A/V tras entrar en proximidad p95 < 1,5 s.                                                                                                                                                                                            |
-| RNF-03 | Compatibilidad | Últimas 2 versiones de Chrome, Edge, Firefox y Safari de escritorio.                                                                                                                                                                           |
-| RNF-04 | Disponibilidad | 99 % mensual en la beta. Reconexión automática del socket y de los medios tras cortes < 30 s.                                                                                                                                                  |
-| RNF-05 | Seguridad      | HTTPS/WSS en todo. OAuth 2.0 con PKCE y `state`; verificación del `id_token`. Cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Validación de toda entrada con esquemas. _Rate limit_ en eventos de socket.                                        |
-| RNF-06 | Privacidad     | GDPR: consentimiento de cámara/micrófono, borrado de cuenta, sin grabaciones en Plaza. Al entrar en una sala, el servidor **silencia** las pistas de pasillo de esa persona (no depende solo del cliente). Plaza no guarda _tokens_ de Google. |
-| RNF-07 | Accesibilidad  | Navegación por teclado de toda la interfaz (no del mapa), contraste AA, `aria-label` en controles.                                                                                                                                             |
-| RNF-08 | Observabilidad | Logs estructurados y errores de cliente y servidor en Sentry.                                                                                                                                                                                  |
-| RNF-09 | Mantenibilidad | Monolito modular; estado de espacios detrás de una interfaz sustituible; servicios externos (Google, LiveKit) detrás de adaptadores.                                                                                                           |
-| RNF-10 | Idioma         | Interfaz en español, preparada para i18n.                                                                                                                                                                                                      |
+| ID     | Categoría      | Requisito                                                                                                                                                                                                                                        |
+| ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RNF-01 | Rendimiento    | Latencia del movimiento de otros usuarios p95 < 200 ms. 60 fps en un portátil medio con 50 avatares.                                                                                                                                             |
+| RNF-02 | Rendimiento    | Conexión A/V tras entrar en proximidad p95 < 1,5 s.                                                                                                                                                                                              |
+| RNF-03 | Compatibilidad | Últimas 2 versiones de Chrome, Edge, Firefox y Safari de escritorio.                                                                                                                                                                             |
+| RNF-04 | Disponibilidad | 99 % mensual en la beta. Reconexión automática del socket y de los medios tras cortes < 30 s.                                                                                                                                                    |
+| RNF-05 | Seguridad      | HTTPS/WSS en todo. OAuth 2.0 con PKCE y `state`; verificación del `id_token`. Cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Validación de toda entrada con esquemas. _Rate limit_ en eventos de socket.                                          |
+| RNF-06 | Privacidad     | GDPR: consentimiento de cámara/micrófono, borrado de cuenta, sin grabaciones en Bululu. Al entrar en una sala, el servidor **silencia** las pistas de pasillo de esa persona (no depende solo del cliente). Bululu no guarda _tokens_ de Google. |
+| RNF-07 | Accesibilidad  | Navegación por teclado de toda la interfaz (no del mapa), contraste AA, `aria-label` en controles.                                                                                                                                               |
+| RNF-08 | Observabilidad | Logs estructurados y errores de cliente y servidor en Sentry.                                                                                                                                                                                    |
+| RNF-09 | Mantenibilidad | Monolito modular; estado de espacios detrás de una interfaz sustituible; servicios externos (Google, LiveKit) detrás de adaptadores.                                                                                                             |
+| RNF-10 | Idioma         | Interfaz en español, preparada para i18n.                                                                                                                                                                                                        |
 
 ## 8. Flujos principales
 
@@ -147,7 +147,7 @@ delegar en Google lo que ya resuelve muy bien (identidad y reuniones).
 
 | Riesgo                                                                                 | Impacto | Mitigación                                                                                                                               |
 | -------------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| El cambio de pestaña a Meet rompe la sensación de "estar en la oficina"                | Medio   | Métrica O6; al volver a Plaza, el avatar sigue en la sala. Plan B: reuniones dentro del mapa con LiveKit (post-MVP).                     |
+| El cambio de pestaña a Meet rompe la sensación de "estar en la oficina"                | Medio   | Métrica O6; al volver a Bululu, el avatar sigue en la sala. Plan B: reuniones dentro del mapa con LiveKit (post-MVP).                    |
 | Verificación de Google para el _scope_ de Meet                                         | Medio   | Modo de pruebas en la beta; alternativa sin _scope_: el _owner_ pega un enlace de Meet por sala.                                         |
 | Dependencia de Google (identidad y reuniones)                                          | Medio   | Adaptadores en el código; identidad por `sub` de OIDC para poder añadir otros proveedores.                                               |
 | Operar el servidor de medios propio (caídas, certificados, TURN en redes corporativas) | Medio   | TURN/TLS en 443 validado antes de invitar a pilotos; monitor de disponibilidad; contingencia: pasar a LiveKit Cloud cambiando variables. |

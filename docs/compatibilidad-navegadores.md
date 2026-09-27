@@ -17,7 +17,7 @@ Dos personas, cada una en un navegador distinto; marcar ✅ / ❌ y anotar el pr
 | Cambiar de altavoz durante la llamada (Firefox y Safari pueden no permitirlo: anotar qué ve la persona)       |        |      |         |        |
 | Pestaña oculta: micro y cámara se apagan; al volver, se restauran                                             |        |      |         |        |
 | Llamar: «Activar avisos de llamadas» pide el permiso; con la pestaña oculta llega la notificación y el sonido |        |      |         |        |
-| Entrar en una sala: se cortan micro y cámara de Plaza; «Unirse a la reunión» abre Meet en otra pestaña        |        |      |         |        |
+| Entrar en una sala: se cortan micro y cámara de Bululu; «Unirse a la reunión» abre Meet en otra pestaña       |        |      |         |        |
 | Chat, reacciones y «Personas» (Localizar, Escritorio)                                                         |        |      |         |        |
 | Corte de red de 10 s: «Reconectando…» y vuelta sola                                                           |        |      |         |        |
 

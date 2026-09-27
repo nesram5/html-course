@@ -1,6 +1,6 @@
-# Bienvenida a la beta de Plaza
+# Bienvenida a la beta de Bululu
 
-Gracias por probar **Plaza**, la oficina virtual de tu equipo: un mapa 2D donde cada persona es un
+Gracias por probar **Bululu**, la oficina virtual de tu equipo: un mapa 2D donde cada persona es un
 avatar. **Acércate a alguien para hablar**, como en la oficina; para reuniones, entra en una sala y
 abre su Google Meet. Esta guía cabe en una página: léela antes del primer día.
 
@@ -38,9 +38,9 @@ Todo lo que no es el mapa se usa también **solo con el teclado** (Tab, Enter y 
 ## Privacidad en 30 segundos
 
 - El **pasillo no es privado**: quien se acerca te oye. Para hablar en privado, usa una sala.
-- Plaza **nunca graba** audio ni vídeo, **no guarda** tu posición en el mapa ni tus tokens de Google.
+- Bululu **nunca graba** audio ni vídeo, **no guarda** tu posición en el mapa ni tus tokens de Google.
 - Guardamos tu perfil básico de Google, tus espacios, el chat (últimos 100 mensajes) y eventos de uso
-  **sin datos personales** para medir si Plaza funciona. Detalle en la página **Privacidad**.
+  **sin datos personales** para medir si Bululu funciona. Detalle en la página **Privacidad**.
 - Puedes **borrar tu cuenta** cuando quieras desde **Mi perfil**.
 
 ## Cómo medimos la beta
@@ -58,4 +58,4 @@ sala terminan en Meet.
 - Si algo no funciona: recarga la página. Si el audio o el vídeo no vuelven en 30 s, escríbenos desde
   **Enviar comentarios** indicando la hora aproximada.
 
-¡Bienvenida y bienvenido a Plaza!
+¡Bienvenida y bienvenido a Bululu!

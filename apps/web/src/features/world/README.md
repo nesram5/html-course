@@ -29,7 +29,7 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
   │         │                      them in 600 ms and removes the old textures
   │         └─ DeskLayer           names over held desks and decoration objects (deskDrawings, pure)
   ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
-  ├─ SessionNotice ── "Has abierto Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
+  ├─ SessionNotice ── "Has abierto Bululu en otra pestaña" + "Usar Bululu aquí"; refused joins
   ├─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
   ├─ SpaceBottomBar ── "Tus controles": avatar · name · the `BarItems` of every extension
   └─ extensions (SpaceExtension, listed in `app/space-extensions.ts`: media, rooms, presence,
@@ -80,7 +80,7 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
 - **`SpaceSession`**: joins when the socket is connected **and** the map is drawn; re-joins after
   every reconnection or redraw, and the new snapshot moves the local avatar where the server says
   (no client-side spawn). `player:correct` just relocates the avatar (architecture §9.3). Kicks:
-  `SESSION_REPLACED` shows a page with "Usar Plaza aquí" (reconnect + join, which replaces the other
+  `SESSION_REPLACED` shows a page with "Usar Bululu aquí" (reconnect + join, which replaces the other
   tab); `REMOVED` / `ACCOUNT_DELETED` go back to "Mis espacios" with a toast. Refused joins show the
   translated error (`NOT_A_MEMBER`, `BANNED_FROM_SPACE`: no retry).
 - **Remote avatars** (`game/remote/`): `RemotePlayersModel` applies snapshots and deltas and, every
@@ -95,7 +95,7 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
 - **Styles** (ADR-011): the page draws the office with the style it was opened with and never
   reloads it; `space:snapshot.themeId` and `space:theme` go to `officeStore.themeId`, and the scene's
   `ThemeLoader` swaps the two images with a fade, without touching avatars or geometry. Old style
-  textures are freed (`window.__plazaWorld.office().styleTextures`).
+  textures are freed (`window.__bululuWorld.office().styleTextures`).
 - **Desks**: `SpaceSession` keeps `officeStore.desks` in step (`space:snapshot.desks`,
   `desk:updated`, through `realtime/office-sync.ts`); `DeskLayer` draws the owner's name (over the
   `above` art, under avatar names) and the objects in the 3 slots of `DeskArea.decorSlots`, from the
@@ -110,9 +110,9 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
 - **Everything a scene registers is released on `SHUTDOWN`/`DESTROY`** (`WorldScene.cleanups`):
   store subscriptions, `EventBus` listeners, `KeyboardInput`, remote sprites. `WorldCanvas` destroys
   the game in its effect cleanup and `useSpaceSession` stops the session (listeners + socket), so
-  leaving the page frees everything. The E2E test checks it through `window.__plazaWorld`.
+  leaving the page frees everything. The E2E test checks it through `window.__bululuWorld`.
 - **Game logic stays out of Phaser**: movement is `LocalPlayerController` (uses `isWalkable` from
-  `@plaza/shared`, the same function as the server); remote players are `RemotePlayersModel`; map
+  `@bululu/shared`, the same function as the server); remote players are `RemotePlayersModel`; map
   parsing is `parseMap`; draw order is `game/sprites/depth.ts`.
 - **Keyboard**: handled on `window` (Phaser's keyboard plugin is disabled) so keys typed in inputs
   never move the avatar and `Tab` always moves the focus on. The canvas container is focusable
@@ -126,7 +126,7 @@ SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth)
 
 ## Development probes
 
-`window.__plazaWorld` (development builds only, `debug.ts`): `liveGames()`, `listenerCount()`,
+`window.__bululuWorld` (development builds only, `debug.ts`): `liveGames()`, `listenerCount()`,
 `localPlayer()`, `avatars()` (tile, drawn position, opacity, label depth), `fps()`, `realtime()`,
 `stress(n)` (n fake people walking through the real remote system; `0` stops) and
 `dropConnection()` (closes the transport like a network cut).

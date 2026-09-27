@@ -77,7 +77,7 @@
 **Criterios de aceptación**
 
 - **Dado** la tarjeta "Ausente" de alguien o su fila en la lista de miembros, **cuando** pulso "Llamar", **entonces** le suena un aviso y recibe una notificación del navegador "Sam te está llamando" (si concedió el permiso).
-- **Dado** la notificación, **cuando** hace clic, **entonces** vuelve a la pestaña de Plaza y se restauran sus medios.
+- **Dado** la notificación, **cuando** hace clic, **entonces** vuelve a la pestaña de Bululu y se restauran sus medios.
 - **Dado** que llamo dos veces en 30 s a la misma persona, **cuando** lo intento, **entonces** el botón está deshabilitado con cuenta atrás (RN-11).
 - **Dado** que la persona está _Ocupada_, **cuando** la llamo, **entonces** recibe la notificación sin sonido.
 - El permiso de notificaciones se pide en el primer uso, no al entrar.

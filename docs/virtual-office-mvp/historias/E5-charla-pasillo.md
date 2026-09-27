@@ -129,7 +129,7 @@
 
 ### E5-S8 · TURN y redes corporativas — 3 pts
 
-**Como** persona en una red corporativa **quiero** que el audio y el vídeo funcionen aunque se bloquee UDP **para** poder usar Plaza desde la oficina de mi empresa.
+**Como** persona en una red corporativa **quiero** que el audio y el vídeo funcionen aunque se bloquee UDP **para** poder usar Bululu desde la oficina de mi empresa.
 
 **Criterios de aceptación**
 

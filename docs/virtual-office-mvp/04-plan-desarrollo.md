@@ -1,6 +1,6 @@
-# 04 · Plan de desarrollo — Plaza MVP
+# 04 · Plan de desarrollo — Bululu MVP
 
-Plan sistemático por **etapas (épicas)** derivado del [brief](./01-brief-requerimiento.md) (v2.2) y de la
+Plan sistemático por **etapas (épicas)** derivado del [brief](./01-brief-requerimiento.md) (v2.3) y de la
 [arquitectura](./02-arquitectura.md). Cada etapa termina en algo **demostrable** y deja el sistema desplegable.
 
 ---
@@ -52,14 +52,14 @@ flowchart LR
 Dos carriles en paralelo cuando las dependencias lo permiten
 (carril A: backend/tiempo real · carril B: frontend/mundo).
 
-| Sprint | Semanas | Carril A                              | Carril B                                      | Pts | Hito al cierre                                                                                                 |
-| ------ | ------- | ------------------------------------- | --------------------------------------------- | --- | -------------------------------------------------------------------------------------------------------------- |
-| 1      | 1–2     | E0 (S1–S3, S5–S7) · E1-S1, S2 · E2-S2 | E0-S4 · E1-S3, S4 · E3-S1                     | 36  | **M1 · "Hola, mundo autenticado"**: login con Google en _staging_; _spike_ validado                            |
-| 2      | 3–4     | E2-S4..S7                             | E2-S1, S3 · E3-S2, S3, S6                     | 34  | Crear espacio con salas de Meet + invitar; caminar por el mapa                                                 |
-| 3      | 5–6     | E4 completo · E5-S1, S3               | E3-S4, S5 · E5-S4                             | 33  | **M2 · "Caminamos juntos"**: varias personas en el mismo mapa; pre-join listo                                  |
-| 4      | 7–8     | E5-S2, S5, S7 · E6-S1, S3             | E5-S6 · E6-S2, S4 · E7-S1                     | 35  | **M3 · "Hablamos y nos reunimos"**: el equipo trabaja a diario en Plaza (_dogfooding_) sobre el LiveKit propio |
-| 5      | 9–10    | E5-S8 · E7-S3, S5 · E8-S1..S3         | E7-S2, S4 · E8-S4, S6                         | 30  | **M4 · Base completa**: RF-01..RF-15 en _staging_                                                              |
-| 6      | 11–12   | E9-S1, S2 · E8-S5                     | E9-S3 · E8-S7 · correcciones del _dogfooding_ | 21  | **M5 · Beta privada** con 5 equipos piloto y oficina personalizable                                            |
+| Sprint | Semanas | Carril A                              | Carril B                                      | Pts | Hito al cierre                                                                                                  |
+| ------ | ------- | ------------------------------------- | --------------------------------------------- | --- | --------------------------------------------------------------------------------------------------------------- |
+| 1      | 1–2     | E0 (S1–S3, S5–S7) · E1-S1, S2 · E2-S2 | E0-S4 · E1-S3, S4 · E3-S1                     | 36  | **M1 · "Hola, mundo autenticado"**: login con Google en _staging_; _spike_ validado                             |
+| 2      | 3–4     | E2-S4..S7                             | E2-S1, S3 · E3-S2, S3, S6                     | 34  | Crear espacio con salas de Meet + invitar; caminar por el mapa                                                  |
+| 3      | 5–6     | E4 completo · E5-S1, S3               | E3-S4, S5 · E5-S4                             | 33  | **M2 · "Caminamos juntos"**: varias personas en el mismo mapa; pre-join listo                                   |
+| 4      | 7–8     | E5-S2, S5, S7 · E6-S1, S3             | E5-S6 · E6-S2, S4 · E7-S1                     | 35  | **M3 · "Hablamos y nos reunimos"**: el equipo trabaja a diario en Bululu (_dogfooding_) sobre el LiveKit propio |
+| 5      | 9–10    | E5-S8 · E7-S3, S5 · E8-S1..S3         | E7-S2, S4 · E8-S4, S6                         | 30  | **M4 · Base completa**: RF-01..RF-15 en _staging_                                                               |
+| 6      | 11–12   | E9-S1, S2 · E8-S5                     | E9-S3 · E8-S7 · correcciones del _dogfooding_ | 21  | **M5 · Beta privada** con 5 equipos piloto y oficina personalizable                                             |
 
 > La personalización (E9) añade un sexto sprint, que también absorbe el despliegue de la beta (E8-S5) y el
 > onboarding de pilotos (E8-S7). Así el sprint 5 recupera ~5 puntos de margen y el sprint 6 deja ~14 para
@@ -74,10 +74,10 @@ Dos carriles en paralelo cuando las dependencias lo permiten
    también arranca en el sprint 1 (E0-S5), porque depende de terceros.
 2. **Lógica pura primero:** en E3–E6 se implementa y prueba primero la función de `shared/world`
    (colisiones, salas, proximidad) y después la integración en red y UI.
-3. **Contrato primero:** cada historia que toca red empieza añadiendo el esquema zod en `@plaza/shared`.
+3. **Contrato primero:** cada historia que toca red empieza añadiendo el esquema zod en `@bululu/shared`.
 4. **Delegar antes que construir:** antes de construir UI de medios, comprobar si `@livekit/components-react`
    ya la resuelve; antes de construir algo de reuniones, comprobar si Google Meet ya lo hace.
-5. **Dogfooding desde M3:** el equipo trabaja dentro de Plaza desde la semana 9.
+5. **Dogfooding desde M3:** el equipo trabaja dentro de Bululu desde la semana 9.
 6. **Arte con antelación:** el segundo estilo de cada plantilla se encarga o compra en el sprint 3, para tenerlo en el sprint 6 (E9-S1); si no llega, se usan variantes de color.
 
 ## 5. Matriz de trazabilidad (requisito → historias)

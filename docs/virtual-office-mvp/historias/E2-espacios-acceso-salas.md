@@ -34,7 +34,7 @@
 - **Dado** `packages/maps`, **cuando** reviso el `manifest.json`, **entonces** hay 2 plantillas: "Oficina pequeña" (≈ 40×30 casillas, 1 sala) y "Campus" (≈ 80×60, 3 salas), cada una con miniatura y al menos 2 `spawns`.
 - **Dado** un mapa sin la capa `collision`, con una sala no rectangular o sin `areaId`, **cuando** corre `pnpm validate:maps` en CI, **entonces** falla indicando el problema.
 - Cada plantilla genera su estilo `pixel` (`below.png` / `above.png`) en el _build_ con `tmxrasterizer`; los demás estilos llegan en E9-S1.
-  _Implementado así:_ un generador propio en TypeScript (`pnpm --filter @plaza/maps generate`) rasteriza las capas de _tiles_ y los PNG se versionan; un test falla si no coinciden con lo que genera. Si un mapa se edita a mano en Tiled, hay que volver a ejecutar el generador (ver `plaza/packages/maps/README.md`).
+  _Implementado así:_ un generador propio en TypeScript (`pnpm --filter @bululu/maps generate`) rasteriza las capas de _tiles_ y los PNG se versionan; un test falla si no coinciden con lo que genera. Si un mapa se edita a mano en Tiled, hay que volver a ejecutar el generador (ver `bululu/packages/maps/README.md`).
 
 **Tareas técnicas**
 
@@ -118,7 +118,7 @@
 - **Dado** que se crearon, **cuando** abro los ajustes del espacio, **entonces** veo cada sala con su enlace de Meet y un botón "Probar".
 - **Dado** que rechazo el permiso o Google falla, **cuando** vuelvo, **entonces** puedo reintentar o **pegar un enlace de Meet a mano** para cada sala (`source: "manual"`); el espacio funciona igualmente.
 - **Dado** un enlace pegado a mano, **cuando** lo guardo, **entonces** se valida que empiece por `https://meet.google.com/`.
-- Plaza **no guarda** el _token_ de Google: se usa en la petición y se descarta (verificado en la revisión de código).
+- Bululu **no guarda** el _token_ de Google: se usa en la petición y se descarta (verificado en la revisión de código).
 
 **Tareas técnicas**
 

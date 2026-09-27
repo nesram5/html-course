@@ -87,7 +87,7 @@ hasta su escritorio y después dice: "_Puede verse así, o así, o incluso así.
 
 - [ ] `PATCH /api/spaces/:spaceId { themeId }` (solo _owner_) → difunde `space:theme { themeId }`.
 - [ ] `ThemeLoader` en Phaser: carga las nuevas imágenes y las cambia con un fundido; libera las texturas anteriores.
-- [x] Script de _build_ que genera el estilo _pixel_ con `tmxrasterizer` y comprueba tamaños. _(Implementado con un generador propio en lugar de `tmxrasterizer`: `pnpm --filter @plaza/maps generate` + `pnpm validate:maps`, ver `plaza/packages/maps/README.md`.)_
+- [x] Script de _build_ que genera el estilo _pixel_ con `tmxrasterizer` y comprueba tamaños. _(Implementado con un generador propio en lugar de `tmxrasterizer`: `pnpm --filter @bululu/maps generate` + `pnpm validate:maps`, ver `bululu/packages/maps/README.md`.)_
 - [ ] Soporte de estilos de "variante de color" (matriz en `theme.json`) como plan B.
 
 ---

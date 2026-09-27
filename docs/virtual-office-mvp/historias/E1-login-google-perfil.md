@@ -38,7 +38,7 @@
 
 **Criterios de aceptación**
 
-- **Dado** que pulso "Entrar con Google", **cuando** acepto en Google, **entonces** vuelvo a Plaza con la cookie `plaza_sid` (`HttpOnly`, `Secure`, `SameSite=Lax`) y en la ruta `next` original.
+- **Dado** que pulso "Entrar con Google", **cuando** acepto en Google, **entonces** vuelvo a Bululu con la cookie `bululu_sid` (`HttpOnly`, `Secure`, `SameSite=Lax`) y en la ruta `next` original.
 - **Dado** un `state` alterado o un `id_token` con audiencia, emisor o caducidad incorrectos, **cuando** llega el _callback_, **entonces** se rechaza con `401` y se registra.
 - **Dado** que la primera vez entro, **cuando** se crea mi usuario, **entonces** mi nombre visible es mi nombre de Google.
 - **Dado** que cierro sesión, **cuando** reutilizo la cookie, **entonces** recibo `401`.

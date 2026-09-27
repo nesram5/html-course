@@ -18,7 +18,7 @@
 **Criterios de aceptación**
 
 - **Dado** un clon nuevo, **cuando** ejecuto `pnpm install && pnpm -r build`, **entonces** todo compila sin errores.
-- **Dado** `@plaza/shared`, **cuando** lo importo desde `web` y `server`, **entonces** los tipos se resuelven sin pasos de publicación.
+- **Dado** `@bululu/shared`, **cuando** lo importo desde `web` y `server`, **entonces** los tipos se resuelven sin pasos de publicación.
 
 **Tareas técnicas**
 
@@ -89,7 +89,7 @@
 **Tareas técnicas**
 
 - [ ] `infra/docker-compose.yml` (Postgres + LiveKit en modo dev con un _profile_ opcional), Prisma inicializado, _seed_.
-- [ ] Proyecto de Google Cloud "plaza-dev" con la API de Meet habilitada y la pantalla de consentimiento en modo de pruebas.
+- [ ] Proyecto de Google Cloud "bululu-dev" con la API de Meet habilitada y la pantalla de consentimiento en modo de pruebas.
 
 ---
 

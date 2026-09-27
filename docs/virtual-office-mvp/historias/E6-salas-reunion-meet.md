@@ -29,8 +29,8 @@
 **Criterios de aceptación**
 
 - **Dado** que entro en "Sala 1", **cuando** piso la primera casilla, **entonces** veo la tarjeta "Estás en Sala 1 · 2 personas dentro · **Unirse a la reunión**" y se cortan mis conexiones de pasillo (`media:peers` vacío).
-- **Dado** la tarjeta, **cuando** pulso "Unirse a la reunión", **entonces** el Meet de la sala se abre en una pestaña nueva (`noopener`) y mis micro y cámara de Plaza quedan apagados para no duplicar el audio.
-- **Dado** que salgo de la sala, **cuando** piso el pasillo, **entonces** la tarjeta desaparece y mis medios de Plaza vuelven al estado que tenían antes de entrar.
+- **Dado** la tarjeta, **cuando** pulso "Unirse a la reunión", **entonces** el Meet de la sala se abre en una pestaña nueva (`noopener`) y mis micro y cámara de Bululu quedan apagados para no duplicar el audio.
+- **Dado** que salgo de la sala, **cuando** piso el pasillo, **entonces** la tarjeta desaparece y mis medios de Bululu vuelven al estado que tenían antes de entrar.
 - **Dado** que la sala no tiene enlace de Meet, **cuando** entro, **entonces** la tarjeta lo indica y, si soy _owner_, me ofrece añadirlo.
 - Se registran los eventos `room_entered` y `room_meet_opened` para la métrica O6.
 

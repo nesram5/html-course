@@ -1,6 +1,6 @@
-# 02 · Arquitectura — Plaza MVP
+# 02 · Arquitectura — Bululu MVP
 
-Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.2) a una arquitectura concreta.
+Este documento traduce el [brief](./01-brief-requerimiento.md) (v2.3) a una arquitectura concreta.
 Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 
 ---
@@ -22,7 +22,7 @@ Cada decisión relevante tiene su ADR (sección 12) con alternativas y motivos.
 ```mermaid
 flowchart LR
     U[Persona usuaria<br/>navegador de escritorio]
-    subgraph Plaza
+    subgraph Bululu
       W[Web App<br/>React + Phaser]
       S[API + Realtime<br/>Fastify + Socket.IO]
       DB[(PostgreSQL)]
@@ -275,7 +275,7 @@ Un estilo es una **piel** sobre la misma geometría: cambia el arte, nunca las c
 packages/maps/templates/<id>/
 ├── map.tmj                      # única fuente de la geometría
 └── themes/
-    ├── pixel/                   # generado desde las capas de tiles (generador propio de @plaza/maps, en lugar de tmxrasterizer)
+    ├── pixel/                   # generado desde las capas de tiles (generador propio de @bululu/maps, en lugar de tmxrasterizer)
     │   ├── below.png  above.png  thumbnail.png  theme.json
     └── watercolor/              # arte pintado sobre la misma base
         ├── below.png  above.png  thumbnail.png  theme.json   # theme.json: name, author, license
@@ -380,7 +380,7 @@ sequenceDiagram
 
 - **Creación:** al crear el espacio se pide al _owner_ el _scope_ `meetings.space.created` (autorización incremental,
   solo esa vez). Se crea un _space_ de Meet por sala con `accessType: TRUSTED` (miembros de la organización e
-  invitados). El _token_ se usa y se descarta: **Plaza no guarda credenciales de Google**.
+  invitados). El _token_ se usa y se descarta: **Bululu no guarda credenciales de Google**.
 - **Alternativa manual:** si el _owner_ no concede el permiso o la app no está verificada, puede pegar un
   enlace de Meet por sala (`source: "manual"`).
 - **Entrar en una sala:** el servidor calcula `roomId`, saca a la persona de la proximidad y **silencia sus pistas
@@ -393,18 +393,18 @@ sequenceDiagram
 
 ### 11.1 Seguridad
 
-| Tema         | Decisión                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Login        | OAuth 2.0 _authorization code_ + PKCE + `state` con `@fastify/oauth2`; `id_token` verificado con `google-auth-library` (audiencia, emisor, caducidad). _Scopes_: `openid email profile`.         |
-| Sesión       | Cookie `__Host-plaza_sid` (el prefijo impide que otro subdominio la plante) con token aleatorio de 32 bytes; en BD se guarda su hash. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
-| Dominio      | Si el espacio tiene `allowedDomain`, entra quien tiene el claim `hd` (guardado en `User.hostedDomain` en cada login) igual a ese dominio y `email_verified`; el dominio del e-mail no basta.     |
-| CSRF         | `SameSite=Lax` + cabecera `X-Plaza-Client` obligatoria en peticiones que modifican.                                                                                                              |
-| Validación   | zod en **todas** las entradas REST y de socket.                                                                                                                                                  |
-| Rate limit   | _Token bucket_ por socket para `player:move`, `chat:send`, `reaction`, `ring:send`.                                                                                                              |
-| Autorización | Guardas `assertOwner`, `assertMember` en los servicios.                                                                                                                                          |
-| Cabeceras    | `@fastify/helmet` con CSP (orígenes propios + dominio de LiveKit).                                                                                                                               |
-| Secretos     | Variables de entorno validadas con zod al arrancar.                                                                                                                                              |
-| Tests        | Ruta de login de prueba **solo** si `AUTH_TEST_LOGIN=true` (nunca en producción; el arranque falla si está activa con `NODE_ENV=production`).                                                    |
+| Tema         | Decisión                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login        | OAuth 2.0 _authorization code_ + PKCE + `state` con `@fastify/oauth2`; `id_token` verificado con `google-auth-library` (audiencia, emisor, caducidad). _Scopes_: `openid email profile`.          |
+| Sesión       | Cookie `__Host-bululu_sid` (el prefijo impide que otro subdominio la plante) con token aleatorio de 32 bytes; en BD se guarda su hash. `HttpOnly`, `Secure`, `SameSite=Lax`, 30 días deslizantes. |
+| Dominio      | Si el espacio tiene `allowedDomain`, entra quien tiene el claim `hd` (guardado en `User.hostedDomain` en cada login) igual a ese dominio y `email_verified`; el dominio del e-mail no basta.      |
+| CSRF         | `SameSite=Lax` + cabecera `X-Bululu-Client` obligatoria en peticiones que modifican.                                                                                                              |
+| Validación   | zod en **todas** las entradas REST y de socket.                                                                                                                                                   |
+| Rate limit   | _Token bucket_ por socket para `player:move`, `chat:send`, `reaction`, `ring:send`.                                                                                                               |
+| Autorización | Guardas `assertOwner`, `assertMember` en los servicios.                                                                                                                                           |
+| Cabeceras    | `@fastify/helmet` con CSP (orígenes propios + dominio de LiveKit).                                                                                                                                |
+| Secretos     | Variables de entorno validadas con zod al arrancar.                                                                                                                                               |
+| Tests        | Ruta de login de prueba **solo** si `AUTH_TEST_LOGIN=true` (nunca en producción; el arranque falla si está activa con `NODE_ENV=production`).                                                     |
 
 ### 11.2 Errores
 
@@ -430,7 +430,7 @@ El código es idéntico en todos los entornos: solo cambian `LIVEKIT_URL`, `LIVE
 
 Dimensionado para la beta: unas 50 personas por espacio y hasta ~150 conectadas en total, en conversaciones
 de 2 a 8. Como referencia, el _benchmark_ oficial de LiveKit sostiene una reunión de 150 publicadores y 150
-suscriptores de vídeo en 16 núcleos; la carga de Plaza es una fracción de eso.
+suscriptores de vídeo en 16 núcleos; la carga de Bululu es una fracción de eso.
 
 | Recurso        | Especificación                                                                            | Motivo                                                                                                            |
 | -------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |

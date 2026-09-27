@@ -1,4 +1,4 @@
-# Estado de la implementación del MVP — Plaza
+# Estado de la implementación del MVP — Bululu
 
 > **Para:** responsable de producto. **Fecha:** 27-09-2026. **Rama:** `claude/mvp-software-plan-video-gmdpkg`
 > (sin publicar en `main` ni desplegar todavía). **Código:** la raíz del repositorio ([`README.md`](../../README.md)).
@@ -36,7 +36,7 @@ servidor de desarrollo de LiveKit reales:
 | `pnpm lint`                                  | ✅ ESLint sin errores ni avisos (`--max-warnings=0`)                                                   |
 | `pnpm typecheck`                             | ✅ TypeScript estricto en los 5 paquetes y en `e2e/`                                                   |
 | `pnpm test`                                  | ✅ **1 023 tests** en 117 ficheros + 15 comprobaciones de reglas de lint (1 min 56 s)                  |
-| `pnpm test:coverage` (`@plaza/shared`)       | ✅ 99,6 % de líneas, 95,6 % de ramas (mínimo exigido: 90 % de líneas)                                  |
+| `pnpm test:coverage` (`@bululu/shared`)      | ✅ 99,6 % de líneas, 95,6 % de ramas (mínimo exigido: 90 % de líneas)                                  |
 | `pnpm build`                                 | ✅ los 5 paquetes                                                                                      |
 | `pnpm validate:maps`                         | ✅ 2 plantillas, 8 avatares, 14 objetos de decoración                                                  |
 | `pnpm audit --prod --audit-level high`       | ✅ ninguna vulnerabilidad conocida en las dependencias de producción                                   |
@@ -44,29 +44,29 @@ servidor de desarrollo de LiveKit reales:
 
 Tests de `pnpm test` por paquete:
 
-| Paquete         | Ficheros |     Tests | Qué cubre                                                                                           |
-| --------------- | -------: | --------: | --------------------------------------------------------------------------------------------------- |
-| `@plaza/shared` |       11 |       139 | Contratos zod (REST y tiempo real), lógica pura del mundo (mapa, movimiento, proximidad)            |
-| `@plaza/maps`   |        4 |        27 | Plantillas, estilos, avatares, catálogo de decoración, licencias; recursos generados al día         |
-| `@plaza/load`   |        3 |        15 | Herramientas de la prueba de carga                                                                  |
-| `@plaza/web`    |       52 |       376 | Componentes, _stores_, controlador de medios, accesibilidad, i18n                                   |
-| `@plaza/server` |       47 |       466 | Unitarios e **integración con PostgreSQL y LiveKit reales** (auth, espacios, mundo, medios, salas…) |
-| **Total**       |  **117** | **1 023** |                                                                                                     |
+| Paquete          | Ficheros |     Tests | Qué cubre                                                                                           |
+| ---------------- | -------: | --------: | --------------------------------------------------------------------------------------------------- |
+| `@bululu/shared` |       11 |       139 | Contratos zod (REST y tiempo real), lógica pura del mundo (mapa, movimiento, proximidad)            |
+| `@bululu/maps`   |        4 |        27 | Plantillas, estilos, avatares, catálogo de decoración, licencias; recursos generados al día         |
+| `@bululu/load`   |        3 |        15 | Herramientas de la prueba de carga                                                                  |
+| `@bululu/web`    |       52 |       376 | Componentes, _stores_, controlador de medios, accesibilidad, i18n                                   |
+| `@bululu/server` |       47 |       466 | Unitarios e **integración con PostgreSQL y LiveKit reales** (auth, espacios, mundo, medios, salas…) |
+| **Total**        |  **117** | **1 023** |                                                                                                     |
 
 ## 2. Estado por etapa (E0–E9)
 
-| Etapa                                | Estado                   | Qué hay (resumen)                                                                                                                                                                                                                                                                                                                                                                                                          | Evidencia principal                                                                                                                                               |
-| ------------------------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **E0** Fundaciones                   | ✅                       | Monorepo pnpm (`apps/web`, `apps/server`, `packages/shared`, `packages/maps`, `tools/load`); ESLint estricto con reglas de arquitectura, Prettier, commitlint y _hooks_; esqueletos de servidor (Fastify 5 + Socket.IO + Prisma) y web (Vite + React 19 + i18n); Docker Compose local; CI. El _spike_ E0-S7 se contestó con el código real de E5/E6 ([informe](../spikes/E0-S7-livekit.md)).                               | `.github/workflows/plaza-ci.yml` (raíz del repositorio), `scripts/verify-lint-rules.mjs`, `e2e/tests/smoke.spec.ts`                                               |
-| **E1** Login con Google y perfil     | ✅                       | OIDC con PKCE y `state`, verificación del `id_token`; sesión en cookie `__Host-plaza_sid` (HttpOnly, Secure, SameSite=Lax); rutas protegidas; nombre editable y 8 avatares. Login de prueba solo fuera de producción.                                                                                                                                                                                                      | `apps/server/src/modules/auth`, `apps/web/src/features/auth`; `auth.int.test.ts`, `google-oidc.test.ts`, `access.spec.ts`                                         |
-| **E2** Espacios, acceso y salas      | ✅                       | 2 plantillas validadas; asistente de creación; "Mis espacios"; enlace de invitación regenerable; dominio permitido (con el _claim_ `hd` de Google); miembros, expulsión, readmisión y cambio de rol; creación de un Google Meet por sala (o enlace pegado a mano).                                                                                                                                                         | `apps/server/src/modules/spaces`, `adapters/google-meet.ts`; `spaces.int.test.ts`, `join-invite.spec.ts`                                                          |
-| **E3** Motor de mapa 2D              | ✅                       | `parseMap` compartido; escena Phaser 3 por capas; movimiento por casillas con animación; colisiones; cámara, zoom y nombres; puente React ⇄ Phaser.                                                                                                                                                                                                                                                                        | `packages/shared/src/world`, `apps/web/src/features/world/game`; `world.spec.ts`, `world-performance.spec.ts`                                                     |
-| **E4** Multijugador en tiempo real   | ✅                       | Socket.IO autenticado; estado vivo por espacio detrás de una interfaz sustituible; validación de movimiento en el servidor; _tick_ de 15 Hz con deltas; interpolación de otras personas; reconexión con 30 s de gracia; una pestaña activa por persona.                                                                                                                                                                    | `apps/server/src/modules/world`; `world.int.test.ts`, `space-runtime.test.ts`, `realtime.spec.ts`                                                                 |
-| **E5** Charla de pasillo (LiveKit)   | ✅                       | Motor de proximidad por pares con histéresis (R = 3, máx. 8); `media:peers`; _token_ de LiveKit; pre-join con vista previa; `MediaController` con suscripción selectiva, _simulcast_ y reconexión; vídeos sobre el mapa, controles y aviso de "pasillo no privado"; LiveKit propio + TURN preparados (`infra/livekit`).                                                                                                    | `packages/shared/src/world/proximity.ts`, `apps/web/src/features/media`; `hallway.int.test.ts`, `media-controller.test.ts`, `hallway.spec.ts`                     |
-| **E6** Salas con Google Meet         | ✅                       | Sala actual en el estado del jugador; al entrar se corta el pasillo y se ofrece "Unirse a la reunión"; **el servidor silencia las pistas y retira el permiso de publicar** (y el _webhook_ firmado lo repite); ocupación de las salas visible en el mapa.                                                                                                                                                                  | `apps/server/src/modules/rooms`, `modules/media`; `meeting-room-media.int.test.ts`, `meeting-rooms.spec.ts`                                                       |
-| **E7** Presencia, chat y reacciones  | ✅                       | Estados Disponible/Ocupado/Ausente con auto-silencio al ocultar la pestaña; lista de personas con Localizar y Escritorio; chat del espacio (últimos 100); reacciones de 3 s; llamar (_ring_) con aviso, notificación y espera de 30 s.                                                                                                                                                                                     | `apps/server/src/modules/presence`, `modules/chat`; `presence.int.test.ts`, `chat.int.test.ts`, `presence-chat.spec.ts`                                           |
-| **E8** Lanzamiento de la beta        | ✅ código / ⏳ operación | Sentry y _logs_ estructurados con datos personales filtrados; revisión de seguridad (16 hallazgos, todos corregidos o aceptados); prueba de carga; 41 E2E; despliegue con imágenes, migraciones seguras, copias diarias y _rollback_; accesibilidad (axe + teclado), i18n y GDPR (borrado de cuenta, página de privacidad); panel de métricas O1–O6 y comentarios de pilotos. **Falta ejecutarlo en las VMs reales** (§5). | `infra/app`, `.github/workflows/plaza-deploy.yml`, `docs/runbook.md`, `security-review.md`, `load-test.md`; `a11y.spec.ts`, `keyboard.spec.ts`, `product.spec.ts` |
-| **E9** Personalización de la oficina | ✅                       | Estilos visuales intercambiables en directo (mín. 2 por plantilla) sobre la misma geometría; reclamar, asignar y liberar escritorios, aparecer junto al propio; decoración con hasta 3 objetos del catálogo; generador reproducible de los recursos gráficos.                                                                                                                                                              | `apps/server/src/modules/desks`, `apps/web/src/features/personalization`, `packages/maps`; `desks.int.test.ts`, `personalization.spec.ts`                         |
+| Etapa                                | Estado                   | Qué hay (resumen)                                                                                                                                                                                                                                                                                                                                                                                                          | Evidencia principal                                                                                                                                         |
+| ------------------------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **E0** Fundaciones                   | ✅                       | Monorepo pnpm (`apps/web`, `apps/server`, `packages/shared`, `packages/maps`, `tools/load`); ESLint estricto con reglas de arquitectura, Prettier, commitlint y _hooks_; esqueletos de servidor (Fastify 5 + Socket.IO + Prisma) y web (Vite + React 19 + i18n); Docker Compose local; CI. El _spike_ E0-S7 se contestó con el código real de E5/E6 ([informe](../spikes/E0-S7-livekit.md)).                               | `.github/workflows/ci.yml` (raíz del repositorio), `scripts/verify-lint-rules.mjs`, `e2e/tests/smoke.spec.ts`                                               |
+| **E1** Login con Google y perfil     | ✅                       | OIDC con PKCE y `state`, verificación del `id_token`; sesión en cookie `__Host-bululu_sid` (HttpOnly, Secure, SameSite=Lax); rutas protegidas; nombre editable y 8 avatares. Login de prueba solo fuera de producción.                                                                                                                                                                                                     | `apps/server/src/modules/auth`, `apps/web/src/features/auth`; `auth.int.test.ts`, `google-oidc.test.ts`, `access.spec.ts`                                   |
+| **E2** Espacios, acceso y salas      | ✅                       | 2 plantillas validadas; asistente de creación; "Mis espacios"; enlace de invitación regenerable; dominio permitido (con el _claim_ `hd` de Google); miembros, expulsión, readmisión y cambio de rol; creación de un Google Meet por sala (o enlace pegado a mano).                                                                                                                                                         | `apps/server/src/modules/spaces`, `adapters/google-meet.ts`; `spaces.int.test.ts`, `join-invite.spec.ts`                                                    |
+| **E3** Motor de mapa 2D              | ✅                       | `parseMap` compartido; escena Phaser 3 por capas; movimiento por casillas con animación; colisiones; cámara, zoom y nombres; puente React ⇄ Phaser.                                                                                                                                                                                                                                                                        | `packages/shared/src/world`, `apps/web/src/features/world/game`; `world.spec.ts`, `world-performance.spec.ts`                                               |
+| **E4** Multijugador en tiempo real   | ✅                       | Socket.IO autenticado; estado vivo por espacio detrás de una interfaz sustituible; validación de movimiento en el servidor; _tick_ de 15 Hz con deltas; interpolación de otras personas; reconexión con 30 s de gracia; una pestaña activa por persona.                                                                                                                                                                    | `apps/server/src/modules/world`; `world.int.test.ts`, `space-runtime.test.ts`, `realtime.spec.ts`                                                           |
+| **E5** Charla de pasillo (LiveKit)   | ✅                       | Motor de proximidad por pares con histéresis (R = 3, máx. 8); `media:peers`; _token_ de LiveKit; pre-join con vista previa; `MediaController` con suscripción selectiva, _simulcast_ y reconexión; vídeos sobre el mapa, controles y aviso de "pasillo no privado"; LiveKit propio + TURN preparados (`infra/livekit`).                                                                                                    | `packages/shared/src/world/proximity.ts`, `apps/web/src/features/media`; `hallway.int.test.ts`, `media-controller.test.ts`, `hallway.spec.ts`               |
+| **E6** Salas con Google Meet         | ✅                       | Sala actual en el estado del jugador; al entrar se corta el pasillo y se ofrece "Unirse a la reunión"; **el servidor silencia las pistas y retira el permiso de publicar** (y el _webhook_ firmado lo repite); ocupación de las salas visible en el mapa.                                                                                                                                                                  | `apps/server/src/modules/rooms`, `modules/media`; `meeting-room-media.int.test.ts`, `meeting-rooms.spec.ts`                                                 |
+| **E7** Presencia, chat y reacciones  | ✅                       | Estados Disponible/Ocupado/Ausente con auto-silencio al ocultar la pestaña; lista de personas con Localizar y Escritorio; chat del espacio (últimos 100); reacciones de 3 s; llamar (_ring_) con aviso, notificación y espera de 30 s.                                                                                                                                                                                     | `apps/server/src/modules/presence`, `modules/chat`; `presence.int.test.ts`, `chat.int.test.ts`, `presence-chat.spec.ts`                                     |
+| **E8** Lanzamiento de la beta        | ✅ código / ⏳ operación | Sentry y _logs_ estructurados con datos personales filtrados; revisión de seguridad (16 hallazgos, todos corregidos o aceptados); prueba de carga; 41 E2E; despliegue con imágenes, migraciones seguras, copias diarias y _rollback_; accesibilidad (axe + teclado), i18n y GDPR (borrado de cuenta, página de privacidad); panel de métricas O1–O6 y comentarios de pilotos. **Falta ejecutarlo en las VMs reales** (§5). | `infra/app`, `.github/workflows/deploy.yml`, `docs/runbook.md`, `security-review.md`, `load-test.md`; `a11y.spec.ts`, `keyboard.spec.ts`, `product.spec.ts` |
+| **E9** Personalización de la oficina | ✅                       | Estilos visuales intercambiables en directo (mín. 2 por plantilla) sobre la misma geometría; reclamar, asignar y liberar escritorios, aparecer junto al propio; decoración con hasta 3 objetos del catálogo; generador reproducible de los recursos gráficos.                                                                                                                                                              | `apps/server/src/modules/desks`, `apps/web/src/features/personalization`, `packages/maps`; `desks.int.test.ts`, `personalization.spec.ts`                   |
 
 ## 3. Estado por requisito (RF-01..RF-18)
 
@@ -116,7 +116,7 @@ devolución del permiso de publicar, expulsión de LiveKit al perder la membres�
 ### 4.2 Pruebas de extremo a extremo (E2E)
 
 41 tests de Playwright (14 ficheros) con Chromium, cámara y micrófono falsos, **servidor de
-LiveKit real**, el servidor y la web reales y una base de datos propia (`plaza_e2e_gate`, API en
+LiveKit real**, el servidor y la web reales y una base de datos propia (`bululu_e2e_gate`, API en
 `:3490`, web en `:5490`), con **un solo _worker_** y **sin reintentos**:
 
 | Ejecución | Resultado | Duración (Playwright) | Duración total (con arranque de servidores) |
@@ -141,7 +141,7 @@ espera menos.
 ### 4.3 Prueba de carga (tiempo real, RNF-01)
 
 Repetida en esta puerta de salida (27-09-2026) con el servidor **compilado** (`node dist/main.js`),
-50 _bots_ de `@plaza/load` en un espacio `office-small@1`, 4 pasos/s cada uno, **3 min**, en la
+50 _bots_ de `@bululu/load` en un espacio `office-small@1`, 4 pasos/s cada uno, **3 min**, en la
 misma máquina compartida:
 
 | Figura                                                             | Resultado (esta puerta)                                 | Medida completa de E8-S3 (5 min, imagen Docker con 2 CPU) |
@@ -203,7 +203,7 @@ documentación de operaciones**, pero hay que comprobarlo con medios reales. Ord
 5. Configurar el **dominio permitido** del espacio con el dominio de Workspace: la otra cuenta
    del mismo Workspace entra con `/s/<slug>` sin invitación; la cuenta **personal** no entra
    aunque su e-mail fuera de ese dominio (se usa el _claim_ `hd`, H-9).
-6. Comprobar que Plaza no guarda _tokens_ de Google: en la base de datos no hay columnas de
+6. Comprobar que Bululu no guarda _tokens_ de Google: en la base de datos no hay columnas de
    _access/refresh token_ (RNF-06).
 
 ### 5.2 Servidor de medios propio y TURN en una red corporativa
@@ -259,9 +259,9 @@ Anotar el modelo del portátil, el navegador y el resultado en `docs/load-test.m
 
 1. En la VM de _staging_, arrancar la **imagen de producción** del servidor con el perfil de
    carga (`NODE_ENV=test`, `AUTH_TEST_LOGIN=true`, `RATE_LIMIT_PER_MINUTE=100000`,
-   `HEALTH_TOKEN=<16+ caracteres>`, base de datos `plaza_load`, otro puerto) y limitarla a 2 CPU.
+   `HEALTH_TOKEN=<16+ caracteres>`, base de datos `bululu_load`, otro puerto) y limitarla a 2 CPU.
 2. Desde la máquina cliente:
-   `PLAZA_HEALTH_TOKEN=<el mismo> pnpm --filter @plaza/load load --url https://<host de carga> --bots 50 --duration 900 --sample-every 30`
+   `BULULU_HEALTH_TOKEN=<el mismo> pnpm --filter @bululu/load load --url https://<host de carga> --bots 50 --duration 900 --sample-every 30`
    (47 _bots_ si en paralelo se hace la medida de fps de 5.3).
 3. Criterios: p95 de latencia de movimiento < 200 ms en cada intervalo, 0 errores y 0
    desconexiones, memoria sin crecimiento sostenido. Parar el contenedor y borrar su base de datos
@@ -307,8 +307,8 @@ Requisitos: Node.js 22, pnpm 10 (`corepack enable`) y Docker.
 cp .env.example .env              # sin credenciales de Google se usa el login de prueba
 pnpm install
 pnpm infra:up:livekit             # PostgreSQL 16 + servidor de desarrollo de LiveKit
-pnpm db:migrate                   # crea las tablas en plaza_dev
-pnpm db:seed                      # opcional: usuario dev@plaza.local y espacio "oficina-demo"
+pnpm db:migrate                   # crea las tablas en bululu_dev
+pnpm db:seed                      # opcional: usuario dev@bululu.local y espacio "oficina-demo"
 pnpm dev                          # servidor en :3000, web en http://localhost:5173
 ```
 
@@ -333,9 +333,9 @@ La guía completa está en el [runbook](../runbook.md). Resumen:
 
 1. **VM de medios** (LiveKit + TURN): ver 5.2.
 2. **VM de app** (2 vCPU / 4 GB, Ubuntu 24.04, Docker + Compose; TCP 80/443 y UDP 443 abiertos;
-   DNS `plaza.<dominio>`), usuario de despliegue con la clave SSH del _workflow_ y carpeta
-   `/opt/plaza`.
-3. `/opt/plaza/.env` a partir de
+   DNS `bululu.<dominio>`), usuario de despliegue con la clave SSH del _workflow_ y carpeta
+   `/opt/bululu`.
+3. `/opt/bululu/.env` a partir de
    [`infra/app/.env.production.example`](../../infra/app/.env.production.example)
    (`chmod 600`): `SESSION_SECRET` y `HEALTH_TOKEN` nuevos, `POSTGRES_PASSWORD`,
    `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (5.1), `LIVEKIT_*` y `CSP_CONNECT_SRC` (5.2),
@@ -349,10 +349,10 @@ La guía completa está en el [runbook](../runbook.md). Resumen:
 
 ### 8.2 Publicar
 
-1. Llevar la rama a `main` mediante _pull request_; el CI («Plaza CI») debe pasar.
+1. Llevar la rama a `main` mediante _pull request_; el CI («Bululu CI») debe pasar.
 2. Cada _merge_ en `main` con CI verde se despliega solo en **_staging_**. Allí, hacer 5.1–5.4.
 3. Para la **beta**: `git tag v0.1.0 && git push origin v0.1.0` sobre un commit de `main` con CI
-   verde → el _workflow_ «Plaza deploy» construye las imágenes, **espera la aprobación** del
+   verde → el _workflow_ «Bululu deploy» construye las imágenes, **espera la aprobación** del
    _environment_ `beta` y ejecuta `deploy.sh` en la VM (migraciones primero; si fallan, la versión
    anterior sigue sirviendo).
 4. Comprobar: `curl -s https://<dominio>/api/health` devuelve `{"status":"ok","version":"v0.1.0"}`;
