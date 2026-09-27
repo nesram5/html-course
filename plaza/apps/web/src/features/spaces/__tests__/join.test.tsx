@@ -119,4 +119,21 @@ describe('join page /join/:token (E2-S5)', () => {
       await screen.findByRole('heading', { name: 'Esta invitación ya no es válida' }),
     ).toBeInTheDocument();
   });
+
+  it('tells people removed by the owner that they cannot join again (ban)', async () => {
+    mockApi({
+      ...preview,
+      'GET /api/me': { body: { user: meFixture() } },
+      [`POST /api/join/${TOKEN}`]: apiError(403, 'BANNED_FROM_SPACE'),
+    });
+
+    renderApp({ route: `/join/${TOKEN}` });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ya no puedes unirte a este espacio' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('La administración te expulsó. Si fue un error, pídele que te readmita.'),
+    ).toBeInTheDocument();
+  });
 });

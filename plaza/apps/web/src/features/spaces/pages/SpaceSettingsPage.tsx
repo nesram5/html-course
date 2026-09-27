@@ -6,6 +6,7 @@ import { PageLoading, UserMenu } from '@/features/auth';
 import { errorMessageKey } from '@/shared/api';
 
 import { AllowedDomainForm } from '../components/AllowedDomainForm';
+import { BansPanel } from '../components/BansPanel';
 import { InvitePanel } from '../components/InvitePanel';
 import { MembersPanel } from '../components/MembersPanel';
 import { RoomsSettings } from '../components/RoomsSettings';
@@ -17,7 +18,10 @@ const RESULT_TONE = {
   failed: 'border-amber-300 bg-amber-50',
 } as const;
 
-/** `/spaces/:spaceId/settings`: invite link, allowed domain, Meet rooms and members (E2-S4..S7). */
+/**
+ * `/spaces/:spaceId/settings`: invite link, allowed domain, Meet rooms, members and removed people
+ * (E2-S4..S7).
+ */
 export function SpaceSettingsPage() {
   const { t } = useTranslation('spaces');
   const { t: tc } = useTranslation();
@@ -48,6 +52,7 @@ export function SpaceSettingsPage() {
         )}
         <RoomsSettings space={space.data} />
         {isOwner && <MembersPanel spaceId={space.data.id} />}
+        {isOwner && <BansPanel spaceId={space.data.id} />}
       </>
     );
   }

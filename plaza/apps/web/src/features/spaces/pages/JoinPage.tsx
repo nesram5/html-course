@@ -21,6 +21,19 @@ function InvalidInvite() {
   );
 }
 
+function Banned() {
+  const { t } = useTranslation('spaces');
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <h1 className="text-2xl font-semibold">{t('join.banned')}</h1>
+      <p className="text-slate-600">{t('join.bannedHint')}</p>
+      <Link to={WEB_PATHS.spaces} className="text-brand-700 underline">
+        {t('join.goToSpaces')}
+      </Link>
+    </div>
+  );
+}
+
 /** Signed in: joins once (idempotent), then the avatar prompt if needed, then the space. */
 function AutoJoin({ token }: { token: string }) {
   const { t } = useTranslation('spaces');
@@ -35,8 +48,10 @@ function AutoJoin({ token }: { token: string }) {
   }, [join, token]);
 
   if (join.isError) {
-    const invalid = isApiError(join.error) && join.error.code === 'INVALID_INVITE';
-    return invalid ? <InvalidInvite /> : <p role="alert">{tc(errorMessageKey(join.error))}</p>;
+    const code = isApiError(join.error) ? join.error.code : null;
+    if (code === 'INVALID_INVITE') return <InvalidInvite />;
+    if (code === 'BANNED_FROM_SPACE') return <Banned />;
+    return <p role="alert">{tc(errorMessageKey(join.error))}</p>;
   }
   if (!join.isSuccess) return <p role="status">{t('join.joining')}</p>;
   return (

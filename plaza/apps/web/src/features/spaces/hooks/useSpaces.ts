@@ -5,6 +5,7 @@ import {
   authorizeRooms,
   createSpace,
   enterSpace,
+  fetchBans,
   fetchJoinPreview,
   fetchMapTemplates,
   fetchMembers,
@@ -14,6 +15,7 @@ import {
   regenerateInviteLink,
   removeMember,
   spacesKeys,
+  unbanMember,
   updateRoomLink,
   updateSpace,
 } from '../api/spaces-api';
@@ -33,6 +35,13 @@ export function useMembers(spaceId: string) {
   return useQuery({
     queryKey: spacesKeys.members(spaceId),
     queryFn: ({ signal }) => fetchMembers(spaceId, { signal }),
+  });
+}
+
+export function useBans(spaceId: string) {
+  return useQuery({
+    queryKey: spacesKeys.bans(spaceId),
+    queryFn: ({ signal }) => fetchBans(spaceId, { signal }),
   });
 }
 
@@ -100,7 +109,19 @@ export function useRemoveMember(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => removeMember(spaceId, userId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: spacesKeys.members(spaceId) }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: spacesKeys.members(spaceId) }),
+        queryClient.invalidateQueries({ queryKey: spacesKeys.bans(spaceId) }),
+      ]),
+  });
+}
+
+export function useUnbanMember(spaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => unbanMember(spaceId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: spacesKeys.bans(spaceId) }),
   });
 }
 

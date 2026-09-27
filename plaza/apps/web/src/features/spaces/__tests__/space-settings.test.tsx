@@ -46,6 +46,7 @@ function settingsApi(overrides: Parameters<typeof mockApi>[0] = {}) {
         ],
       },
     },
+    'GET /api/spaces/space-1/bans': { body: { bans: [] } },
     'POST /api/spaces/space-1/invite-link': () => {
       inviteUrl = NEW_URL;
       return { body: { url: NEW_URL } };
@@ -130,6 +131,48 @@ describe('space settings (E2-S4, E2-S6, E2-S7)', () => {
 
     expect(await screen.findByText('Luis ya no es miembro del espacio.')).toBeInTheDocument();
     expect(api.callsTo('DELETE /api/spaces/space-1/members/user-luis')).toHaveLength(1);
+  });
+
+  it('lists removed people and readmits them with "Readmitir"', async () => {
+    let bans = [
+      {
+        userId: 'user-eva',
+        displayName: 'Eva',
+        avatarId: 'avatar-02',
+        email: 'eva@acme.com',
+        createdAt: '2026-09-20T10:00:00.000Z',
+      },
+    ];
+    const api = settingsApi({
+      'GET /api/spaces/space-1/bans': () => ({ body: { bans } }),
+      'DELETE /api/spaces/space-1/bans/user-eva': () => {
+        bans = [];
+        return { status: 204 };
+      },
+    });
+    const user = userEvent.setup();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    const panel = await screen.findByRole('region', { name: 'Personas expulsadas' });
+    expect(within(panel).getByText('Eva')).toBeInTheDocument();
+    expect(
+      within(panel).getByText(/eva@acme\.com · Expulsada el 20 sept 2026/),
+    ).toBeInTheDocument();
+    await user.click(within(panel).getByRole('button', { name: 'Readmitir a Eva' }));
+
+    expect(await screen.findByText('Eva puede volver a unirse al espacio.')).toBeInTheDocument();
+    expect(api.callsTo('DELETE /api/spaces/space-1/bans/user-eva')).toHaveLength(1);
+    await waitFor(() => {
+      expect(screen.queryByRole('region', { name: 'Personas expulsadas' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('hides the removed people panel when nobody was removed', async () => {
+    settingsApi();
+    renderApp({ route: '/spaces/space-1/settings' });
+
+    expect(await screen.findByText('luis@acme.com')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Personas expulsadas' })).not.toBeInTheDocument();
   });
 
   it('lists each room with its Meet link and a "Probar" button', async () => {
