@@ -1,4 +1,4 @@
-import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '@plaza/shared';
+import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '@bululu/shared';
 import type {
   FastifyInstance,
   FastifyReply,
@@ -16,7 +16,7 @@ declare module 'fastify' {
   }
 }
 
-/** `__Host-plaza_sid`: `HttpOnly`, `Secure`, `SameSite=Lax`, 30 days sliding (architecture §11.1). */
+/** `__Host-bululu_sid`: `HttpOnly`, `Secure`, `SameSite=Lax`, 30 days sliding (architecture §11.1). */
 export function setSessionCookie(reply: FastifyReply, token: string): void {
   reply.setCookie(SESSION_COOKIE_NAME, token, {
     path: '/',

@@ -22,7 +22,7 @@ import {
   type SpaceKicked,
   type SpaceSnapshot,
   type WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -665,7 +665,7 @@ describe('world module: realtime multiplayer (E4)', () => {
         expect(testApp.media.permissions).toEqual([{ ...target, canPublish: false }]);
       });
 
-      // No session and no X-Plaza-Client: LiveKit's signature is the credential.
+      // No session and no X-Bululu-Client: LiveKit's signature is the credential.
       expect((await webhook(await joined(ana.user.id))).statusCode).toBe(204);
       const published = await signedWebhook(keys, {
         event: 'track_published',

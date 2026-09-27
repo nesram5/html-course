@@ -6,7 +6,7 @@ import {
   type PublicPlayer,
   type WorldDelta,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
 /** A person walks one tile every ~120 ms and a tick lasts ~66 ms: a step in ~55 % of ticks. */
@@ -24,7 +24,7 @@ interface Walker {
 /**
  * Development-only load generator (E4-S5 "60 fps with 50 avatars"): `count` fake people who
  * random-walk over walkable tiles, producing the same `world:delta` a server tick would. The
- * scene feeds them to the real `RemotePlayersSystem` (`window.__plazaWorld.stress(n)`).
+ * scene feeds them to the real `RemotePlayersSystem` (`window.__bululuWorld.stress(n)`).
  */
 export class StressDriver {
   private readonly walkers: Walker[] = [];

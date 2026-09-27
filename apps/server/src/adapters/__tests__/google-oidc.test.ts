@@ -6,7 +6,7 @@ import { AppError } from '../../platform/errors.js';
 import { GoogleIdentityProvider } from '../google-oidc.js';
 import { LOGIN_SCOPES } from '../identity-provider.js';
 
-const CLIENT_ID = 'plaza-test.apps.googleusercontent.com';
+const CLIENT_ID = 'bululu-test.apps.googleusercontent.com';
 const KID = 'test-key-1';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CERTS_URL = 'https://www.googleapis.com/oauth2/v1/certs';

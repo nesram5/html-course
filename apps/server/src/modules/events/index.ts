@@ -1,4 +1,4 @@
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { EventsRepository } from './events.repository.js';
 import { registerEventsRoutes } from './events.routes.js';
 import { EventsService } from './events.service.js';
@@ -17,7 +17,7 @@ declare module '../types.js' {
  * client telemetry of the O1–O6 metrics. Registered right after `spaces`, so every later module
  * (rooms, world…) can record events with `services.get('events').record(...)`.
  */
-export const eventsModule: PlazaModule = {
+export const eventsModule: BululuModule = {
   name: 'events',
   register({ app, container, services }) {
     const events = new EventsService({

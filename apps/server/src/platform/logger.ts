@@ -1,4 +1,4 @@
-import { scrubString } from '@plaza/shared';
+import { scrubString } from '@bululu/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import { pino, type LoggerOptions } from 'pino';
 
@@ -38,7 +38,7 @@ export function loggerOptions(
 ): LoggerOptions {
   return {
     level: config.logLevel,
-    base: { service: 'plaza-server', version: config.version },
+    base: { service: 'bululu-server', version: config.version },
     redact: { paths: REDACTED_PATHS, censor: '[redacted]' },
     serializers: {
       req(req: { method?: string; url?: string; id?: string }) {

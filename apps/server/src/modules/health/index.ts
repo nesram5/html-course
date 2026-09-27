@@ -6,11 +6,11 @@ import {
   HEALTH_TOKEN_HEADER,
   HealthResponseSchema,
   type HealthResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyRequest } from 'fastify';
 
 import type { AppConfig } from '../../platform/config.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 
 const MB = 1024 * 1024;
 
@@ -40,7 +40,7 @@ export function canSeeDetails(
  * space, the average tick, `media:peers` per tick and the process memory. Space ids and load
  * figures are not public: they would tell outsiders which spaces exist and how busy they are.
  */
-export const healthModule: PlazaModule = {
+export const healthModule: BululuModule = {
   name: 'health',
   register({ app, container }) {
     const { config, metrics } = container;

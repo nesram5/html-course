@@ -1,4 +1,4 @@
-import { WEB_PATHS, apiPath } from '@plaza/shared';
+import { WEB_PATHS, apiPath } from '@bululu/shared';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -1,4 +1,4 @@
-import { MeetingRoomSourceSchema, type MeetingRoomDto } from '@plaza/shared';
+import { MeetingRoomSourceSchema, type MeetingRoomDto } from '@bululu/shared';
 import type { MeetingRoom } from '@prisma/client';
 
 import type { MapRoomArea } from '../../platform/maps-catalog.js';

@@ -1,4 +1,4 @@
-import { API_PATHS, CLIENT_HEADER } from '@plaza/shared';
+import { API_PATHS, CLIENT_HEADER } from '@bululu/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../test/app.js';
@@ -14,7 +14,7 @@ describe('app platform plugins', () => {
     await testApp.app.close();
   });
 
-  it('serves only the public folders of @plaza/maps under /assets/maps', async () => {
+  it('serves only the public folders of @bululu/maps under /assets/maps', async () => {
     for (const url of [
       '/assets/maps/package.json',
       '/assets/maps/src/manifest.ts',
@@ -25,7 +25,7 @@ describe('app platform plugins', () => {
     }
   });
 
-  it('requires X-Plaza-Client on state-changing requests, even with a percent-encoded /api prefix', async () => {
+  it('requires X-Bululu-Client on state-changing requests, even with a percent-encoded /api prefix', async () => {
     for (const url of [API_PATHS.authLogout, '/%61pi/auth/logout', '/%61%70%69/auth/logout']) {
       const response = await testApp.app.inject({ method: 'POST', url });
       expect(response.statusCode, url).toBe(403);
@@ -40,7 +40,7 @@ describe('app platform plugins', () => {
     expect(withHeader.statusCode).toBe(204);
   });
 
-  it('keeps the signed LiveKit webhook exempt from the X-Plaza-Client header', async () => {
+  it('keeps the signed LiveKit webhook exempt from the X-Bululu-Client header', async () => {
     const response = await testApp.app.inject({
       method: 'POST',
       url: API_PATHS.mediaWebhook,

@@ -139,7 +139,7 @@ test.describe('multiplayer in real time (E4)', () => {
     // The network goes away: the open WebSocket closes and new connections fail.
     await luis.context.setOffline(true);
     await luis.page.evaluate(() => {
-      window.__plazaWorld?.dropConnection();
+      window.__bululuWorld?.dropConnection();
     });
 
     await expect(luis.page.getByTestId('connection-banner')).toHaveText('Reconectando…');

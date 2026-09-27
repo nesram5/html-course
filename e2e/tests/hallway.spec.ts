@@ -33,7 +33,7 @@ interface MediaProbe {
 declare global {
   interface Window {
     /** Development-only probe installed by `apps/web/src/features/media/debug.ts`. */
-    __plazaMedia?: { state(): MediaProbe };
+    __bululuMedia?: { state(): MediaProbe };
   }
 }
 
@@ -50,7 +50,7 @@ async function person(browser: Browser, email: string, name: string): Promise<Pe
 }
 
 function media(page: Page): Promise<MediaProbe | undefined> {
-  return page.evaluate(() => window.__plazaMedia?.state());
+  return page.evaluate(() => window.__bululuMedia?.state());
 }
 
 /** The <video> of `userId` in the hallway strip of `page`. */

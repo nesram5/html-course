@@ -1,4 +1,4 @@
-import { WEB_PATHS } from '@plaza/shared';
+import { WEB_PATHS } from '@bululu/shared';
 import { createElement } from 'react';
 import type { RouteObject } from 'react-router';
 

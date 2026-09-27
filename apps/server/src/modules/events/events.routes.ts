@@ -4,7 +4,7 @@ import {
   TELEMETRY_RATE_PER_MINUTE,
   TelemetryBodySchema,
   TrackEventBodySchema,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 
 import { currentUser, sessionRateLimit } from '../auth/index.js';

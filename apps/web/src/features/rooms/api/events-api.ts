@@ -1,4 +1,4 @@
-import { API_PATHS, apiPath, type TrackEventBody } from '@plaza/shared';
+import { API_PATHS, apiPath, type TrackEventBody } from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

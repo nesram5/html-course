@@ -1,7 +1,7 @@
-import { PRESENCE_RATE_PER_SEC } from '@plaza/shared';
+import { PRESENCE_RATE_PER_SEC } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
-import { safeHandler, type PlazaIo, type SafeHandlerDeps } from '../../platform/socket.js';
+import { safeHandler, type BululuIo, type SafeHandlerDeps } from '../../platform/socket.js';
 import { KeyedTokenBuckets } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { PresenceService } from './presence.service.js';
@@ -20,7 +20,7 @@ export const RING_PER_SECOND = 1;
  * or reconnecting does not refill it (E8-S2).
  */
 export function registerPresenceSocket(
-  io: PlazaIo,
+  io: BululuIo,
   deps: SafeHandlerDeps,
   presence: PresenceService,
   clock: () => number,

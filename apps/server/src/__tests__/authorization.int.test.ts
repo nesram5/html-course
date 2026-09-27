@@ -4,11 +4,11 @@ import {
   SpaceResponseSchema,
   type ErrorResponse,
   type SpaceDetailDto,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { modules } from '../modules/index.js';
-import type { PlazaModule } from '../modules/types.js';
+import type { BululuModule } from '../modules/types.js';
 import { buildTestApp, type TestApp } from '../test/app.js';
 import { resetDatabase } from '../test/db.js';
 import { signIn, type TestUser } from '../test/session.js';
@@ -189,7 +189,7 @@ const PUBLIC_ROUTES = new Set([
 ]);
 
 /** Records every route registered after it (`onRoute`), HEAD excluded. */
-function routeRecorder(routes: string[]): PlazaModule {
+function routeRecorder(routes: string[]): BululuModule {
   return {
     name: 'route-recorder',
     register({ app }) {
@@ -226,7 +226,7 @@ describe('route inventory (E8-S2)', () => {
       const response = await testApp.app.inject({
         method: method as Method,
         url: fillParams(url),
-        headers: { 'x-plaza-client': 'test' },
+        headers: { 'x-bululu-client': 'test' },
         ...(method !== 'GET' && method !== 'DELETE' && { payload: {} }),
       });
       answers[route] = response.statusCode;
@@ -304,7 +304,7 @@ describe('authorization matrix of the space endpoints', () => {
 
   it.each(cases)('%s as %s', async (_name, actor, endpoint) => {
     const ids = { member: users.member.user.id, owner: users.owner.user.id };
-    const headers = actor === 'anonymous' ? { 'x-plaza-client': 'test' } : users[actor].headers;
+    const headers = actor === 'anonymous' ? { 'x-bululu-client': 'test' } : users[actor].headers;
 
     const payload =
       endpoint.payload?.userId === 'OWNER_ID'

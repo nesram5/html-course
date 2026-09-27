@@ -1,4 +1,4 @@
-import type { PresenceStatus } from '@plaza/shared';
+import type { PresenceStatus } from '@bululu/shared';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

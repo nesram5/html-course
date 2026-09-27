@@ -26,7 +26,7 @@ import {
   type SpaceBansResponse,
   type SpaceResponse,
   type SpacesResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 
 import { AppError } from '../../platform/errors.js';

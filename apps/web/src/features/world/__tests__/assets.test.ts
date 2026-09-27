@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 describe('map asset URLs', () => {
-  it('follows the layout of @plaza/maps served at /assets/maps', () => {
+  it('follows the layout of @bululu/maps served at /assets/maps', () => {
     expect(templateDir('office-small@1')).toBe('office-small');
     expect(mapUrl('campus@2')).toBe('/assets/maps/templates/campus/map.tmj');
     expect(avatarUrl('avatar-03')).toBe('/assets/maps/avatars/avatar-03.png');

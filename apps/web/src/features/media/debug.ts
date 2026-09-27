@@ -15,11 +15,11 @@ export interface MediaDebug {
 
 declare global {
   interface Window {
-    __plazaMedia?: MediaDebug;
+    __bululuMedia?: MediaDebug;
   }
 }
 
-/** Installs `window.__plazaMedia` (never in production builds); returns the uninstaller. */
+/** Installs `window.__bululuMedia` (never in production builds); returns the uninstaller. */
 export function installMediaDebug(store: MediaStore): () => void {
   if (!import.meta.env.DEV) return () => undefined;
   const probe: MediaDebug = {
@@ -36,8 +36,8 @@ export function installMediaDebug(store: MediaStore): () => void {
       };
     },
   };
-  window.__plazaMedia = probe;
+  window.__bululuMedia = probe;
   return () => {
-    if (window.__plazaMedia === probe) delete window.__plazaMedia;
+    if (window.__bululuMedia === probe) delete window.__bululuMedia;
   };
 }

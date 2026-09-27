@@ -7,7 +7,7 @@ import {
   SpaceResponseSchema,
   type ErrorResponse,
   type SpaceDetailDto,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../../platform/errors.js';
@@ -265,7 +265,7 @@ describe('rooms module (E2-S7)', () => {
       });
 
       expect(response.statusCode).toBe(403);
-      expect(CLIENT_HEADER).toBe('x-plaza-client');
+      expect(CLIENT_HEADER).toBe('x-bululu-client');
     });
   });
 });

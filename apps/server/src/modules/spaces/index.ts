@@ -1,5 +1,5 @@
 import { KeyedSerial } from '../../platform/keyed-serial.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { SpaceNotifier } from './space-notifier.js';
 import { registerSpacesRoutes } from './spaces.routes.js';
 import { SpacesService } from './spaces.service.js';
@@ -31,7 +31,7 @@ declare module '../types.js' {
  * Spaces module (E2-S2..S6): create and list spaces, map templates, invite link, allowed domain,
  * join by link or by domain, members and kick.
  */
-export const spacesModule: PlazaModule = {
+export const spacesModule: BululuModule = {
   name: 'spaces',
   register({ app, io, container, services }) {
     const notifier = new SpaceNotifier(io);

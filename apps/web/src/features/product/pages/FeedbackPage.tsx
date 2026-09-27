@@ -1,4 +1,4 @@
-import { FEEDBACK_MAX_LEN } from '@plaza/shared';
+import { FEEDBACK_MAX_LEN } from '@bululu/shared';
 import { useMutation } from '@tanstack/react-query';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';

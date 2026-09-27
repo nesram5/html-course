@@ -1,11 +1,11 @@
-import type { AccountDeletionPreview } from '@plaza/shared';
+import type { AccountDeletionPreview } from '@bululu/shared';
 import type { Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';
 import { AppError } from '../../platform/errors.js';
 import type { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { Logger } from '../../platform/logger.js';
-import type { PlazaIo } from '../../platform/socket.js';
+import type { BululuIo } from '../../platform/socket.js';
 import { freeDesk, type SpaceNotifier } from '../spaces/index.js';
 
 type Tx = Prisma.TransactionClient | Database;
@@ -22,7 +22,7 @@ interface MembershipFacts {
 
 export interface AccountServiceDeps {
   db: Database;
-  io: PlazaIo;
+  io: BululuIo;
   notifier: SpaceNotifier;
   /** Per-space desk queue of the spaces module (claims, member removal): see `deleteAccount`. */
   deskChanges: KeyedSerial;

@@ -1,4 +1,4 @@
-import { SlugIdSchema, parseMap, type WorldMap } from '@plaza/shared';
+import { SlugIdSchema, parseMap, type WorldMap } from '@bululu/shared';
 import { z } from 'zod';
 
 /** Map assets are served by the server (and proxied by Vite in development) under this path. */
@@ -27,7 +27,7 @@ export function decorUrl(itemId: string): string {
   return `${MAPS_BASE_URL}/decor/${itemId}.png`;
 }
 
-/** The fields of `theme.json` the client needs (full schema: `@plaza/maps` `ThemeFileSchema`). */
+/** The fields of `theme.json` the client needs (full schema: `@bululu/maps` `ThemeFileSchema`). */
 const ThemeJsonSchema = z.looseObject({
   baseThemeId: SlugIdSchema.optional(),
   colorMatrix: z.array(z.number()).length(20).optional(),

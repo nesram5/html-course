@@ -1,4 +1,4 @@
-import { REACTION_EMOJIS, type ReactionEmoji } from '@plaza/shared';
+import { REACTION_EMOJIS, type ReactionEmoji } from '@bululu/shared';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

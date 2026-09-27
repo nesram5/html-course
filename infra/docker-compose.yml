@@ -1,10 +1,10 @@
 # Local services for Plaza (E0-S5).
 #   pnpm infra:up          → PostgreSQL 16
 #   pnpm infra:up:livekit  → PostgreSQL 16 + LiveKit server in dev mode (key "devkey", secret "secret")
-# Host ports can be changed with PLAZA_PG_PORT / PLAZA_LIVEKIT_PORT if they are already taken.
-# Its own project name: the app stack of infra/app is `plaza`, and sharing it on one Docker host
+# Host ports can be changed with BULULU_PG_PORT / BULULU_LIVEKIT_PORT if they are already taken.
+# Its own project name: the app stack of infra/app is `bululu`, and sharing it on one Docker host
 # would mix containers and the Postgres volume of both.
-name: plaza-dev
+name: bululu-dev
 
 services:
   postgres:
@@ -12,13 +12,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: plaza_dev
+      POSTGRES_DB: bululu_dev
     ports:
-      - '${PLAZA_PG_PORT:-5432}:5432'
+      - '${BULULU_PG_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d plaza_dev']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d bululu_dev']
       interval: 2s
       timeout: 3s
       retries: 30
@@ -30,16 +30,16 @@ services:
     command: ['--dev', '--bind', '0.0.0.0']
     environment:
       # Signed webhooks to the dev server on the host, as on the media VM (E6-S3). Set
-      # PLAZA_API_PORT when the server does not listen on 3000; if it is down LiveKit only logs.
+      # BULULU_API_PORT when the server does not listen on 3000; if it is down LiveKit only logs.
       LIVEKIT_CONFIG: |
         webhook:
           api_key: devkey
           urls:
-            - http://host.docker.internal:${PLAZA_API_PORT:-3000}/api/media/livekit-webhook
+            - http://host.docker.internal:${BULULU_API_PORT:-3000}/api/media/livekit-webhook
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     ports:
-      - '${PLAZA_LIVEKIT_PORT:-7880}:7880'
+      - '${BULULU_LIVEKIT_PORT:-7880}:7880'
       - '7881:7881'
       - '7882:7882/udp'
 

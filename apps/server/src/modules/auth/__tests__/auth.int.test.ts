@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
   type ErrorResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -87,7 +87,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
       expect(flowCookie).not.toContain(location.searchParams.get('state'));
     });
 
-    it('comes back with a __Host-plaza_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
+    it('comes back with a __Host-bululu_sid cookie (HttpOnly, Secure, SameSite=Lax) to the original next', async () => {
       testApp.identity.willAuthenticate('good-code', {
         sub: 'google-sub-ana',
         email: 'ana@acme.com',
@@ -386,7 +386,7 @@ describe('auth module (E1-S1, E1-S2)', () => {
       expect(cookieOf(response, SESSION_COOKIE_NAME)?.httpOnly).toBe(true);
     });
 
-    it('requires the X-Plaza-Client header', async () => {
+    it('requires the X-Bululu-Client header', async () => {
       const response = await testApp.app.inject({
         method: 'POST',
         url: API_PATHS.authTestLogin,

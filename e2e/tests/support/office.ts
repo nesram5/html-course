@@ -2,7 +2,7 @@ import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
 import { step, tile } from './world';
 
-/** Office personalization as reported by `window.__plazaWorld.office()` (E9). */
+/** Office personalization as reported by `window.__bululuWorld.office()` (E9). */
 export interface OfficeProbe {
   themeId: string;
   swaps: number;
@@ -15,7 +15,7 @@ export interface OfficeProbe {
 }
 
 export function office(page: Page): Promise<OfficeProbe | null> {
-  return page.evaluate(() => window.__plazaWorld?.office() ?? null);
+  return page.evaluate(() => window.__bululuWorld?.office() ?? null);
 }
 
 export interface Tile {

@@ -1,4 +1,4 @@
-import { WEB_PATHS } from '@plaza/shared';
+import { WEB_PATHS } from '@bululu/shared';
 import type { RouteObject } from 'react-router';
 
 import { authRoutes } from '@/features/auth';

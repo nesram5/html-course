@@ -3,7 +3,7 @@ import type {
   ReactionEmoji,
   ServerEventName,
   ServerEventPayload,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** Stand-in for the parts of `RealtimeClient` the chat feature uses. */
 export class FakeChatClient {

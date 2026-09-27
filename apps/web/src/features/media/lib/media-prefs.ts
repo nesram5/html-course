@@ -18,8 +18,8 @@ export const DEFAULT_MEDIA_CHOICES: MediaChoices = {
   audioOutputDeviceId: null,
 };
 
-const PREFS_KEY = 'plaza.media.choices.v1';
-const HALLWAY_NOTICE_KEY = 'plaza.media.hallwayNoticeSeen.v1';
+const PREFS_KEY = 'bululu.media.choices.v1';
+const HALLWAY_NOTICE_KEY = 'bululu.media.hallwayNoticeSeen.v1';
 
 const StoredChoicesSchema = z.object({
   audioEnabled: z.boolean(),

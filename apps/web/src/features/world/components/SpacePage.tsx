@@ -1,4 +1,4 @@
-import { WEB_PATHS } from '@plaza/shared';
+import { WEB_PATHS } from '@bululu/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';

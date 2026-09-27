@@ -1,4 +1,4 @@
-import type { AvatarDto } from '@plaza/shared';
+import type { AvatarDto } from '@bululu/shared';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarSprite } from '@/features/auth';

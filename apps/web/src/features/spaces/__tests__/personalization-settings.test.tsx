@@ -1,4 +1,4 @@
-import type { MapTemplateDto, MemberDto } from '@plaza/shared';
+import type { MapTemplateDto, MemberDto } from '@bululu/shared';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';

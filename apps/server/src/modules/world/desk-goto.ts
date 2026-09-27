@@ -1,8 +1,8 @@
-import { deskSpawnTile, type DeskArea, type Direction, type Tile } from '@plaza/shared';
+import { deskSpawnTile, type DeskArea, type Direction, type Tile } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
-import { safeHandler, type PlazaIo, type SafeHandlerDeps } from '../../platform/socket.js';
-import type { PlazaSocket } from '../../platform/socket.js';
+import { safeHandler, type BululuIo, type SafeHandlerDeps } from '../../platform/socket.js';
+import type { BululuSocket } from '../../platform/socket.js';
 import { KeyedTokenBuckets } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { WorldRepository } from './world.repository.js';
@@ -28,7 +28,7 @@ export function facingDesk(tile: Tile, desk: DeskArea): Direction {
 export async function gotoDesk(
   world: WorldService,
   repository: WorldRepository,
-  socket: PlazaSocket,
+  socket: BululuSocket,
 ): Promise<void> {
   const userId = socketUserId(socket);
   const { spaceId } = socket.data;
@@ -52,7 +52,7 @@ export async function gotoDesk(
 
 /** Registers the `desk:goto` handler on every connection (E9-S2). */
 export function registerDeskGoto(
-  io: PlazaIo,
+  io: BululuIo,
   deps: SafeHandlerDeps,
   world: WorldService,
   repository: WorldRepository,

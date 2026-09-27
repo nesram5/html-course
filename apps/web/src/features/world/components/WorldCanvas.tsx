@@ -1,4 +1,4 @@
-import type { WorldMap } from '@plaza/shared';
+import type { WorldMap } from '@bululu/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

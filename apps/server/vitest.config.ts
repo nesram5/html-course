@@ -8,7 +8,7 @@ export default defineConfig({
   ssr: {
     resolve: {
       conditions: [
-        '@plaza/source',
+        '@bululu/source',
         ...defaultServerConditions.filter((condition) => condition !== 'module'),
       ],
     },

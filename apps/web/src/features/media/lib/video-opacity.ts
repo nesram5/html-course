@@ -1,4 +1,4 @@
-import { PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '@plaza/shared';
+import { PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '@bululu/shared';
 
 /** Opacity of a hallway video at the edge of the conversation, just before it is cut. */
 export const VIDEO_MIN_OPACITY = 0.35;

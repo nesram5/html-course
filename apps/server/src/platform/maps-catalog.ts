@@ -7,7 +7,7 @@ import {
   ThemeFileSchema,
   type MapsManifest,
   type ManifestTemplate,
-} from '@plaza/maps';
+} from '@bululu/maps';
 import {
   parseMap,
   type AvatarDto,
@@ -15,7 +15,7 @@ import {
   type MapTemplateDto,
   type ThemeDto,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** Public URL prefix under which the server serves the maps package (see `app.ts`). */
 export const MAP_ASSETS_PREFIX = '/assets/maps';
@@ -27,7 +27,7 @@ export interface MapRoomArea {
 }
 
 /**
- * Read-only catalog of `@plaza/maps`: templates, their meeting rooms and themes, and avatars.
+ * Read-only catalog of `@bululu/maps`: templates, their meeting rooms and themes, and avatars.
  * Injected through the container so tests can use a fixture catalog (`src/test/maps-fixture.ts`).
  */
 export interface MapsCatalog {
@@ -51,10 +51,10 @@ export interface MapsCatalog {
   listDecor(): DecorItemDto[];
 }
 
-/** Folder of the `@plaza/maps` package (manifest, templates, avatars, decor). */
+/** Folder of the `@bululu/maps` package (manifest, templates, avatars, decor). */
 export function mapsPackageDir(): string {
   const require = createRequire(import.meta.url);
-  return dirname(require.resolve('@plaza/maps/package.json'));
+  return dirname(require.resolve('@bululu/maps/package.json'));
 }
 
 export interface ManifestCatalogFiles {
@@ -78,7 +78,7 @@ export class ManifestMapsCatalog implements MapsCatalog {
   constructor(
     private readonly manifest: MapsManifest,
     private readonly files: ManifestCatalogFiles,
-    /** Tiled parser, `parseMap` of `@plaza/shared` by default. */
+    /** Tiled parser, `parseMap` of `@bululu/shared` by default. */
     private readonly parse: (tmj: unknown) => WorldMap = parseMap,
   ) {
     this.#templates = new Map(manifest.templates.map((template) => [template.id, template]));

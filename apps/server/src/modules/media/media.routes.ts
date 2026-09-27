@@ -3,7 +3,7 @@ import {
   MediaTokenResponseSchema,
   SpaceParamsSchema,
   type MediaTokenResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import type { WebhookReceiver } from 'livekit-server-sdk';
 

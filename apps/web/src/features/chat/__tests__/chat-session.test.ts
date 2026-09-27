@@ -3,7 +3,7 @@ import {
   PROTOCOL_VERSION,
   type ChatMessageDto,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EventBus } from '@/features/world';

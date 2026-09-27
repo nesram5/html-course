@@ -52,7 +52,7 @@ describe('createErrorReporter', () => {
       expect.objectContaining({
         dsn,
         environment: 'staging',
-        release: 'plaza-server@1.2.3',
+        release: 'bululu-server@1.2.3',
         sendDefaultPii: false,
       }),
     );

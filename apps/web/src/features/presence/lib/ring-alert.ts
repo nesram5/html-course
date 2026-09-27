@@ -1,4 +1,4 @@
-import type { RingReceived } from '@plaza/shared';
+import type { RingReceived } from '@bululu/shared';
 
 /** Browser APIs used by the ring alert, injectable for tests. */
 export interface RingAlertEnv {
@@ -87,7 +87,7 @@ export function showRingAlert(
     const notification = new api(texts.title, {
       body: texts.body,
       silent: ring.silent,
-      tag: `plaza-ring-${ring.fromUserId}`,
+      tag: `bululu-ring-${ring.fromUserId}`,
     });
     notification.onclick = () => {
       env.focusWindow();

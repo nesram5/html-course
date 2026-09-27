@@ -1,4 +1,4 @@
-import type { PresenceStatus } from '@plaza/shared';
+import type { PresenceStatus } from '@bululu/shared';
 
 import type { Database } from '../../platform/db.js';
 

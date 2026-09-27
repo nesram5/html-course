@@ -37,7 +37,7 @@ import {
 const MEET_URI = 'https://meet.google.com/abc-defg-hij';
 const ROOM_ID = 'sala-reuniones';
 /** The admin of the metrics page (`ADMIN_EMAILS` of the E2E server). */
-const ADMIN = 'producto@plaza.test';
+const ADMIN = 'producto@bululu.test';
 
 /** O6 of the admin metrics page (E8-S7): room entries and Meet openings. */
 async function o6(
@@ -64,7 +64,7 @@ async function person(browser: Browser, email: string, name: string): Promise<Pe
 }
 
 function media(page: Page) {
-  return page.evaluate(() => window.__plazaMedia?.state());
+  return page.evaluate(() => window.__bululuMedia?.state());
 }
 
 /**
@@ -146,7 +146,7 @@ function playing(page: Page, userId: string): Promise<boolean> {
 /** `true` when an <audio> element plays the microphone of `userId`. */
 function hearing(page: Page, userId: string): Promise<boolean> {
   return page.evaluate(
-    (id) => document.querySelector(`audio[data-plaza-audio="${id}"]`) !== null,
+    (id) => document.querySelector(`audio[data-bululu-audio="${id}"]`) !== null,
     userId,
   );
 }
@@ -195,9 +195,9 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
       probe.__cutAt = null;
       const check = () => {
         const cut =
-          document.querySelector(`audio[data-plaza-audio="${id}"]`) === null &&
+          document.querySelector(`audio[data-bululu-audio="${id}"]`) === null &&
           document.querySelector(`[data-testid="hallway-video"][data-user-id="${id}"]`) === null &&
-          !(window.__plazaMedia?.state().subscribed ?? []).includes(id);
+          !(window.__bululuMedia?.state().subscribed ?? []).includes(id);
         if (cut) probe.__cutAt = Date.now();
         else setTimeout(check, 10);
       };
@@ -247,7 +247,7 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
 
     // Ana sees the room tinted as occupied and the 📹 next to Eva; "Personas" says where she is.
     await expect
-      .poll(() => ana.page.evaluate(() => window.__plazaWorld?.rooms()))
+      .poll(() => ana.page.evaluate(() => window.__bululuWorld?.rooms()))
       .toEqual([{ areaId: ROOM_ID, occupied: true, people: 1 }]);
     await expect.poll(async () => (await remoteAvatar(ana.page, eva.userId))?.inMeeting).toBe(true);
     await ana.page
@@ -306,7 +306,7 @@ test.describe('meeting rooms with Google Meet (E6)', () => {
     await expect.poll(() => playing(ana.page, eva.userId), { timeout: 10_000 }).toBe(true);
     await expect.poll(() => hearing(ana.page, eva.userId), { timeout: 10_000 }).toBe(true);
     await expect
-      .poll(() => ana.page.evaluate(() => window.__plazaWorld?.rooms()))
+      .poll(() => ana.page.evaluate(() => window.__bululuWorld?.rooms()))
       .toEqual([{ areaId: ROOM_ID, occupied: false, people: 0 }]);
     await expect(eva.page.getByRole('button', { name: 'Silenciar micrófono' })).toBeEnabled();
 

@@ -3,7 +3,7 @@ import {
   type ErrorCode,
   type ErrorPayload,
   type ErrorResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyError, FastifyInstance, FastifyRequest } from 'fastify';
 import { ZodError, prettifyError } from 'zod';
 

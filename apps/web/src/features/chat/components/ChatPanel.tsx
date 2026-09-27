@@ -1,4 +1,4 @@
-import { CHAT_MAX_LEN, type ChatMessageDto } from '@plaza/shared';
+import { CHAT_MAX_LEN, type ChatMessageDto } from '@bululu/shared';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -35,7 +35,7 @@ import {
   type MediaParticipant,
 } from './media-plan.js';
 
-const USAGE = `Usage: pnpm --filter @plaza/load media [options]
+const USAGE = `Usage: pnpm --filter @bululu/load media [options]
 
 Hallway media load (E8-S3): G conversations of N people in ONE LiveKit room (like a Plaza space),
 each person publishing a synthetic camera (simulcast) and microphone and subscribing only to the

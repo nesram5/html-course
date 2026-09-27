@@ -7,7 +7,7 @@ set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../../.." && pwd)"
 image="${LIVEKIT_IMAGE:-livekit/livekit-server:v1.9}"
-name="plaza-turn-test-$$"
+name="bululu-turn-test-$$"
 certs="$(mktemp -d)"
 
 cleanup() {

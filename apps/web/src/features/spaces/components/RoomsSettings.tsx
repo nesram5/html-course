@@ -1,4 +1,4 @@
-import type { SpaceDetailDto } from '@plaza/shared';
+import type { SpaceDetailDto } from '@bululu/shared';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 

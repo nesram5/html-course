@@ -1,4 +1,4 @@
-import type { AdminMetricsResponse } from '@plaza/shared';
+import type { AdminMetricsResponse } from '@bululu/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';

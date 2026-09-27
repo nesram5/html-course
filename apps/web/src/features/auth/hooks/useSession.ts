@@ -1,4 +1,4 @@
-import type { Me } from '@plaza/shared';
+import type { Me } from '@bululu/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {

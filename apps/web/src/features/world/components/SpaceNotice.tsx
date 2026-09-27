@@ -1,4 +1,4 @@
-import { WEB_PATHS } from '@plaza/shared';
+import { WEB_PATHS } from '@bululu/shared';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';

@@ -1,12 +1,12 @@
-import { SESSION_COOKIE_NAME, type ErrorPayload } from '@plaza/shared';
+import { SESSION_COOKIE_NAME, type ErrorPayload } from '@bululu/shared';
 import type { ExtendedError } from 'socket.io';
 
 import { AppError } from '../../platform/errors.js';
 import type { Logger } from '../../platform/logger.js';
-import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
+import type { BululuIo, BululuSocket } from '../../platform/socket.js';
 import type { AuthService } from './auth.service.js';
 
-type SocketMiddleware = Parameters<PlazaIo['use']>[0];
+type SocketMiddleware = Parameters<BululuIo['use']>[0];
 
 function handshakeError(payload: ErrorPayload): ExtendedError {
   const error: ExtendedError = new Error(payload.message);
@@ -17,7 +17,7 @@ function handshakeError(payload: ErrorPayload): ExtendedError {
 
 /**
  * Socket.IO handshake authentication (`requireUser` for sockets, E1-S2 / E4-S1): reads the
- * `__Host-plaza_sid` cookie of the upgrade request and fills `socket.data.userId` / `sessionId`.
+ * `__Host-bululu_sid` cookie of the upgrade request and fills `socket.data.userId` / `sessionId`.
  * Connections without a valid session are refused with `connect_error` `{ code: UNAUTHORIZED }`.
  */
 export function createSocketAuthMiddleware(deps: {
@@ -50,7 +50,7 @@ export function createSocketAuthMiddleware(deps: {
 }
 
 /** userId of an authenticated socket (always set after the handshake middleware). */
-export function socketUserId(socket: PlazaSocket): string {
+export function socketUserId(socket: BululuSocket): string {
   if (socket.data.userId === undefined) throw new AppError('UNAUTHORIZED');
   return socket.data.userId;
 }

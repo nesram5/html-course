@@ -1,4 +1,4 @@
-import { apiPath, WEB_PATHS, type AccountDeletionPreview } from '@plaza/shared';
+import { apiPath, WEB_PATHS, type AccountDeletionPreview } from '@bululu/shared';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';

@@ -66,7 +66,7 @@ describe('ManifestMapsCatalog', () => {
     expect(await catalog.worldMap('office-small@1')).toBe(map);
   });
 
-  it('parses every generated template of @plaza/maps with parseMap', async () => {
+  it('parses every generated template of @bululu/maps with parseMap', async () => {
     const catalog = ManifestMapsCatalog.fromDir(mapsPackageDir());
 
     const templates = await catalog.listTemplates();
@@ -99,8 +99,8 @@ describe('ManifestMapsCatalog', () => {
     expect(avatars.every((avatar) => catalog.hasAvatar(avatar.id))).toBe(true);
   });
 
-  it('loads the manifest of a folder (MAPS_DIR) and of the @plaza/maps package', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'plaza-maps-'));
+  it('loads the manifest of a folder (MAPS_DIR) and of the @bululu/maps package', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bululu-maps-'));
     writeFileSync(
       join(dir, 'manifest.json'),
       JSON.stringify({ version: 1, templates: [], avatars: [], decor: [] }),

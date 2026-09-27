@@ -6,7 +6,7 @@ import {
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import Fastify from 'fastify';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';

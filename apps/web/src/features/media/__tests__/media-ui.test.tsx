@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type PublicPlayer } from '@plaza/shared';
+import { PROTOCOL_VERSION, type PublicPlayer } from '@bululu/shared';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomEvent, VideoQuality } from 'livekit-client';

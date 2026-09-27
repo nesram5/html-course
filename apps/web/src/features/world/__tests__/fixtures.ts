@@ -4,7 +4,7 @@ import {
   type SpaceSnapshot,
   type WorldDelta,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /**
  * A 6×5 test map (`#` blocks). Room "sala" covers x 3..4, y 1..2.

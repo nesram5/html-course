@@ -3,7 +3,7 @@ import {
   MEDIA_TOKEN_TTL_SECONDS,
   type MediaTokenResponse,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { DisconnectReason, RoomEvent, VideoQuality } from 'livekit-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -213,7 +213,7 @@ describe('MediaController: subscriptions follow media:peers (E5-S5)', () => {
     const audio = new FakeAudioTrack('a1');
 
     lk.emit(RoomEvent.TrackSubscribed, audio, luis.mic, luis);
-    expect(document.querySelectorAll('audio[data-plaza-audio="user-2"]')).toHaveLength(1);
+    expect(document.querySelectorAll('audio[data-bululu-audio="user-2"]')).toHaveLength(1);
 
     lk.emit(RoomEvent.TrackUnsubscribed, audio, luis.mic, luis);
     expect(document.querySelectorAll('audio')).toHaveLength(0);

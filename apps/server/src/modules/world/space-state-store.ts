@@ -1,4 +1,4 @@
-import { SPACE_UNLOAD_DELAY_MS } from '@plaza/shared';
+import { SPACE_UNLOAD_DELAY_MS } from '@bululu/shared';
 
 import type { CancelTimer, Timers } from '../../platform/timers.js';
 import type { SpaceRuntime } from './space-runtime.js';

@@ -1,12 +1,12 @@
 {
-  "name": "@plaza/shared",
+  "name": "@bululu/shared",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Shared contracts (zod), game constants and pure world logic used by web and server.",
   "exports": {
     ".": {
-      "@plaza/source": "./src/index.ts",
+      "@bululu/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }

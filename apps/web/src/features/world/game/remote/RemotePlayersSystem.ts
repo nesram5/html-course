@@ -1,4 +1,4 @@
-import { effectivePresence, type PublicPlayer, type WorldDelta } from '@plaza/shared';
+import { effectivePresence, type PublicPlayer, type WorldDelta } from '@bululu/shared';
 import type * as Phaser from 'phaser';
 
 import { AvatarSprite } from '../sprites/AvatarSprite';

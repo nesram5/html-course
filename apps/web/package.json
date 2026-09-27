@@ -1,5 +1,5 @@
 {
-  "name": "@plaza/web",
+  "name": "@bululu/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
   "dependencies": {
     "@livekit/components-react": "^2.9.24",
     "@livekit/components-styles": "^1.2.0",
-    "@plaza/shared": "workspace:*",
+    "@bululu/shared": "workspace:*",
     "@sentry/react": "^10.75.3",
     "@tanstack/react-query": "^5.104.0",
     "i18next": "^26.4.2",

@@ -5,7 +5,7 @@ import {
   MeResponseSchema,
   SpaceResponseSchema,
   type SpaceDetailDto,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../../test/app.js';
@@ -22,7 +22,7 @@ describe('admin metrics page and in-app feedback (E8-S7)', () => {
 
   beforeAll(async () => {
     testApp = await buildTestApp({
-      env: { ADMIN_EMAILS: 'Producto@Plaza.dev' },
+      env: { ADMIN_EMAILS: 'Producto@Bululu.dev' },
       overrides: { now: () => NOW },
     });
   });
@@ -33,7 +33,7 @@ describe('admin metrics page and in-app feedback (E8-S7)', () => {
 
   beforeEach(async () => {
     await resetDatabase(testApp.container.db);
-    admin = await signIn(testApp.app, 'producto@plaza.dev', { displayName: 'Producto' });
+    admin = await signIn(testApp.app, 'producto@bululu.dev', { displayName: 'Producto' });
     luis = await signIn(testApp.app, 'luis@acme.com', { displayName: 'Luis' });
     const created = await testApp.app.inject({
       method: 'POST',
@@ -142,7 +142,7 @@ describe('admin metrics page and in-app feedback (E8-S7)', () => {
         await testApp.app.inject({
           method: 'POST',
           url: API_PATHS.feedback,
-          headers: { 'x-plaza-client': 'test' },
+          headers: { 'x-bululu-client': 'test' },
           payload: { message: 'anon' },
         })
       ).statusCode,

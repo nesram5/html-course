@@ -1,4 +1,4 @@
-import type { WorldMap } from '@plaza/shared';
+import type { WorldMap } from '@bululu/shared';
 import type * as Phaser from 'phaser';
 
 import { reportError } from '@/shared/lib/sentry';

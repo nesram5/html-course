@@ -1,4 +1,4 @@
-import { DESK_DECOR_SLOTS, type DecorItemDto, type DeskDecor } from '@plaza/shared';
+import { DESK_DECOR_SLOTS, type DecorItemDto, type DeskDecor } from '@bululu/shared';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

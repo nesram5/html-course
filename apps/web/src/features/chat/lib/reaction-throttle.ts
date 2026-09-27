@@ -1,4 +1,4 @@
-import { REACTION_RATE_PER_SEC } from '@plaza/shared';
+import { REACTION_RATE_PER_SEC } from '@bululu/shared';
 
 /**
  * Client-side limit of reactions (E7-S4: at most 3 per second), so holding a key does not flood

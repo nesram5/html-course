@@ -7,38 +7,44 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-/** Imports forbidden in @plaza/shared: it must run unchanged in the browser and in Node. */
+/** Imports forbidden in @bululu/shared: it must run unchanged in the browser and in Node. */
 const SHARED_FORBIDDEN_IMPORTS = {
   paths: [
-    { name: 'react', message: '@plaza/shared must not depend on React.' },
-    { name: 'react-dom', message: '@plaza/shared must not depend on React.' },
-    { name: 'phaser', message: '@plaza/shared must not depend on Phaser.' },
-    { name: 'socket.io', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'socket.io-client', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'livekit-client', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'fastify', message: '@plaza/shared must not depend on the server.' },
-    { name: '@prisma/client', message: '@plaza/shared must not depend on the server.' },
-    { name: 'livekit-server-sdk', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'google-auth-library', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'ws', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'undici', message: '@plaza/shared must not depend on network libraries.' },
-    { name: 'axios', message: '@plaza/shared must not depend on network libraries.' },
+    { name: 'react', message: '@bululu/shared must not depend on React.' },
+    { name: 'react-dom', message: '@bululu/shared must not depend on React.' },
+    { name: 'phaser', message: '@bululu/shared must not depend on Phaser.' },
+    { name: 'socket.io', message: '@bululu/shared must not depend on network libraries.' },
+    { name: 'socket.io-client', message: '@bululu/shared must not depend on network libraries.' },
+    { name: 'livekit-client', message: '@bululu/shared must not depend on network libraries.' },
+    { name: 'fastify', message: '@bululu/shared must not depend on the server.' },
+    { name: '@prisma/client', message: '@bululu/shared must not depend on the server.' },
+    { name: 'livekit-server-sdk', message: '@bululu/shared must not depend on network libraries.' },
+    {
+      name: 'google-auth-library',
+      message: '@bululu/shared must not depend on network libraries.',
+    },
+    { name: 'ws', message: '@bululu/shared must not depend on network libraries.' },
+    { name: 'undici', message: '@bululu/shared must not depend on network libraries.' },
+    { name: 'axios', message: '@bululu/shared must not depend on network libraries.' },
     // Node built-ins imported without the `node:` prefix (`fs`, `path`, ...).
     ...builtinModules
       .filter((name) => !name.startsWith('_'))
-      .map((name) => ({ name, message: '@plaza/shared must not use Node.js APIs.' })),
+      .map((name) => ({ name, message: '@bululu/shared must not use Node.js APIs.' })),
   ],
   patterns: [
-    { group: ['node:*'], message: '@plaza/shared must not use Node.js APIs.' },
+    { group: ['node:*'], message: '@bululu/shared must not use Node.js APIs.' },
     {
       group: ['@fastify/*', '@livekit/*', '@sentry/*', 'socket.io/*', 'socket.io-client/*'],
-      message: '@plaza/shared must not depend on network or server libraries.',
+      message: '@bululu/shared must not depend on network or server libraries.',
     },
     {
       group: ['react/*', 'react-dom/*', 'phaser/*'],
-      message: '@plaza/shared must stay framework-free.',
+      message: '@bululu/shared must stay framework-free.',
     },
-    { group: ['@plaza/*'], message: '@plaza/shared must not depend on other workspace packages.' },
+    {
+      group: ['@bululu/*'],
+      message: '@bululu/shared must not depend on other workspace packages.',
+    },
   ],
 };
 
@@ -138,7 +144,7 @@ export default tseslint.config(
     rules: { 'no-restricted-exports': 'off' },
   },
 
-  // @plaza/shared: framework- and runtime-free (E0-S2).
+  // @bululu/shared: framework- and runtime-free (E0-S2).
   {
     files: ['packages/shared/src/**/*.ts'],
     ignores: ['packages/shared/src/**/__tests__/**'],

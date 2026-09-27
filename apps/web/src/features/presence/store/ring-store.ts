@@ -1,4 +1,4 @@
-import { RING_COOLDOWN_MS } from '@plaza/shared';
+import { RING_COOLDOWN_MS } from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

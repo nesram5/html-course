@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@plaza/shared';
+import type { ErrorCode } from '@bululu/shared';
 import { vi } from 'vitest';
 
 export interface MockRequest {

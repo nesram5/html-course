@@ -1,4 +1,4 @@
-import { CHAT_MAX_LEN } from '@plaza/shared';
+import { CHAT_MAX_LEN } from '@bululu/shared';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

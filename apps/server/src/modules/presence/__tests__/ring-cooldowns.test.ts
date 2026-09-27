@@ -1,4 +1,4 @@
-import { RING_COOLDOWN_MS } from '@plaza/shared';
+import { RING_COOLDOWN_MS } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import { RingCooldowns } from '../ring-cooldowns.js';

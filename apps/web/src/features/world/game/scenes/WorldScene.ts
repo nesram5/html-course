@@ -12,7 +12,7 @@ import {
   type Tile,
   type WorldDelta,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import * as Phaser from 'phaser';
 
 import type { ThemeAssets } from '../../api/assets';

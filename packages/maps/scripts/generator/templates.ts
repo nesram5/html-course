@@ -196,8 +196,8 @@ export const campus: TemplateSpec = {
 
     // ── Outdoors ──
     const pathFill = (x: number, y: number) => `path-${String(Math.floor(hash2(x, y, 3) * 2))}`;
-    b.setFloor(31, by + bh, 2, 6, pathFill); // entrance → plaza
-    b.setFloor(26, 41, 12, 12, pathFill); // plaza
+    b.setFloor(31, by + bh, 2, 6, pathFill); // entrance → square
+    b.setFloor(26, 41, 12, 12, pathFill); // square
     b.setFloor(2, 46, 24, 2, pathFill).setFloor(38, 46, 40, 2, pathFill); // east-west avenue
     b.setFloor(2, 24, 4, 2, pathFill).setFloor(58, 24, 20, 2, pathFill); // side exits
     b.setFloor(2, 24, 2, 22, pathFill).setFloor(76, 24, 2, 22, pathFill);

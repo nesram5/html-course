@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import type { Container } from '../container.js';
-import type { PlazaIo, SafeHandlerDeps } from '../platform/socket.js';
+import type { BululuIo, SafeHandlerDeps } from '../platform/socket.js';
 
 /**
  * Services that modules expose to modules registered after them. Each module adds its entry
@@ -38,7 +38,7 @@ export class ServiceRegistry {
 
 export interface ModuleContext {
   app: FastifyInstance;
-  io: PlazaIo;
+  io: BululuIo;
   container: Container;
   services: ServiceRegistry;
   /** Dependencies for `safeHandler` (logger + error reporter). */
@@ -46,7 +46,7 @@ export interface ModuleContext {
 }
 
 /** A backend module (architecture §5.2). Listed in `modules/index.ts`. */
-export interface PlazaModule {
+export interface BululuModule {
   name: string;
   register(ctx: ModuleContext): void | Promise<void>;
 }

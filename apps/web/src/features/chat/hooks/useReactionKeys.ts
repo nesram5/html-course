@@ -1,4 +1,4 @@
-import { REACTION_EMOJIS, type ReactionEmoji } from '@plaza/shared';
+import { REACTION_EMOJIS, type ReactionEmoji } from '@bululu/shared';
 import { useEffect, useRef } from 'react';
 
 import { isTypingTarget } from '@/features/world';

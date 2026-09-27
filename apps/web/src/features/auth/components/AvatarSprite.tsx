@@ -1,4 +1,4 @@
-import type { AvatarDto } from '@plaza/shared';
+import type { AvatarDto } from '@bululu/shared';
 import type { CSSProperties } from 'react';
 
 import './avatar-sprite.css';

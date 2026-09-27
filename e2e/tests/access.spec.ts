@@ -4,7 +4,7 @@ import { expect, test, type APIRequestContext, type Browser } from '@playwright/
 
 import { enterOffice } from './support/world';
 
-const CLIENT = { 'x-plaza-client': 'e2e' };
+const CLIENT = { 'x-bululu-client': 'e2e' };
 
 interface CreatedSpace {
   id: string;

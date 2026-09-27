@@ -37,7 +37,7 @@ const EnvSchema = z
     /** Enables POST /api/auth/test-login (CI and local only). */
     AUTH_TEST_LOGIN: booleanFlag,
 
-    /** Folder with the maps catalog (`manifest.json`); defaults to the `@plaza/maps` package. */
+    /** Folder with the maps catalog (`manifest.json`); defaults to the `@bululu/maps` package. */
     MAPS_DIR: optional(z.string().min(1)),
 
     /** Max HTTP requests per minute and client IP (@fastify/rate-limit). */
@@ -71,7 +71,7 @@ const EnvSchema = z
     HEALTH_TOKEN: optional(z.string().min(16, 'must be at least 16 characters')),
 
     /**
-     * People connected at once per space; `MAX_PLAYERS_PER_SPACE` of `@plaza/shared` (RN-06)
+     * People connected at once per space; `MAX_PLAYERS_PER_SPACE` of `@bululu/shared` (RN-06)
      * when unset. Lowered by tests. (Not imported here: the test global setup loads this file
      * without the workspace source condition.)
      */
@@ -90,7 +90,7 @@ const EnvSchema = z
      * `/api/health` and the Sentry release. Defaults to `package.json`, which releases do not
      * bump.
      */
-    PLAZA_VERSION: optional(z.string().min(1).max(64)),
+    BULULU_VERSION: optional(z.string().min(1).max(64)),
   })
   .superRefine((env, ctx) => {
     if (env.AUTH_TEST_LOGIN && env.NODE_ENV === 'production') {
@@ -139,7 +139,7 @@ const ConfigSchema = EnvSchema.transform((env) => ({
   host: env.HOST,
   port: env.PORT,
   logLevel: env.LOG_LEVEL,
-  version: env.PLAZA_VERSION ?? readPackageVersion(),
+  version: env.BULULU_VERSION ?? readPackageVersion(),
   databaseUrl: env.DATABASE_URL,
   sessionSecret: env.SESSION_SECRET,
   publicUrl: env.PUBLIC_URL.replace(/\/+$/, ''),

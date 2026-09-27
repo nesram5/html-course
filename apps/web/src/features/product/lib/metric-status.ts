@@ -1,4 +1,4 @@
-import type { AdminMetricsResponse } from '@plaza/shared';
+import type { AdminMetricsResponse } from '@bululu/shared';
 
 /** Targets of the beta (brief §3). */
 export const TARGETS = {

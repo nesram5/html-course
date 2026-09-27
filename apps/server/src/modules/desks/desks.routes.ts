@@ -9,7 +9,7 @@ import {
   type DecorCatalogResponse,
   type DeskResponse,
   type DesksResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 import { z } from 'zod';
 

@@ -1,4 +1,4 @@
-import { CHAT_HISTORY, type ChatMessageDto } from '@plaza/shared';
+import { CHAT_HISTORY, type ChatMessageDto } from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

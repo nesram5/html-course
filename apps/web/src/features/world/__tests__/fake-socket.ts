@@ -1,4 +1,4 @@
-import type { PlazaClientSocket } from '../realtime/realtime-client';
+import type { BululuClientSocket } from '../realtime/realtime-client';
 
 type Handler = (...args: unknown[]) => void;
 
@@ -23,8 +23,8 @@ export class FakeSocket {
   private readonly handlers = new Map<string, Set<Handler>>();
   private readonly anyHandlers = new Set<Handler>();
 
-  asSocket(): PlazaClientSocket {
-    return this as unknown as PlazaClientSocket;
+  asSocket(): BululuClientSocket {
+    return this as unknown as BululuClientSocket;
   }
 
   on(event: string, handler: Handler): this {

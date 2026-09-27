@@ -1,4 +1,4 @@
-import { API_PATHS, HealthResponseSchema } from '@plaza/shared';
+import { API_PATHS, HealthResponseSchema } from '@bululu/shared';
 import { useQuery } from '@tanstack/react-query';
 
 import { http } from '@/shared/api';

@@ -1,4 +1,4 @@
-import { API_PATHS, DecorCatalogResponseSchema, MapTemplatesResponseSchema } from '@plaza/shared';
+import { API_PATHS, DecorCatalogResponseSchema, MapTemplatesResponseSchema } from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

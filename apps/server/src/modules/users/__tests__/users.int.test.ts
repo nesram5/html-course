@@ -3,7 +3,7 @@ import {
   AvatarsResponseSchema,
   MeResponseSchema,
   type ErrorResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../../test/app.js';
@@ -94,14 +94,14 @@ describe('users module (E1-S4)', () => {
     const response = await testApp.app.inject({
       method: 'PATCH',
       url: API_PATHS.me,
-      headers: { 'x-plaza-client': 'test' },
+      headers: { 'x-bululu-client': 'test' },
       payload: { displayName: 'Hacker' },
     });
 
     expect(response.statusCode).toBe(401);
   });
 
-  it('lists the avatar catalog of @plaza/maps (at least 8 walking sprites)', async () => {
+  it('lists the avatar catalog of @bululu/maps (at least 8 walking sprites)', async () => {
     const response = await testApp.app.inject({ method: 'GET', url: API_PATHS.avatars });
 
     const { avatars } = AvatarsResponseSchema.parse(response.json());

@@ -10,7 +10,7 @@ import {
   REALTIME_PATH,
   type ClientToServerEvents,
   type ServerToClientEvents,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
@@ -49,7 +49,7 @@ describe('graceful shutdown (E8-S5)', () => {
     const base = `http://127.0.0.1:${String(port)}`;
     let output = '';
     // Node itself (with the tsx loader), not a wrapper: the signal must reach the server.
-    const args = ['--import', 'tsx', '--conditions=@plaza/source', 'src/main.ts'];
+    const args = ['--import', 'tsx', '--conditions=@bululu/source', 'src/main.ts'];
     const server = spawn(process.execPath, args, {
       cwd: serverDir,
       env: {

@@ -1,4 +1,4 @@
-import { SPACE_NAME_MAX_LEN, type SpaceDetailDto } from '@plaza/shared';
+import { SPACE_NAME_MAX_LEN, type SpaceDetailDto } from '@bululu/shared';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type SpaceSnapshot } from '@plaza/shared';
+import { PROTOCOL_VERSION, type SpaceSnapshot } from '@bululu/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EventBus } from '../bridge/event-bus';

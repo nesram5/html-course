@@ -4,12 +4,12 @@ import {
   API_PATHS,
   type AdminFeedback,
   type AdminMetricsResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import type { Database } from '../../platform/db.js';
 import { AppError } from '../../platform/errors.js';
 import { currentUser } from '../auth/index.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { isAdminEmail } from '../users/index.js';
 import { computeAdminMetrics, metricsWindow } from './admin-metrics.js';
 
@@ -88,7 +88,7 @@ export class AdminService {
 }
 
 /** Admin module (E8-S7): `GET /api/admin/metrics`. */
-export const adminModule: PlazaModule = {
+export const adminModule: BululuModule = {
   name: 'admin',
   register({ app, container, services }) {
     const admin = new AdminService(container.db, container.config.adminEmails, container.now);

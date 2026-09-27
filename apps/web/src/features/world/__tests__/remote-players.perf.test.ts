@@ -1,7 +1,7 @@
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 
-import { MAX_PLAYERS_PER_SPACE, TICK_MS } from '@plaza/shared';
+import { MAX_PLAYERS_PER_SPACE, TICK_MS } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

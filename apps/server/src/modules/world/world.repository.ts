@@ -1,4 +1,4 @@
-import { DeskDecorSchema, PresenceStatusSchema, type DeskState } from '@plaza/shared';
+import { DeskDecorSchema, PresenceStatusSchema, type DeskState } from '@bululu/shared';
 
 import type { Database } from '../../platform/db.js';
 

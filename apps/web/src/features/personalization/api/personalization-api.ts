@@ -1,4 +1,4 @@
-import { API_PATHS, apiPath, DeskResponseSchema, parseMap, type DeskDecor } from '@plaza/shared';
+import { API_PATHS, apiPath, DeskResponseSchema, parseMap, type DeskDecor } from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

@@ -1,4 +1,4 @@
-import { effectivePresence, type PresenceStatus } from '@plaza/shared';
+import { effectivePresence, type PresenceStatus } from '@bululu/shared';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

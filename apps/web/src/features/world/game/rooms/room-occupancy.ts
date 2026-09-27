@@ -1,4 +1,4 @@
-import type { PublicPlayer } from '@plaza/shared';
+import type { PublicPlayer } from '@bululu/shared';
 
 import type { WorldState } from '../../store/world-store';
 

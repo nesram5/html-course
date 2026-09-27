@@ -1,4 +1,4 @@
-import { MEDIA_TOKEN_TTL_SECONDS, mediaRoomName, type MediaTokenResponse } from '@plaza/shared';
+import { MEDIA_TOKEN_TTL_SECONDS, mediaRoomName, type MediaTokenResponse } from '@bululu/shared';
 
 import type { MediaProvider } from '../../adapters/media-provider.js';
 import { AppError } from '../../platform/errors.js';

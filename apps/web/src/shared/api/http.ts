@@ -1,4 +1,4 @@
-import { CLIENT_HEADER, ErrorResponseSchema, type ErrorCode } from '@plaza/shared';
+import { CLIENT_HEADER, ErrorResponseSchema, type ErrorCode } from '@bululu/shared';
 import type { z } from 'zod';
 
 /** Code of an `ApiError`: a server error code or a client-side network failure. */
@@ -65,7 +65,7 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 /**
  * Typed `fetch` for the Plaza API (same origin; Vite proxies `/api` in development).
- * Sends the session cookie and the `X-Plaza-Client` header (CSRF defence), validates the
+ * Sends the session cookie and the `X-Bululu-Client` header (CSRF defence), validates the
  * response with the given zod schema and turns `{ error: { code } }` bodies into `ApiError`.
  */
 export async function http<S extends z.ZodType>(

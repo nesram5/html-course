@@ -1,5 +1,5 @@
 {
-  "name": "plaza",
+  "name": "bululu",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
@@ -7,7 +7,7 @@
     "node": ">=22.12 <23"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @plaza/server --filter @plaza/web dev",
+    "dev": "pnpm --parallel --filter @bululu/server --filter @bululu/web dev",
     "build": "pnpm -r build",
     "lint": "eslint --max-warnings=0 .",
     "lint:fix": "eslint --fix .",
@@ -15,19 +15,19 @@
     "test": "pnpm -r test && pnpm test:lint-rules",
     "test:lint-rules": "node scripts/verify-lint-rules.mjs",
     "test:unit": "pnpm -r test:unit",
-    "test:coverage": "pnpm --filter @plaza/shared test:coverage",
+    "test:coverage": "pnpm --filter @bululu/shared test:coverage",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:links": "node scripts/check-doc-links.mjs",
-    "db:migrate": "pnpm --filter @plaza/server db:migrate",
-    "db:deploy": "pnpm --filter @plaza/server db:deploy",
-    "db:reset": "pnpm --filter @plaza/server db:reset",
-    "db:seed": "pnpm --filter @plaza/server db:seed",
+    "db:migrate": "pnpm --filter @bululu/server db:migrate",
+    "db:deploy": "pnpm --filter @bululu/server db:deploy",
+    "db:reset": "pnpm --filter @bululu/server db:reset",
+    "db:seed": "pnpm --filter @bululu/server db:seed",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:up:livekit": "docker compose -f infra/docker-compose.yml --profile livekit up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml --profile livekit down",
-    "validate:maps": "pnpm --filter @plaza/maps validate",
+    "validate:maps": "pnpm --filter @bululu/maps validate",
     "prepare": "node scripts/install-git-hooks.mjs"
   },
   "lint-staged": {

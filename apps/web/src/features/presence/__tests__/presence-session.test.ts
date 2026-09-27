@@ -1,4 +1,4 @@
-import type { RingReceived } from '@plaza/shared';
+import type { RingReceived } from '@bululu/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { EventBus } from '@/features/world';

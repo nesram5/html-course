@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@plaza/shared';
+import type { ErrorCode } from '@bululu/shared';
 
 /** A bot whose `space:join` was refused (`SPACE_FULL`, `RATE_LIMITED`, `NOT_A_MEMBER`...). */
 export class JoinError extends Error {

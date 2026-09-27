@@ -11,7 +11,7 @@ import {
   SpaceResponseSchema,
   type HealthResponse,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** A signed-in bot: its userId and the `Cookie` header with its session. */
 export interface BotSession {

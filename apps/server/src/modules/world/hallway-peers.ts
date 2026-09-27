@@ -1,4 +1,4 @@
-import { changedPeers, computePeers, type PeerMap, type PeersChange } from '@plaza/shared';
+import { changedPeers, computePeers, type PeerMap, type PeersChange } from '@bululu/shared';
 
 import type { SpaceRuntime } from './space-runtime.js';
 
@@ -26,7 +26,7 @@ interface OpenConversation {
  * 3. returns who must get `media:peers`: only the people whose set changed, plus the ones that
  *    (re)connected since the last tick and need their current list.
  *
- * The logic is the pure `computePeers` / `changedPeers` of `@plaza/shared`; this class only keeps
+ * The logic is the pure `computePeers` / `changedPeers` of `@bululu/shared`; this class only keeps
  * the state between ticks. No sockets, no timers.
  */
 export class HallwayPeers {

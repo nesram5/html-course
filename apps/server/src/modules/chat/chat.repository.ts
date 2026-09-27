@@ -1,4 +1,4 @@
-import type { ChatMessageDto } from '@plaza/shared';
+import type { ChatMessageDto } from '@bululu/shared';
 import type { ChatMessage, Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';

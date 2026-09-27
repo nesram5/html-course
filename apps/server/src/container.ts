@@ -25,7 +25,7 @@ export interface Container {
   identity: IdentityProvider;
   meetings: MeetingProvider;
   media: MediaProvider;
-  /** Catalog of `@plaza/maps` (templates, rooms, themes, avatars). */
+  /** Catalog of `@bululu/maps` (templates, rooms, themes, avatars). */
   maps: MapsCatalog;
   /** Current time; replaced in tests. */
   now: () => Date;

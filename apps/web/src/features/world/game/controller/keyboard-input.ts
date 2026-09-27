@@ -1,4 +1,4 @@
-import type { Direction } from '@plaza/shared';
+import type { Direction } from '@bululu/shared';
 
 /** Arrow keys (by `key`) and WASD (by physical `code`, so it works on any keyboard layout). */
 const DIRECTION_BY_KEY: Readonly<Record<string, Direction>> = {

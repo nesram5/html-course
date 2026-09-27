@@ -92,7 +92,7 @@ describe('HTTP error handling', () => {
     });
   });
 
-  it('requires the X-Plaza-Client header on state-changing requests', async () => {
+  it('requires the X-Bululu-Client header on state-changing requests', async () => {
     const rejected = await app.inject({ method: 'POST', url: '/api/test/echo', payload: { a: 1 } });
     expect(rejected.statusCode).toBe(403);
     expect(rejected.json<{ error: { code: string } }>().error.code).toBe('FORBIDDEN');
@@ -100,7 +100,7 @@ describe('HTTP error handling', () => {
     const accepted = await app.inject({
       method: 'POST',
       url: '/api/test/echo',
-      headers: { 'x-plaza-client': 'web' },
+      headers: { 'x-bululu-client': 'web' },
       payload: { a: 1 },
     });
     expect(accepted.statusCode).toBe(200);
@@ -111,7 +111,7 @@ describe('HTTP error handling', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/test/echo',
-      headers: { 'x-plaza-client': 'web', 'content-type': 'application/json' },
+      headers: { 'x-bululu-client': 'web', 'content-type': 'application/json' },
       payload: '{nope',
     });
     expect(response.statusCode).toBe(400);

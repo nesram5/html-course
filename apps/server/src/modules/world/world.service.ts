@@ -11,7 +11,7 @@ import {
   type PlayerMove,
   type SpaceSnapshot,
   type WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { DisconnectReason } from 'socket.io';
 
 import type { ErrorReporter } from '../../platform/error-reporter.js';
@@ -20,7 +20,7 @@ import { KeyedSerial } from '../../platform/keyed-serial.js';
 import type { Logger } from '../../platform/logger.js';
 import type { MapsCatalog } from '../../platform/maps-catalog.js';
 import type { InMemoryRealtimeMetrics } from '../../platform/metrics.js';
-import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
+import type { BululuIo, BululuSocket } from '../../platform/socket.js';
 import type { CancelTimer, Timers } from '../../platform/timers.js';
 import type { TokenBucket } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
@@ -66,7 +66,7 @@ export function spaceRoom(spaceId: string): string {
 }
 
 export interface WorldServiceDeps {
-  io: PlazaIo;
+  io: BululuIo;
   repository: WorldRepository;
   spaces: SpacesService;
   maps: MapsCatalog;
@@ -154,7 +154,7 @@ export class WorldService {
    * back where it was (E4-S6). Returns the `space:snapshot`.
    */
   async join(
-    socket: PlazaSocket,
+    socket: BululuSocket,
     spaceId: string,
     options: JoinOptions = { takeover: true },
   ): Promise<SpaceSnapshot> {
@@ -168,7 +168,7 @@ export class WorldService {
     }
   }
 
-  async #join(socket: PlazaSocket, pending: PendingJoin): Promise<SpaceSnapshot> {
+  async #join(socket: BululuSocket, pending: PendingJoin): Promise<SpaceSnapshot> {
     const { spaceId, userId } = pending;
     const member = await this.deps.repository.findMember(spaceId, userId);
     if (member === null) throw new AppError('NOT_A_MEMBER', 'Space not found');
@@ -252,7 +252,7 @@ export class WorldService {
    * person was not removed from the space meanwhile (the kick could not reach a socket that was
    * not in the space yet), and there is room for a new avatar (RN-06).
    */
-  #assertCanEnter(socket: PlazaSocket, pending: PendingJoin, runtime: SpaceRuntime): void {
+  #assertCanEnter(socket: BululuSocket, pending: PendingJoin, runtime: SpaceRuntime): void {
     if (!socket.connected) {
       throw new AppError('NOT_IN_SPACE', 'The connection closed while joining');
     }
@@ -283,7 +283,7 @@ export class WorldService {
   }
 
   /** The socket leaves its space at once, without grace (it joined another space). */
-  leave(socket: PlazaSocket): void {
+  leave(socket: BululuSocket): void {
     const { spaceId, userId } = socket.data;
     if (spaceId === undefined || userId === undefined) return;
     void socket.leave(spaceRoom(spaceId));
@@ -297,7 +297,7 @@ export class WorldService {
    * The runtime of the space this socket joined, and its person; `NOT_IN_SPACE` when the socket
    * has not joined (or was replaced by a newer tab). Used by the presence and chat handlers.
    */
-  joinedRuntime(socket: PlazaSocket): { runtime: SpaceRuntime; userId: string } {
+  joinedRuntime(socket: BululuSocket): { runtime: SpaceRuntime; userId: string } {
     const userId = socketUserId(socket);
     const { spaceId } = socket.data;
     const runtime = spaceId === undefined ? undefined : this.store.get(spaceId);
@@ -308,7 +308,7 @@ export class WorldService {
   }
 
   /** The live socket of a person in a space, `undefined` when not connected. */
-  socketOf(runtime: SpaceRuntime, userId: string): PlazaSocket | undefined {
+  socketOf(runtime: SpaceRuntime, userId: string): BululuSocket | undefined {
     const socketId = runtime.socketOf(userId);
     return socketId === null ? undefined : this.deps.io.sockets.sockets.get(socketId);
   }
@@ -320,7 +320,7 @@ export class WorldService {
    * with `player:correct` (the position the server keeps); accepted ones reach the others on the
    * next tick. Entering or leaving a meeting room is handled by {@link roomChanged}.
    */
-  move(socket: PlazaSocket, bucket: TokenBucket, move: PlayerMove): void {
+  move(socket: BululuSocket, bucket: TokenBucket, move: PlayerMove): void {
     const { runtime, userId } = this.joinedRuntime(socket);
     const current = runtime.get(userId);
     if (current === undefined) throw new AppError('NOT_IN_SPACE');
@@ -449,7 +449,7 @@ export class WorldService {
    * deliberate leave (the client closed the socket itself: "Salir"; or the server did: logout) is
    * not a network cut, so the avatar leaves at once. Replaced or kicked sockets are ignored.
    */
-  disconnected(socket: PlazaSocket, reason?: DisconnectReason): void {
+  disconnected(socket: BululuSocket, reason?: DisconnectReason): void {
     const { spaceId, userId } = socket.data;
     if (spaceId === undefined || userId === undefined) return;
     const runtime = this.store.get(spaceId);

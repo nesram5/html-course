@@ -1,4 +1,4 @@
-import type { PresenceStatus, RingReceived } from '@plaza/shared';
+import type { PresenceStatus, RingReceived } from '@bululu/shared';
 
 import type { EventBus, RealtimeClient } from '@/features/world';
 

@@ -1,4 +1,4 @@
-import { DISPLAY_NAME_MAX_LEN, type Me, type UpdateMeBody } from '@plaza/shared';
+import { DISPLAY_NAME_MAX_LEN, type Me, type UpdateMeBody } from '@bululu/shared';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

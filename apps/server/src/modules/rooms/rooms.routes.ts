@@ -14,7 +14,7 @@ import {
   type RoomResponse,
   type RoomsResponse,
   type RoomsSetupResult,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 import { z } from 'zod';
 
@@ -25,7 +25,7 @@ import type { Logger } from '../../platform/logger.js';
 import { currentUser, OAuthFlowCookie } from '../auth/index.js';
 import type { RoomsService } from './rooms.service.js';
 
-export const MEET_FLOW_COOKIE = 'plaza_oauth_meet';
+export const MEET_FLOW_COOKIE = 'bululu_oauth_meet';
 
 const meetFlow = new OAuthFlowCookie(
   MEET_FLOW_COOKIE,

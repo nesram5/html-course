@@ -18,7 +18,7 @@ describe('http', () => {
     vi.unstubAllGlobals();
   });
 
-  it('sends credentials, the X-Plaza-Client header and a JSON body', async () => {
+  it('sends credentials, the X-Bululu-Client header and a JSON body', async () => {
     const fetchMock = stubFetch(Response.json({ id: 'a' }, { status: 201 }));
 
     const item = await http('/api/items', ItemSchema, {
@@ -32,7 +32,7 @@ describe('http', () => {
     expect(url).toBe('/api/items?next=%2Fs%2Facme');
     expect(init).toMatchObject({ method: 'POST', credentials: 'include', body: '{"name":"x"}' });
     expect(init?.headers).toMatchObject({
-      'x-plaza-client': 'web',
+      'x-bululu-client': 'web',
       'Content-Type': 'application/json',
     });
   });

@@ -1,4 +1,4 @@
-import type { AvatarDto, Me, UpdateMeBody } from '@plaza/shared';
+import type { AvatarDto, Me, UpdateMeBody } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
 import type { MapsCatalog } from '../../platform/maps-catalog.js';

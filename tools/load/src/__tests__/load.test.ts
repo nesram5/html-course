@@ -1,4 +1,4 @@
-import { isWalkable, type WorldMap } from '@plaza/shared';
+import { isWalkable, type WorldMap } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import { LatencyTracker, memoryTrend, percentile, summarize, type ServerSample } from '../stats.js';

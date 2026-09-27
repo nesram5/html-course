@@ -1,4 +1,4 @@
-import { CRITICAL_OUTAGE_MS, type TelemetrySample } from '@plaza/shared';
+import { CRITICAL_OUTAGE_MS, type TelemetrySample } from '@bululu/shared';
 import type { StoreApi } from 'zustand/vanilla';
 
 import type { MediaState } from '@/features/media';

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { TEST_DATABASE_URL } from './config.js';
 
 /**
- * Integration tests run against their own database (`plaza_test` by default, override with
+ * Integration tests run against their own database (`bululu_test` by default, override with
  * TEST_DATABASE_URL). This applies pending migrations (non-destructive `migrate deploy`, which
  * also creates the database when missing); each test file empties the tables with
  * `resetDatabase()`. If a migration was edited locally, drop the test database by hand.

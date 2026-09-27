@@ -1,4 +1,4 @@
-import { DIRECTIONS, isWalkable, stepTowards, type Direction, type WorldMap } from '@plaza/shared';
+import { DIRECTIONS, isWalkable, stepTowards, type Direction, type WorldMap } from '@bululu/shared';
 
 export interface Step {
   x: number;

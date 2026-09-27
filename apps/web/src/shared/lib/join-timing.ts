@@ -1,11 +1,11 @@
-import { TELEMETRY_MAX_VALUE_MS } from '@plaza/shared';
+import { TELEMETRY_MAX_VALUE_MS } from '@bululu/shared';
 
 /**
  * O5 "tiempo de entrada" (E8-S7): from opening an invitation link to being inside the map. The
  * invitation page marks the start in `sessionStorage`, which survives the Google sign-in round
  * trip in the same tab; the office takes it once joined. Nothing personal is kept.
  */
-const KEY = 'plaza.join.startedAt.v1';
+const KEY = 'bululu.join.startedAt.v1';
 
 type Storage = Pick<globalThis.Storage, 'getItem' | 'setItem' | 'removeItem'>;
 

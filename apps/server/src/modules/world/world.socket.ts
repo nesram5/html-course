@@ -1,7 +1,7 @@
-import { MOVE_RATE_PER_SEC, SPACE_JOIN_BURST, SPACE_JOIN_WINDOW_MS } from '@plaza/shared';
+import { MOVE_RATE_PER_SEC, SPACE_JOIN_BURST, SPACE_JOIN_WINDOW_MS } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
-import { safeHandler, type PlazaIo, type SafeHandlerDeps } from '../../platform/socket.js';
+import { safeHandler, type BululuIo, type SafeHandlerDeps } from '../../platform/socket.js';
 import { KeyedTokenBuckets, TokenBucket } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { WorldService } from './world.service.js';
@@ -24,7 +24,7 @@ export const DEFAULT_JOIN_RATE_LIMIT: JoinRateLimit = {
  * (`PROTOCOL_MISMATCH`, zod validation, errors as acks or `error` events).
  */
 export function registerWorldSocket(
-  io: PlazaIo,
+  io: BululuIo,
   deps: SafeHandlerDeps,
   world: WorldService,
   clock: () => number,

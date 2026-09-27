@@ -1,4 +1,4 @@
-import { TILE_SIZE, type DeskArea, type DeskState } from '@plaza/shared';
+import { TILE_SIZE, type DeskArea, type DeskState } from '@bululu/shared';
 
 import type { DecorPreview } from '../../store/office-store';
 

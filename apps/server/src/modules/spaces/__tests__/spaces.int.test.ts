@@ -13,8 +13,8 @@ import {
   SpacesResponseSchema,
   type ErrorResponse,
   type SpaceDetailDto,
-} from '@plaza/shared';
-import { parseManifest } from '@plaza/maps';
+} from '@bululu/shared';
+import { parseManifest } from '@bululu/maps';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { ManifestMapsCatalog } from '../../../platform/maps-catalog.js';
@@ -52,7 +52,7 @@ describe('spaces module (E2-S2..S6)', () => {
     return testApp.app.inject({
       method,
       url,
-      headers: user?.headers ?? { 'x-plaza-client': 'test' },
+      headers: user?.headers ?? { 'x-bululu-client': 'test' },
       ...(payload !== undefined && { payload }),
     });
   }
@@ -412,7 +412,7 @@ describe('spaces module (E2-S2..S6)', () => {
     it('requires a session to join', async () => {
       const space = await createSpace();
 
-      const response = await joinAs({ ...luis, headers: { 'x-plaza-client': 'test' } }, space);
+      const response = await joinAs({ ...luis, headers: { 'x-bululu-client': 'test' } }, space);
 
       expect(response.statusCode).toBe(401);
     });

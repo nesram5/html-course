@@ -3,7 +3,7 @@ import {
   MessagesResponseSchema,
   SpaceParamsSchema,
   type MessagesResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 
 import { currentUser } from '../auth/index.js';

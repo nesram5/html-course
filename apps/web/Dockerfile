@@ -3,7 +3,7 @@
 # Plaza web app served by Caddy (E8-S5): the Vite build as static files with SPA fallback, and
 # /api, /realtime (WebSocket) and /assets/maps proxied to the server. Build from the repository
 # root:
-#   docker build -f apps/web/Dockerfile -t plaza-web \
+#   docker build -f apps/web/Dockerfile -t bululu-web \
 #     --build-arg VITE_APP_VERSION=0.1.0 --build-arg VITE_SENTRY_DSN=https://… .
 #
 # VITE_* values are public (they end up in the JavaScript bundle): never pass secrets here.
@@ -32,7 +32,7 @@ COPY tools/load/package.json tools/load/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     --mount=type=secret,id=extra_ca,required=false \
     if [ -f /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi; \
-    pnpm install --frozen-lockfile --filter "@plaza/web..."
+    pnpm install --frozen-lockfile --filter "@bululu/web..."
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/web apps/web
@@ -45,7 +45,7 @@ ENV VITE_APP_VERSION=${VITE_APP_VERSION} \
     VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
     VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
     VITE_SENTRY_ENVIRONMENT=${VITE_SENTRY_ENVIRONMENT}
-RUN pnpm --filter @plaza/web build
+RUN pnpm --filter @bululu/web build
 
 FROM ${CADDY_IMAGE} AS runtime
 COPY infra/app/Caddyfile /etc/caddy/Caddyfile

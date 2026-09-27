@@ -1,7 +1,7 @@
-import type { PresenceStatus } from '@plaza/shared';
+import type { PresenceStatus } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
-import type { PlazaSocket } from '../../../platform/socket.js';
+import type { BululuSocket } from '../../../platform/socket.js';
 import type { WorldService } from '../../world/index.js';
 import type { PresenceRepository } from '../presence.repository.js';
 import { PresenceService } from '../presence.service.js';
@@ -42,7 +42,7 @@ describe('PresenceService.setStatus (E7-S1)', () => {
       cooldowns: new RingCooldowns(),
       now: () => 0,
     });
-    const socket = {} as PlazaSocket;
+    const socket = {} as BululuSocket;
 
     const busy = presence.setStatus(socket, 'busy');
     const available = presence.setStatus(socket, 'available');

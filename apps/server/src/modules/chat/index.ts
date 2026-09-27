@@ -1,5 +1,5 @@
 import { systemTimers, type Timers } from '../../platform/timers.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { registerChatRoutes } from './chat.routes.js';
 import { ChatService } from './chat.service.js';
 import { registerChatSocket } from './chat.socket.js';
@@ -21,7 +21,7 @@ export interface ChatModuleOptions {
  * Chat module (E7-S3, E7-S4): space chat (persisted, last 100 messages) and ephemeral
  * reactions. Needs `auth`, `spaces` and `world` registered before it.
  */
-export function createChatModule(options: ChatModuleOptions = {}): PlazaModule {
+export function createChatModule(options: ChatModuleOptions = {}): BululuModule {
   return {
     name: 'chat',
     register({ app, io, container, services, socketDeps }) {
@@ -39,4 +39,4 @@ export function createChatModule(options: ChatModuleOptions = {}): PlazaModule {
   };
 }
 
-export const chatModule: PlazaModule = createChatModule();
+export const chatModule: BululuModule = createChatModule();

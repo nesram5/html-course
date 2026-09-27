@@ -35,7 +35,7 @@ describe('invite tokens', () => {
     expect(deriveInviteToken('secret', 'space-1', 1)).toBe(token);
     expect(deriveInviteToken('secret', 'space-1', 2)).not.toBe(token);
     expect(deriveInviteToken('other', 'space-1', 1)).not.toBe(token);
-    expect(inviteUrl('https://plaza.test', token)).toBe(`https://plaza.test/join/${token}`);
+    expect(inviteUrl('https://bululu.test', token)).toBe(`https://bululu.test/join/${token}`);
   });
 });
 

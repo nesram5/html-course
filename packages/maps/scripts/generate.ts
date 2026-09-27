@@ -1,5 +1,5 @@
 /**
- * `pnpm --filter @plaza/maps generate` — regenerates every asset of the package (templates,
+ * `pnpm --filter @bululu/maps generate` — regenerates every asset of the package (templates,
  * themes, avatars, decor, tileset and manifest.json) from `scripts/generator/`.
  */
 import { join } from 'node:path';

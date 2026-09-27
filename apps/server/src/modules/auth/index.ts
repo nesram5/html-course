@@ -1,6 +1,6 @@
 import type { preHandlerAsyncHookHandler } from 'fastify';
 
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { AuthRepository } from './auth.repository.js';
 import { registerAuthRoutes } from './auth.routes.js';
 import { AuthService } from './auth.service.js';
@@ -26,11 +26,11 @@ declare module '../types.js' {
 }
 
 /**
- * Auth module (E1-S2): Google sign-in (PKCE + state), `__Host-plaza_sid` sessions with sliding expiry,
+ * Auth module (E1-S2): Google sign-in (PKCE + state), `__Host-bululu_sid` sessions with sliding expiry,
  * logout, test sign-in and the Socket.IO handshake authentication. Must be registered before any
  * module with protected routes or socket handlers.
  */
-export const authModule: PlazaModule = {
+export const authModule: BululuModule = {
   name: 'auth',
   register({ app, io, container, services }) {
     const service = new AuthService(

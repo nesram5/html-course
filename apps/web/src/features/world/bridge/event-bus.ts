@@ -4,7 +4,7 @@ import type {
   ReactionEmoji,
   SpaceSnapshot,
   WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** One step (or a turn in place, when the tile does not change) of the local avatar. */
 export interface LocalStep {

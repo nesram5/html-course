@@ -1,4 +1,4 @@
-import { effectivePresence, type EffectivePresence } from '@plaza/shared';
+import { effectivePresence, type EffectivePresence } from '@bululu/shared';
 
 import type { PresencePerson } from '../store/presence-store';
 

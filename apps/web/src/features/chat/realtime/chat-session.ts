@@ -1,4 +1,4 @@
-import type { ChatMessageDto, ReactionEmoji } from '@plaza/shared';
+import type { ChatMessageDto, ReactionEmoji } from '@bululu/shared';
 
 import type { EventBus, RealtimeClient } from '@/features/world';
 

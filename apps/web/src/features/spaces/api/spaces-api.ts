@@ -15,7 +15,7 @@ import {
   type CreateSpaceBody,
   type Role,
   type UpdateSpaceBody,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

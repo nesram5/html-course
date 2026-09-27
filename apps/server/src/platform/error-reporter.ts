@@ -1,4 +1,4 @@
-import { scrubBreadcrumb, scrubEvent } from '@plaza/shared';
+import { scrubBreadcrumb, scrubEvent } from '@bululu/shared';
 import type { NodeOptions } from '@sentry/node';
 
 import type { AppConfig } from './config.js';
@@ -30,7 +30,7 @@ export interface ErrorReporterOptions {
 
 /**
  * Sentry reporter when `SENTRY_DSN` is set; otherwise a no-op. Every event carries the release
- * (`plaza-server@<version>`), the person (`user.id` only) and the space, request and socket
+ * (`bululu-server@<version>`), the person (`user.id` only) and the space, request and socket
  * event as tags. Nothing else about the person is sent (`sendDefaultPii: false`, no default
  * integrations, so no request bodies, cookies or local variables), and `beforeSend` /
  * `beforeBreadcrumb` scrub anything shaped like a token, an invite link, a cookie or an e-mail
@@ -47,7 +47,7 @@ export async function createErrorReporter(
   Sentry.init({
     dsn: config.sentry.dsn,
     environment: config.sentry.environment,
-    release: `plaza-server@${config.version}`,
+    release: `bululu-server@${config.version}`,
     sendDefaultPii: false,
     defaultIntegrations: false,
     beforeSend: (event) => scrubEvent(event),

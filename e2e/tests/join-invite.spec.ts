@@ -4,9 +4,9 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { enterOffice, openOffice, remoteAvatar } from './support/world';
 
-const CLIENT = { 'x-plaza-client': 'e2e' };
+const CLIENT = { 'x-bululu-client': 'e2e' };
 /** The admin of the metrics page (`ADMIN_EMAILS` of the E2E server). */
-const ADMIN = 'producto@plaza.test';
+const ADMIN = 'producto@bululu.test';
 
 interface Metrics {
   o2: { spaces: { spaceId: string; daysPerWeek: number[] }[] };

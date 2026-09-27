@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-/** An avatar as reported by the development probe `window.__plazaWorld.avatars()`. */
+/** An avatar as reported by the development probe `window.__bululuWorld.avatars()`. */
 export interface AvatarProbe {
   /** `null` for the local avatar. */
   userId: string | null;
@@ -24,7 +24,7 @@ export interface AvatarProbe {
 declare global {
   interface Window {
     /** Development-only probes installed by `apps/web/src/features/world/debug.ts`. */
-    __plazaWorld?: {
+    __bululuWorld?: {
       liveGames(): number;
       listenerCount(): number;
       avatars(): AvatarProbe[];
@@ -48,7 +48,7 @@ declare global {
   }
 }
 
-export const CLIENT = { 'x-plaza-client': 'e2e' };
+export const CLIENT = { 'x-bululu-client': 'e2e' };
 
 /** Test login + avatar; returns the user id. */
 export async function signIn(
@@ -260,7 +260,7 @@ export async function openOffice(
 }
 
 export function avatars(page: Page): Promise<AvatarProbe[]> {
-  return page.evaluate(() => window.__plazaWorld?.avatars() ?? []);
+  return page.evaluate(() => window.__bululuWorld?.avatars() ?? []);
 }
 
 /** The remote avatar of `userId` drawn in `page`, if any. */

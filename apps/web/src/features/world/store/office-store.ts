@@ -1,4 +1,4 @@
-import type { DeskDecor, DeskState, MeetingRoomDto } from '@plaza/shared';
+import type { DeskDecor, DeskState, MeetingRoomDto } from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

@@ -1,4 +1,4 @@
-import type { EffectivePresence } from '@plaza/shared';
+import type { EffectivePresence } from '@bululu/shared';
 
 const COLORS: Record<EffectivePresence, string> = {
   available: 'bg-status-available',

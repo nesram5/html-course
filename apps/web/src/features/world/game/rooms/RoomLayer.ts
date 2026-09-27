@@ -1,4 +1,4 @@
-import { TILE_SIZE, type WorldMap } from '@plaza/shared';
+import { TILE_SIZE, type WorldMap } from '@bululu/shared';
 import * as Phaser from 'phaser';
 
 import type { WorldStore } from '../../store/world-store';

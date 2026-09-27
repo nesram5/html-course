@@ -14,7 +14,7 @@ import {
   type SpaceDetailDto,
   type SpaceSummaryDto,
   type UpdateSpaceBody,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { Prisma, type Membership, type Space } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';

@@ -3,11 +3,11 @@ import {
   FEEDBACK_RATE_PER_HOUR,
   FeedbackBodySchema,
   type FeedbackBody,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import type { Database } from '../../platform/db.js';
 import { currentUser, sessionRateLimit } from '../auth/index.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 
 /** In-app feedback of the pilot teams (E8-S7), stored with its author so the team can reply. */
 export class FeedbackService {
@@ -31,7 +31,7 @@ export class FeedbackService {
 }
 
 /** Feedback module (E8-S7): `POST /api/feedback`, rate-limited per session (and per IP). */
-export const feedbackModule: PlazaModule = {
+export const feedbackModule: BululuModule = {
   name: 'feedback',
   register({ app, container, services }) {
     const feedback = new FeedbackService(container.db);

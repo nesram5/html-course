@@ -127,10 +127,10 @@ test.describe('presence, chat and reactions (E7)', () => {
     await luis.page.getByRole('button', { name: 'Localizar a Ana en el mapa' }).click();
 
     await expect
-      .poll(() => luis.page.evaluate(() => window.__plazaWorld?.cameraTarget()))
+      .poll(() => luis.page.evaluate(() => window.__bululuWorld?.cameraTarget()))
       .toBe(ana.userId);
     await expect
-      .poll(() => luis.page.evaluate(() => window.__plazaWorld?.cameraTarget()), {
+      .poll(() => luis.page.evaluate(() => window.__bululuWorld?.cameraTarget()), {
         timeout: 6000,
       })
       .toBeNull();

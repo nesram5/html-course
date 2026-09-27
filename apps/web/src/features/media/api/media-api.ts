@@ -3,7 +3,7 @@ import {
   apiPath,
   MediaTokenResponseSchema,
   type MediaTokenResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

@@ -1,4 +1,4 @@
-import { MeetUriSchema, type MeetingRoomDto } from '@plaza/shared';
+import { MeetUriSchema, type MeetingRoomDto } from '@bululu/shared';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -1,4 +1,4 @@
-import type { DeskArea, DeskState } from '@plaza/shared';
+import type { DeskArea, DeskState } from '@bululu/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EventBus } from '../bridge/event-bus';

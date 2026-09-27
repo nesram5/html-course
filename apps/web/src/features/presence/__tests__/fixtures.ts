@@ -4,7 +4,7 @@ import {
   type ServerEventName,
   type ServerEventPayload,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** Stand-in for the parts of `RealtimeClient` the presence feature uses. */
 export class FakeClient {

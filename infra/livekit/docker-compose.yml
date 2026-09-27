@@ -7,7 +7,7 @@
 #
 # Both services use the host network (no NAT in front of the media) and restart with the VM.
 # Versions are pinned: upgrades are manual and documented (docs/runbook.md).
-name: plaza-media
+name: bululu-media
 
 services:
   livekit:

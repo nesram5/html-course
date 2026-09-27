@@ -1,4 +1,4 @@
-import type { ReactionEmoji } from '@plaza/shared';
+import type { ReactionEmoji } from '@bululu/shared';
 import { useEffect } from 'react';
 
 import { realtimeClient, worldEvents } from '@/features/world';

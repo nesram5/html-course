@@ -1,4 +1,4 @@
-import { DISPLAY_NAME_MAX_LEN, stripNameControls, type Me } from '@plaza/shared';
+import { DISPLAY_NAME_MAX_LEN, stripNameControls, type Me } from '@bululu/shared';
 import type { User } from '@prisma/client';
 
 /** `User` row → `Me` DTO (`GET /api/me`, test login). */

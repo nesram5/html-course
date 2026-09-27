@@ -7,7 +7,7 @@ import {
   type TelemetryBody,
   type TelemetrySample,
   type TrackEventBody,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 

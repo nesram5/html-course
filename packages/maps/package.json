@@ -1,12 +1,12 @@
 {
-  "name": "@plaza/maps",
+  "name": "@bululu/maps",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Map templates (Tiled .tmj + themes), avatar sprites and desk decoration catalog.",
   "exports": {
     ".": {
-      "@plaza/source": "./src/index.ts",
+      "@bululu/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
@@ -26,11 +26,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "validate": "tsx --conditions=@plaza/source scripts/validate-maps.ts",
-    "generate": "tsx --conditions=@plaza/source scripts/generate.ts"
+    "validate": "tsx --conditions=@bululu/source scripts/validate-maps.ts",
+    "generate": "tsx --conditions=@bululu/source scripts/generate.ts"
   },
   "dependencies": {
-    "@plaza/shared": "workspace:*",
+    "@bululu/shared": "workspace:*",
     "zod": "^4.1.0"
   },
   "devDependencies": {

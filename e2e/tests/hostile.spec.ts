@@ -72,7 +72,7 @@ async function person(browser: Browser, email: string, name: string): Promise<Pe
 
 async function media(page: Page): Promise<MediaProbe | undefined> {
   return page.evaluate(() =>
-    (window as { __plazaMedia?: { state(): MediaProbe } }).__plazaMedia?.state(),
+    (window as { __bululuMedia?: { state(): MediaProbe } }).__bululuMedia?.state(),
   );
 }
 
@@ -94,7 +94,7 @@ function seeing(page: Page, userId: string): Promise<boolean> {
 /** The microphone of `userId` plays in `page` (the media feature appends one <audio> per track). */
 function hearing(page: Page, userId: string): Promise<boolean> {
   return page.evaluate((id) => {
-    const audio = document.querySelector<HTMLAudioElement>(`audio[data-plaza-audio="${id}"]`);
+    const audio = document.querySelector<HTMLAudioElement>(`audio[data-bululu-audio="${id}"]`);
     const track = (audio?.srcObject as MediaStream | null | undefined)?.getAudioTracks()[0];
     return audio !== null && !audio.paused && track?.readyState === 'live';
   }, userId);
@@ -138,7 +138,7 @@ test.describe('hostile and edge cases across hallway, presence and personalizati
     // Eva, far away, has no peers, no subscriptions and plays no audio; nobody subscribes to her.
     expect(await media(eva.page)).toMatchObject({ connection: 'connected', peers: [] });
     expect((await media(eva.page))?.subscribed).toEqual([]);
-    await expect(eva.page.locator('audio[data-plaza-audio]')).toHaveCount(0);
+    await expect(eva.page.locator('audio[data-bululu-audio]')).toHaveCount(0);
     expect((await media(ana.page))?.subscribed).toEqual([luis.userId]);
     expect((await media(luis.page))?.subscribed).toEqual([ana.userId]);
 
@@ -183,7 +183,7 @@ test.describe('hostile and edge cases across hallway, presence and personalizati
         timeout: 5000,
       })
       .toBe(false);
-    await expect(ana.page.locator(`audio[data-plaza-audio="${luis.userId}"]`)).toHaveCount(0);
+    await expect(ana.page.locator(`audio[data-bululu-audio="${luis.userId}"]`)).toHaveCount(0);
     const token = await luis.context.request.post(`/api/spaces/${space.id}/media-token`, {
       headers: CLIENT,
     });

@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@plaza/shared';
+import { ERROR_CODES } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import { createI18n } from '../i18n';

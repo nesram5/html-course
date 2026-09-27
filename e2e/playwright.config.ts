@@ -18,7 +18,7 @@ const API_PORT = Number(process.env.E2E_API_PORT ?? 3100);
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
   dotEnv().E2E_DATABASE_URL ??
-  'postgresql://postgres:postgres@localhost:5432/plaza_e2e';
+  'postgresql://postgres:postgres@localhost:5432/bululu_e2e';
 
 /**
  * E2E tests (standards §7): real server + Vite dev server, fake media devices and the
@@ -47,7 +47,7 @@ export default defineConfig({
     {
       name: 'server',
       command:
-        'pnpm --filter @plaza/server exec prisma migrate deploy && pnpm --filter @plaza/server exec tsx --conditions=@plaza/source src/main.ts',
+        'pnpm --filter @bululu/server exec prisma migrate deploy && pnpm --filter @bululu/server exec tsx --conditions=@bululu/source src/main.ts',
       cwd: '..',
       url: `http://localhost:${String(API_PORT)}/api/health`,
       reuseExistingServer: !process.env.CI,
@@ -67,17 +67,17 @@ export default defineConfig({
         // Every browser of the run connects from 127.0.0.1 (E8-S2 per-IP connection limit).
         REALTIME_CONNECTIONS_PER_MINUTE: '10000',
         // The metrics page (E8-S7) of `a11y.spec.ts` and `product.spec.ts`.
-        ADMIN_EMAILS: 'producto@plaza.test',
+        ADMIN_EMAILS: 'producto@bululu.test',
       },
     },
     {
       name: 'web',
-      command: `pnpm --filter @plaza/web exec vite --port ${String(WEB_PORT)} --strictPort`,
+      command: `pnpm --filter @bululu/web exec vite --port ${String(WEB_PORT)} --strictPort`,
       cwd: '..',
       url: `http://localhost:${String(WEB_PORT)}`,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
-      env: { PLAZA_API_URL: `http://localhost:${String(API_PORT)}` },
+      env: { BULULU_API_URL: `http://localhost:${String(API_PORT)}` },
     },
   ],
 });

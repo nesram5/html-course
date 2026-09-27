@@ -1,4 +1,4 @@
-import type { CreateSpaceBody, Role, UpdateSpaceBody } from '@plaza/shared';
+import type { CreateSpaceBody, Role, UpdateSpaceBody } from '@bululu/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {

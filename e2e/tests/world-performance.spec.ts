@@ -48,7 +48,7 @@ test('50 avatars walking cost little main-thread time per frame (stress mode)', 
   page,
 }) => {
   const run = randomUUID().slice(0, 8);
-  await signIn(page.request, `carga-${run}@plaza.local`, 'Carga');
+  await signIn(page.request, `carga-${run}@bululu.local`, 'Carga');
   const space = await createSpace(page.request, `Carga ${run}`);
   await openOffice(page, space.slug);
   const cdp = await page.context().newCDPSession(page);
@@ -56,7 +56,7 @@ test('50 avatars walking cost little main-thread time per frame (stress mode)', 
 
   const alone = await sample(page, cdp);
   await page.evaluate(() => {
-    window.__plazaWorld?.stress(49);
+    window.__bululuWorld?.stress(49);
   });
   await expect.poll(async () => (await avatars(page)).length).toBe(50);
   await page.waitForTimeout(500);
@@ -74,7 +74,7 @@ test('50 avatars walking cost little main-thread time per frame (stress mode)', 
   await page.screenshot({ path: 'test-results/world-stress-50.png' });
 
   await page.evaluate(() => {
-    window.__plazaWorld?.stress(0);
+    window.__bululuWorld?.stress(0);
   });
   await expect.poll(async () => (await avatars(page)).length).toBe(1);
 });

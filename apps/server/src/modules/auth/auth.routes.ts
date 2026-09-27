@@ -8,7 +8,7 @@ import {
   WEB_PATHS,
   type LoginErrorReason,
   type TestLoginResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -19,7 +19,7 @@ import type { AuthService } from './auth.service.js';
 import { OAuthFlowCookie, type FlowSecrets } from './oauth-flow.js';
 import { clearSessionCookie, sessionTokenOf, setSessionCookie } from './session-http.js';
 
-export const LOGIN_FLOW_COOKIE = 'plaza_oauth_login';
+export const LOGIN_FLOW_COOKIE = 'bululu_oauth_login';
 
 const loginFlow = new OAuthFlowCookie(LOGIN_FLOW_COOKIE, z.object({ next: SafeNextPathSchema }));
 

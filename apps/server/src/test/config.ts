@@ -20,7 +20,7 @@ function dotEnv(): Record<string, string | undefined> {
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ??
   dotEnv().TEST_DATABASE_URL ??
-  'postgresql://postgres:postgres@localhost:5432/plaza_test';
+  'postgresql://postgres:postgres@localhost:5432/bululu_test';
 
 export function testEnv(
   overrides: Record<string, string | undefined> = {},

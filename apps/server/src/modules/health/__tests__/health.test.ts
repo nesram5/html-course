@@ -1,4 +1,4 @@
-import { HEALTH_TOKEN_HEADER, HealthResponseSchema } from '@plaza/shared';
+import { HEALTH_TOKEN_HEADER, HealthResponseSchema } from '@bululu/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../../test/app.js';

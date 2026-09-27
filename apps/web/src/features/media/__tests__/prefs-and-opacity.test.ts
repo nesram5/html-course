@@ -1,4 +1,4 @@
-import { PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '@plaza/shared';
+import { PROXIMITY_HYSTERESIS, PROXIMITY_RADIUS } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -50,9 +50,9 @@ describe('media preferences (E5-S4)', () => {
   it('falls back to the defaults when nothing, garbage or an old format is stored', () => {
     const storage = memoryStorage();
     expect(loadMediaChoices(storage)).toEqual(DEFAULT_MEDIA_CHOICES);
-    storage.data.set('plaza.media.choices.v1', '{not json');
+    storage.data.set('bululu.media.choices.v1', '{not json');
     expect(loadMediaChoices(storage)).toEqual(DEFAULT_MEDIA_CHOICES);
-    storage.data.set('plaza.media.choices.v1', JSON.stringify({ audioEnabled: 'yes' }));
+    storage.data.set('bululu.media.choices.v1', JSON.stringify({ audioEnabled: 'yes' }));
     expect(loadMediaChoices(storage)).toEqual(DEFAULT_MEDIA_CHOICES);
   });
 

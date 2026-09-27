@@ -1,4 +1,4 @@
-import { API_PATHS, apiPath, MessagesResponseSchema, type ChatMessageDto } from '@plaza/shared';
+import { API_PATHS, apiPath, MessagesResponseSchema, type ChatMessageDto } from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

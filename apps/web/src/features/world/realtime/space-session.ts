@@ -1,4 +1,4 @@
-import type { KickReason, SpaceSnapshot } from '@plaza/shared';
+import type { KickReason, SpaceSnapshot } from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

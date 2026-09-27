@@ -1,7 +1,7 @@
-import { MAX_PLAYERS_PER_SPACE } from '@plaza/shared';
+import { MAX_PLAYERS_PER_SPACE } from '@bululu/shared';
 
 import { systemTimers, type Timers } from '../../platform/timers.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { registerDeskGoto } from './desk-goto.js';
 import { WorldRepository } from './world.repository.js';
 import { WorldService } from './world.service.js';
@@ -30,7 +30,7 @@ export interface WorldModuleOptions {
  * Needs `auth` (socket handshake), `spaces` (membership, rooms, kicks), `media` (server-side
  * mute, publish permission and removal) and `events` (`room_entered`) registered before it.
  */
-export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule {
+export function createWorldModule(options: WorldModuleOptions = {}): BululuModule {
   return {
     name: 'world',
     register({ app, io, container, services, socketDeps }) {
@@ -75,4 +75,4 @@ export function createWorldModule(options: WorldModuleOptions = {}): PlazaModule
   };
 }
 
-export const worldModule: PlazaModule = createWorldModule();
+export const worldModule: BululuModule = createWorldModule();

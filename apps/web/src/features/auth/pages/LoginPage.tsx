@@ -1,4 +1,4 @@
-import { LoginErrorReasonSchema, WEB_PATHS } from '@plaza/shared';
+import { LoginErrorReasonSchema, WEB_PATHS } from '@bululu/shared';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useSearchParams } from 'react-router';
 

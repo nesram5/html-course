@@ -1,4 +1,4 @@
-import { RoomsSetupResultSchema, WEB_PATHS } from '@plaza/shared';
+import { RoomsSetupResultSchema, WEB_PATHS } from '@bululu/shared';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';

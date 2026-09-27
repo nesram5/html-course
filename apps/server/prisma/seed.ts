@@ -1,7 +1,7 @@
 /**
  * Development seed: a demo user and a demo space. Idempotent (`pnpm db:seed`).
  * Sign in as this user with the test login (`AUTH_TEST_LOGIN=true`):
- *   POST /api/auth/test-login { "email": "dev@plaza.local" }
+ *   POST /api/auth/test-login { "email": "dev@bululu.local" }
  */
 import { createHash } from 'node:crypto';
 import process from 'node:process';
@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { deriveInviteToken } from '../src/modules/spaces/invite-token.js';
 
-const DEV_EMAIL = 'dev@plaza.local';
+const DEV_EMAIL = 'dev@bululu.local';
 const SESSION_SECRET = process.env.SESSION_SECRET ?? '';
 const PUBLIC_URL = (process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 

@@ -1,4 +1,4 @@
-import { TELEMETRY_MAX_SAMPLES, type TelemetrySample } from '@plaza/shared';
+import { TELEMETRY_MAX_SAMPLES, type TelemetrySample } from '@bululu/shared';
 
 import { postTelemetry } from '../api/product-api';
 

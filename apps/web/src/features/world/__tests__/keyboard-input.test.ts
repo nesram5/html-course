@@ -1,4 +1,4 @@
-import type { Direction } from '@plaza/shared';
+import type { Direction } from '@bululu/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {

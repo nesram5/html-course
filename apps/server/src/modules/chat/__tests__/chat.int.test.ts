@@ -10,7 +10,7 @@ import {
   type Ack,
   type ChatMessageEvent,
   type ReactionEmoji,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetDatabase } from '../../../test/db.js';

@@ -1,4 +1,4 @@
-import { SESSION_TTL_MS, type TestLoginBody } from '@plaza/shared';
+import { SESSION_TTL_MS, type TestLoginBody } from '@bululu/shared';
 import type { User } from '@prisma/client';
 
 import {

@@ -1,4 +1,4 @@
-import type { DeskState } from '@plaza/shared';
+import type { DeskState } from '@bululu/shared';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

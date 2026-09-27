@@ -31,14 +31,14 @@ export interface WorldDebug {
 
 declare global {
   interface Window {
-    __plazaWorld?: WorldDebug;
+    __bululuWorld?: WorldDebug;
   }
 }
 
-/** Installs `window.__plazaWorld` (development only; never in production builds). */
+/** Installs `window.__bululuWorld` (development only; never in production builds). */
 export function installWorldDebug(): void {
   if (!import.meta.env.DEV) return;
-  window.__plazaWorld = {
+  window.__bululuWorld = {
     liveGames: liveGameCount,
     listenerCount: () => worldEvents.listenerCount() + realtimeClient.listenerCount(),
     localPlayer: () => worldStore.getState().localPlayer,

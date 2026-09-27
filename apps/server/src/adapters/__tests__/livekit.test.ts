@@ -1,4 +1,4 @@
-import { MEDIA_TOKEN_TTL_SECONDS } from '@plaza/shared';
+import { MEDIA_TOKEN_TTL_SECONDS } from '@bululu/shared';
 import {
   ParticipantInfo,
   ParticipantPermission,

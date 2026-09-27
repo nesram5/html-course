@@ -1,4 +1,4 @@
-import { DeskDecorSchema, type DeskDecor, type DeskState } from '@plaza/shared';
+import { DeskDecorSchema, type DeskDecor, type DeskState } from '@bululu/shared';
 import type { Membership, Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';

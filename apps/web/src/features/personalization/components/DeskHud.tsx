@@ -1,4 +1,4 @@
-import { deskNear, type WorldMap } from '@plaza/shared';
+import { deskNear, type WorldMap } from '@bululu/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

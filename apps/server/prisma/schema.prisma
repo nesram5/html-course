@@ -33,7 +33,7 @@ model User {
 }
 
 model Session {
-  /// SHA-256 of the `plaza_sid` cookie token; the raw token is never stored.
+  /// SHA-256 of the `bululu_sid` cookie token; the raw token is never stored.
   id        String   @id
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

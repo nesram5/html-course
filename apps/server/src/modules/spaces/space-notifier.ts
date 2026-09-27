@@ -1,6 +1,6 @@
-import type { DeskState, KickReason, MeetingRoomDto } from '@plaza/shared';
+import type { DeskState, KickReason, MeetingRoomDto } from '@bululu/shared';
 
-import type { PlazaIo } from '../../platform/socket.js';
+import type { BululuIo } from '../../platform/socket.js';
 
 /** Called when a person is kicked out of a space, before their sockets are disconnected. */
 export type KickListener = (spaceId: string, userId: string, reason: KickReason) => void;
@@ -12,7 +12,7 @@ export type KickListener = (spaceId: string, userId: string, reason: KickReason)
 export class SpaceNotifier {
   readonly #kickListeners: KickListener[] = [];
 
-  constructor(private readonly io: PlazaIo) {}
+  constructor(private readonly io: BululuIo) {}
 
   /**
    * Registers a listener for kicks (the world module removes the avatar at once instead of

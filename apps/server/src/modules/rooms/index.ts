@@ -1,4 +1,4 @@
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { RoomsRepository } from './rooms.repository.js';
 import { registerRoomsRoutes } from './rooms.routes.js';
 import { RoomsService } from './rooms.service.js';
@@ -15,7 +15,7 @@ declare module '../types.js' {
  * Rooms module (E2-S7): Google Meet link per meeting room, created through the Meet API after an
  * incremental authorization (token used once and discarded) or pasted by hand.
  */
-export const roomsModule: PlazaModule = {
+export const roomsModule: BululuModule = {
   name: 'rooms',
   register({ app, container, services }) {
     const spaces = services.get('spaces');

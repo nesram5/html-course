@@ -1,4 +1,4 @@
-import { AWAY_IDLE_MS } from '@plaza/shared';
+import { AWAY_IDLE_MS } from '@bululu/shared';
 
 /** Interactions that prove the person is at the computer (RN-05: "cualquier interacción"). */
 export const ACTIVITY_EVENTS = [

@@ -1,4 +1,4 @@
-import { TILE_SIZE, type Direction, type EffectivePresence } from '@plaza/shared';
+import { TILE_SIZE, type Direction, type EffectivePresence } from '@bululu/shared';
 import * as Phaser from 'phaser';
 
 import { PRESENCE_COLORS } from '../constants';

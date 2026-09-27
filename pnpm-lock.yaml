@@ -74,10 +74,10 @@ importers:
       '@fastify/static':
         specifier: ^10.1.5
         version: 10.1.5
-      '@plaza/maps':
+      '@bululu/maps':
         specifier: workspace:*
         version: link:../../packages/maps
-      '@plaza/shared':
+      '@bululu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@prisma/client':
@@ -141,7 +141,7 @@ importers:
       '@livekit/components-styles':
         specifier: ^1.2.0
         version: 1.2.0
-      '@plaza/shared':
+      '@bululu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@sentry/react':
@@ -223,7 +223,7 @@ importers:
 
   packages/maps:
     dependencies:
-      '@plaza/shared':
+      '@bululu/shared':
         specifier: workspace:*
         version: link:../shared
       zod:
@@ -270,7 +270,7 @@ importers:
       '@livekit/rtc-node':
         specifier: ^1.1.0
         version: 1.1.0
-      '@plaza/shared':
+      '@bululu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       livekit-server-sdk:

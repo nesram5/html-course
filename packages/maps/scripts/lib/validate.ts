@@ -14,7 +14,7 @@ import {
   parseMap,
   tilesOf,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import {
   MapsManifestSchema,

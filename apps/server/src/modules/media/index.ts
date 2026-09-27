@@ -1,7 +1,7 @@
 import { WebhookReceiver } from 'livekit-server-sdk';
 
 import { currentUser } from '../auth/index.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { MediaRepository } from './media.repository.js';
 import { registerMediaRoutes, registerMediaWebhook } from './media.routes.js';
 import { MediaService } from './media.service.js';
@@ -21,7 +21,7 @@ declare module '../types.js' {
  * signed LiveKit webhook that isolates people who connect from inside a meeting room.
  * Must be registered after `auth`, whose session guard protects the token endpoint.
  */
-export const mediaModule: PlazaModule = {
+export const mediaModule: BululuModule = {
   name: 'media',
   async register({ app, container, services }) {
     const media = new MediaService({

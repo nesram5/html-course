@@ -1,8 +1,8 @@
-import type { PresenceStatus } from '@plaza/shared';
+import type { PresenceStatus } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
 import { KeyedSerial } from '../../platform/keyed-serial.js';
-import type { PlazaSocket } from '../../platform/socket.js';
+import type { BululuSocket } from '../../platform/socket.js';
 import type { WorldService } from '../world/index.js';
 import type { PresenceRepository } from './presence.repository.js';
 import type { RingCooldowns } from './ring-cooldowns.js';
@@ -33,7 +33,7 @@ export class PresenceService {
    * writes are queued per person: two quick changes can never end in the opposite order in the
    * runtime or in the database.
    */
-  async setStatus(socket: PlazaSocket, status: PresenceStatus): Promise<void> {
+  async setStatus(socket: BululuSocket, status: PresenceStatus): Promise<void> {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
     runtime.update(userId, { status });
     await this.#saves.run(`${runtime.spaceId}:${userId}`, () =>
@@ -42,7 +42,7 @@ export class PresenceService {
   }
 
   /** `player:away`: hidden tab or inactivity (RN-05). Not persisted. */
-  setAway(socket: PlazaSocket, away: boolean): void {
+  setAway(socket: BululuSocket, away: boolean): void {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
     runtime.update(userId, { away });
   }
@@ -52,7 +52,7 @@ export class PresenceService {
    * they are busy. Only people connected to the same space can be rung (`UNKNOWN_USER`), never
    * oneself (`VALIDATION_ERROR`), and the same target once every 30 s (`RING_COOLDOWN`, RN-11).
    */
-  ring(socket: PlazaSocket, toUserId: string): void {
+  ring(socket: BululuSocket, toUserId: string): void {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
     if (toUserId === userId) throw new AppError('VALIDATION_ERROR', 'You cannot ring yourself');
     const caller = runtime.get(userId);

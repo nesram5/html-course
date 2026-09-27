@@ -1,4 +1,4 @@
-import { MEET_URI_PREFIX } from '@plaza/shared';
+import { MEET_URI_PREFIX } from '@bululu/shared';
 import type { OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
 

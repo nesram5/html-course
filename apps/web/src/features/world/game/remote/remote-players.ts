@@ -4,7 +4,7 @@ import {
   type PlayerChanged,
   type PublicPlayer,
   type WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** A remote step is animated over one server tick (architecture §9.3). */
 export const REMOTE_MOVE_MS = TICK_MS;

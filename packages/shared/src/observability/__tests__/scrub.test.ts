@@ -14,18 +14,18 @@ describe('scrubString', () => {
     expect(scrubString('token ya29.a0AfH6SMBx-abc_def expired')).toBe(`token ${REDACTED} expired`);
     expect(scrubString('refresh 1//0gAbCdEfGhIjKlMn')).toBe(`refresh ${REDACTED}`);
     expect(scrubString('code 4/0AX4XfWjAbCdEfGhIj')).toBe(`code ${REDACTED}`);
-    expect(scrubString('cookie: plaza_sid=abc123def; other=1')).toBe(
-      `cookie: plaza_sid=${REDACTED}; other=1`,
+    expect(scrubString('cookie: bululu_sid=abc123def; other=1')).toBe(
+      `cookie: bululu_sid=${REDACTED}; other=1`,
     );
   });
 
   it('redacts OAuth and token query parameters, invite links and e-mails', () => {
     expect(
       scrubString(
-        'https://plaza.example.com/api/auth/google/callback?state=s1&code=c2&scope=openid',
+        'https://bululu.example.com/api/auth/google/callback?state=s1&code=c2&scope=openid',
       ),
     ).toBe(
-      `https://plaza.example.com/api/auth/google/callback?state=${REDACTED}&code=${REDACTED}&scope=openid`,
+      `https://bululu.example.com/api/auth/google/callback?state=${REDACTED}&code=${REDACTED}&scope=openid`,
     );
     expect(scrubString('/join/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abc')).toBe(
       `/join/${REDACTED}`,
@@ -43,16 +43,16 @@ describe('scrubString', () => {
 describe('scrubEvent', () => {
   it('never lets a chat body, a token or a cookie through, and keeps userId, spaceId and release', () => {
     const event = {
-      release: 'plaza-server@0.1.0',
+      release: 'bululu-server@0.1.0',
       message: `Failed to verify ${JWT}`,
       user: { id: 'u1', email: 'ana@acme.com', ip_address: '1.2.3.4', username: 'ana' },
       tags: { spaceId: 's1', event: 'chat:send' },
       request: {
-        url: 'https://plaza.example.com/api/auth/google/callback?code=4/0AX4XfWjAbCdEfGhIj&state=x',
+        url: 'https://bululu.example.com/api/auth/google/callback?code=4/0AX4XfWjAbCdEfGhIj&state=x',
         method: 'POST',
         data: { body: 'hola equipo' },
-        cookies: { plaza_sid: 'secret-session' },
-        headers: { Cookie: 'plaza_sid=abc', Authorization: 'Bearer abc', 'user-agent': 'UA' },
+        cookies: { bululu_sid: 'secret-session' },
+        headers: { Cookie: 'bululu_sid=abc', Authorization: 'Bearer abc', 'user-agent': 'UA' },
       },
       extra: {
         payload: { v: 1, body: 'mensaje privado' },
@@ -87,9 +87,9 @@ describe('scrubEvent', () => {
     }
     expect(scrubbed.user).toEqual({ id: 'u1' });
     expect(scrubbed.tags).toEqual({ spaceId: 's1', event: 'chat:send' });
-    expect(scrubbed.release).toBe('plaza-server@0.1.0');
+    expect(scrubbed.release).toBe('bululu-server@0.1.0');
     expect(scrubbed.request).toEqual({
-      url: `https://plaza.example.com/api/auth/google/callback?code=${REDACTED}&state=${REDACTED}`,
+      url: `https://bululu.example.com/api/auth/google/callback?code=${REDACTED}&state=${REDACTED}`,
       method: 'POST',
       headers: { Cookie: REDACTED, Authorization: REDACTED, 'user-agent': 'UA' },
     });

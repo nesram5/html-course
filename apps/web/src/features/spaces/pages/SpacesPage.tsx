@@ -1,4 +1,4 @@
-import { apiPath, WEB_PATHS, type SpaceSummaryDto } from '@plaza/shared';
+import { apiPath, WEB_PATHS, type SpaceSummaryDto } from '@bululu/shared';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 

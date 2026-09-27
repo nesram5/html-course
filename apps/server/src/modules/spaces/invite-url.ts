@@ -1,4 +1,4 @@
-import { apiPath, WEB_PATHS } from '@plaza/shared';
+import { apiPath, WEB_PATHS } from '@bululu/shared';
 
 /** Public `/join/<token>` URL of the web app. */
 export function inviteUrl(publicUrl: string, token: string): string {

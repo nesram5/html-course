@@ -5,17 +5,17 @@ import {
   UpdateMeBodySchema,
   type AvatarsResponse,
   type MeResponse,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { currentUser } from '../auth/index.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { UsersRepository } from './users.repository.js';
 import { UsersService } from './users.service.js';
 
 export { isAdminEmail } from './me.mapper.js';
 
 /** Users module (E1-S4): `GET|PATCH /api/me` and the avatar catalog `GET /api/avatars`. */
-export const usersModule: PlazaModule = {
+export const usersModule: BululuModule = {
   name: 'users',
   register({ app, container, services }) {
     const users = new UsersService(

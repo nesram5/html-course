@@ -1,4 +1,4 @@
-import { SPACE_UNLOAD_DELAY_MS, type WorldMap } from '@plaza/shared';
+import { SPACE_UNLOAD_DELAY_MS, type WorldMap } from '@bululu/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { ManualTimers } from '../../../test/manual-timers.js';

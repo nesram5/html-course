@@ -14,7 +14,7 @@ import {
   type ServerToClientEvents,
   type SpaceDetailDto,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 
 import { createChatModule } from '../modules/chat/index.js';
@@ -22,7 +22,7 @@ import type { EventsService } from '../modules/events/index.js';
 import type { KeyedSerial } from '../platform/keyed-serial.js';
 import { modules } from '../modules/index.js';
 import { createPresenceModule } from '../modules/presence/index.js';
-import type { PlazaModule } from '../modules/types.js';
+import type { BululuModule } from '../modules/types.js';
 import { createWorldModule, type WorldService } from '../modules/world/index.js';
 import type { JoinRateLimit } from '../modules/world/world.socket.js';
 import { buildTestApp, type TestApp, type TestAppOptions } from './app.js';
@@ -82,7 +82,7 @@ export class RealtimeHarness {
   async start(): Promise<void> {
     const { timers } = this.options;
     const joinLimit = this.options.joinLimit ?? { burst: 1_000_000, windowMs: 1000 };
-    const replaced: Record<string, PlazaModule> = {
+    const replaced: Record<string, BululuModule> = {
       world: createWorldModule({ timers, joinLimit }),
       presence: createPresenceModule({ timers }),
       chat: createChatModule({ timers }),

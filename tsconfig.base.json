@@ -20,6 +20,6 @@
     "noImplicitReturns": true,
     // Workspace packages expose their TypeScript sources under this export condition,
     // so type-checking and dev servers never need a build step (see README "Workspace packages").
-    "customConditions": ["@plaza/source"]
+    "customConditions": ["@bululu/source"]
   }
 }

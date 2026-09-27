@@ -1,4 +1,4 @@
-import type { MemberDto } from '@plaza/shared';
+import type { MemberDto } from '@bululu/shared';
 import { createContext, useContext, type ComponentType, type ReactNode } from 'react';
 
 /** What the space settings tell the feature that draws a member's desk cell. */

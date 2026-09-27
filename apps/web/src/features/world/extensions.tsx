@@ -1,4 +1,4 @@
-import type { WorldMap } from '@plaza/shared';
+import type { WorldMap } from '@bululu/shared';
 import { createContext, useContext, type ComponentType, type ReactNode } from 'react';
 
 /** What the office page tells the features that extend it. */

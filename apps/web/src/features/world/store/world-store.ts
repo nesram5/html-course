@@ -1,4 +1,4 @@
-import type { Direction, PublicPlayer, SpaceSnapshot, WorldDelta } from '@plaza/shared';
+import type { Direction, PublicPlayer, SpaceSnapshot, WorldDelta } from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

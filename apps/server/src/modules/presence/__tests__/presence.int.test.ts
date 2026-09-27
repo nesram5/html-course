@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, RING_COOLDOWN_MS, type Ack } from '@plaza/shared';
+import { PROTOCOL_VERSION, RING_COOLDOWN_MS, type Ack } from '@bululu/shared';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetDatabase } from '../../../test/db.js';

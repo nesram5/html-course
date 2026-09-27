@@ -1,4 +1,9 @@
-import { validateDeskDecor, type DecorItemDto, type DeskState, type DeskArea } from '@plaza/shared';
+import {
+  validateDeskDecor,
+  type DecorItemDto,
+  type DeskState,
+  type DeskArea,
+} from '@bululu/shared';
 import { Prisma } from '@prisma/client';
 
 import type { Database } from '../../platform/db.js';

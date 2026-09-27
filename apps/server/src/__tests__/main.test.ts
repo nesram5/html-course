@@ -11,7 +11,7 @@ const serverDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** Starts `src/main.ts` with exactly the given environment (no .env file). */
 function start(env: Record<string, string | undefined>) {
-  return spawnSync('pnpm', ['exec', 'tsx', '--conditions=@plaza/source', 'src/main.ts'], {
+  return spawnSync('pnpm', ['exec', 'tsx', '--conditions=@bululu/source', 'src/main.ts'], {
     cwd: serverDir,
     env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env },
     encoding: 'utf8',

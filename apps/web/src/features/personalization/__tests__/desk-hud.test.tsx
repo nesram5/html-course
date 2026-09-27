@@ -1,4 +1,4 @@
-import type { DecorItemDto, DeskState, WorldMap } from '@plaza/shared';
+import type { DecorItemDto, DeskState, WorldMap } from '@bululu/shared';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';

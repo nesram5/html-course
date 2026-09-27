@@ -6,7 +6,7 @@ import {
   type PublicPlayer,
   type SpaceSnapshot,
   type WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

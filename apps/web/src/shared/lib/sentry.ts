@@ -1,10 +1,10 @@
-import { scrubBreadcrumb, scrubEvent } from '@plaza/shared';
+import { scrubBreadcrumb, scrubEvent } from '@bululu/shared';
 import type { BrowserOptions } from '@sentry/react';
 
 /**
  * Error reporting of the web app. Sentry is only loaded when `VITE_SENTRY_DSN` is set.
  *
- * Every report carries the release (`plaza-web@<VITE_APP_VERSION>`), the person (`user.id`
+ * Every report carries the release (`bululu-web@<VITE_APP_VERSION>`), the person (`user.id`
  * only) and the space (`spaceId` tag), set with {@link setErrorContext}. Chat bodies, tokens,
  * invite links, cookies and e-mails never leave the browser: `sendDefaultPii` is off, console
  * breadcrumbs are dropped and `beforeSend` / `beforeBreadcrumb` scrub the rest (E8-S1).
@@ -42,7 +42,7 @@ export async function initSentry(options: InitSentryOptions = {}): Promise<void>
   const Sentry = await import('@sentry/react');
   Sentry.init({
     dsn,
-    release: `plaza-web@${import.meta.env.VITE_APP_VERSION ?? 'dev'}`,
+    release: `bululu-web@${import.meta.env.VITE_APP_VERSION ?? 'dev'}`,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
     sendDefaultPii: false,
     // Only the manual timing transactions below: no automatic page-load or navigation tracing.
@@ -66,7 +66,7 @@ export async function initSentry(options: InitSentryOptions = {}): Promise<void>
     const end = Date.now();
     Sentry.startInactiveSpan({
       name,
-      op: 'plaza.timing',
+      op: 'bululu.timing',
       forceTransaction: true,
       startTime: new Date(end - durationMs),
     }).end(new Date(end));

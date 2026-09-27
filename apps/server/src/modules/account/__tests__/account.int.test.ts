@@ -5,7 +5,7 @@ import {
   MessagesResponseSchema,
   SESSION_COOKIE_NAME,
   type SpaceDetailDto,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { resetDatabase } from '../../../test/db.js';
@@ -103,7 +103,7 @@ describe('"Borrar mi cuenta" (E8-S6)', () => {
 
   it('needs a session and the client header', async () => {
     expect((await deleteAccount(luis, { cookie: luis.cookie })).statusCode).toBe(403);
-    expect((await deleteAccount(luis, { 'x-plaza-client': 'test' })).statusCode).toBe(401);
+    expect((await deleteAccount(luis, { 'x-bululu-client': 'test' })).statusCode).toBe(401);
     expect(await db().user.count({ where: { id: luis.user.id } })).toBe(1);
   });
 
@@ -123,7 +123,7 @@ describe('"Borrar mi cuenta" (E8-S6)', () => {
     await harness.testApp.app.inject({
       method: 'POST',
       url: API_PATHS.authTestLogin,
-      headers: { 'x-plaza-client': 'test' },
+      headers: { 'x-bululu-client': 'test' },
       payload: { email: 'luis@acme.com' },
     });
     expect(await db().session.count({ where: { userId: luis.user.id } })).toBe(2);

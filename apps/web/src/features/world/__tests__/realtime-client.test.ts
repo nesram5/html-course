@@ -4,14 +4,14 @@ import {
   type ChatMessageEvent,
   type SpaceSnapshot,
   type WorldDelta,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { createConnectionStore, type ConnectionStore } from '../realtime/connection-store';
 import {
   RealtimeClient,
   RealtimeRequestError,
-  createPlazaSocket,
+  createBululuSocket,
   parseServerEvent,
 } from '../realtime/realtime-client';
 import { FakeSocket } from './fake-socket';
@@ -51,9 +51,9 @@ async function rejection(promise: Promise<unknown>): Promise<RealtimeRequestErro
   return error;
 }
 
-describe('createPlazaSocket', () => {
+describe('createBululuSocket', () => {
   it('opens one same-origin WebSocket at /realtime with the session cookie, on demand', () => {
-    createPlazaSocket();
+    createBululuSocket();
 
     expect(io).toHaveBeenCalledWith({
       path: REALTIME_PATH,

@@ -13,7 +13,7 @@ import {
   type RemoteParticipant,
   type RemoteTrackPublication,
 } from '@livekit/rtc-node';
-import { MEDIA_TOKEN_TTL_SECONDS, mediaRoomName } from '@plaza/shared';
+import { MEDIA_TOKEN_TTL_SECONDS, mediaRoomName } from '@bululu/shared';
 import { RoomServiceClient, TrackType } from 'livekit-server-sdk';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 

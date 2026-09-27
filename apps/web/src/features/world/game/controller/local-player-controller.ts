@@ -1,4 +1,4 @@
-import { isWalkable, stepTowards, type Direction, type Tile, type WorldMap } from '@plaza/shared';
+import { isWalkable, stepTowards, type Direction, type Tile, type WorldMap } from '@bululu/shared';
 
 import type { LocalStep } from '../../bridge/event-bus';
 import { STEP_MS } from '../constants';

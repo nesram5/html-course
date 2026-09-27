@@ -15,7 +15,7 @@ import {
   mediaRoomName,
   MediaTokenResponseSchema,
   PROTOCOL_VERSION,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { RoomServiceClient } from 'livekit-server-sdk';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

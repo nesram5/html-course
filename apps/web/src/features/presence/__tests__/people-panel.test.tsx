@@ -1,4 +1,4 @@
-import { RING_COOLDOWN_MS } from '@plaza/shared';
+import { RING_COOLDOWN_MS } from '@bululu/shared';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

@@ -16,7 +16,7 @@ import {
   type ServerEventPayload,
   type ServerToClientEvents,
   type SpaceSnapshot,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io, type Socket } from 'socket.io-client';
 import { z } from 'zod';
 
@@ -28,7 +28,7 @@ import {
 } from './connection-store';
 
 /** The typed Socket.IO client socket (architecture §9). */
-export type PlazaClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+export type BululuClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 /** Code of a failed realtime request: a server error code, or no answer from the server. */
 export type RealtimeErrorCode = ErrorCode | 'NETWORK_ERROR';
@@ -52,7 +52,7 @@ export function isRealtimeRequestError(error: unknown): error is RealtimeRequest
 export const ACK_TIMEOUT_MS = 10_000;
 
 /** The only Socket.IO socket of the app: same origin, `/realtime`, WebSocket, session cookie. */
-export function createPlazaSocket(): PlazaClientSocket {
+export function createBululuSocket(): BululuClientSocket {
   return io({
     path: REALTIME_PATH,
     transports: ['websocket'],
@@ -67,7 +67,7 @@ export type ParsedServerEvent<E extends ServerEventName> =
   | { readonly ok: true; readonly payload: ServerEventPayload<E> }
   | { readonly ok: false; readonly error: z.ZodError };
 
-/** Validates the payload of a server event with its schema from `@plaza/shared`. */
+/** Validates the payload of a server event with its schema from `@bululu/shared`. */
 export function parseServerEvent<E extends ServerEventName>(
   event: E,
   raw: unknown,
@@ -95,7 +95,7 @@ const RingAckSchema = ackSchema(z.null());
 type Listener<E extends ServerEventName> = (payload: ServerEventPayload<E>) => void;
 
 export interface RealtimeClientOptions {
-  readonly createSocket?: () => PlazaClientSocket;
+  readonly createSocket?: () => BululuClientSocket;
   readonly store?: ConnectionStore;
   readonly ackTimeoutMs?: number;
   /** Called with every incoming event that fails validation (dropped). Defaults to Sentry. */
@@ -114,16 +114,16 @@ export interface RealtimeClientOptions {
  * buffered by Socket.IO: stale steps must not be replayed after a reconnection (E4-S6).
  */
 export class RealtimeClient {
-  private socket: PlazaClientSocket | null = null;
+  private socket: BululuClientSocket | null = null;
   private readonly listeners = new Map<ServerEventName, Set<(payload: never) => void>>();
   private readonly connectListeners = new Set<() => void>();
-  private readonly createSocket: () => PlazaClientSocket;
+  private readonly createSocket: () => BululuClientSocket;
   private readonly ackTimeoutMs: number;
   private readonly onInvalidEvent: (event: string, error: unknown) => void;
   readonly store: ConnectionStore;
 
   constructor(options: RealtimeClientOptions = {}) {
-    this.createSocket = options.createSocket ?? createPlazaSocket;
+    this.createSocket = options.createSocket ?? createBululuSocket;
     this.store = options.store ?? defaultConnectionStore;
     this.ackTimeoutMs = options.ackTimeoutMs ?? ACK_TIMEOUT_MS;
     this.onInvalidEvent =
@@ -153,7 +153,7 @@ export class RealtimeClient {
 
   /**
    * Closes the transport the way a network failure does: Socket.IO then reconnects by itself.
-   * Only for the development probes (`window.__plazaWorld`) and E2E tests of E4-S6.
+   * Only for the development probes (`window.__bululuWorld`) and E2E tests of E4-S6.
    */
   simulateNetworkDrop(): void {
     this.socket?.io.engine.close();
@@ -243,7 +243,7 @@ export class RealtimeClient {
     );
   }
 
-  private send(emit: (socket: PlazaClientSocket) => void): boolean {
+  private send(emit: (socket: BululuClientSocket) => void): boolean {
     const socket = this.socket;
     if (socket?.connected !== true) return false;
     emit(socket);
@@ -252,7 +252,7 @@ export class RealtimeClient {
 
   private async request<T>(
     event: string,
-    emit: (socket: PlazaClientSocket, timeoutMs: number) => Promise<unknown>,
+    emit: (socket: BululuClientSocket, timeoutMs: number) => Promise<unknown>,
     schema: z.ZodType<
       { ok: true; data: T } | { ok: false; error: z.infer<typeof ErrorPayloadSchema> }
     >,
@@ -282,7 +282,7 @@ export class RealtimeClient {
     return parsed.data.data;
   }
 
-  private wire(socket: PlazaClientSocket): PlazaClientSocket {
+  private wire(socket: BululuClientSocket): BululuClientSocket {
     const store = this.store;
     socket.on('connect', () => {
       store.getState().setStatus('connected');

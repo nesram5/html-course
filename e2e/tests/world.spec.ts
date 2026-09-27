@@ -9,7 +9,7 @@ import { enterOffice, tile } from './support/world';
  * Everything is real: the test signs in with the test login, chooses an avatar, creates a space
  * through the spaces API and opens it; the map, theme images and avatar come from `/assets/maps`.
  */
-const CLIENT = { 'x-plaza-client': 'e2e' };
+const CLIENT = { 'x-bululu-client': 'e2e' };
 
 interface CreatedSpace {
   id: string;
@@ -25,7 +25,7 @@ async function createSpace(
   const run = randomUUID().slice(0, 8);
   const login = await page.request.post('/api/auth/test-login', {
     headers: CLIENT,
-    data: { email: `paseante-${run}@plaza.local`, displayName: 'Paseante' },
+    data: { email: `paseante-${run}@bululu.local`, displayName: 'Paseante' },
   });
   expect(login.status()).toBe(200);
   const me = await page.request.patch('/api/me', {
@@ -160,7 +160,7 @@ test.describe('2D map engine (E3)', () => {
     await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-state', 'ready', {
       timeout: 30_000,
     });
-    expect(await page.evaluate(() => window.__plazaWorld?.liveGames())).toBe(1);
+    expect(await page.evaluate(() => window.__bululuWorld?.liveGames())).toBe(1);
   });
 
   test('leaving the page destroys the game and its listeners', async ({ page }) => {
@@ -169,15 +169,15 @@ test.describe('2D map engine (E3)', () => {
     await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-state', 'ready', {
       timeout: 30_000,
     });
-    expect(await page.evaluate(() => window.__plazaWorld?.liveGames())).toBe(1);
-    expect(await page.evaluate(() => window.__plazaWorld?.listenerCount())).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__bululuWorld?.liveGames())).toBe(1);
+    expect(await page.evaluate(() => window.__bululuWorld?.listenerCount())).toBeGreaterThan(0);
 
     await page.getByRole('link', { name: 'Salir' }).click();
 
     await expect(page).toHaveURL(/\/spaces$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Mis espacios' })).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(0);
-    expect(await page.evaluate(() => window.__plazaWorld?.liveGames())).toBe(0);
-    await expect.poll(() => page.evaluate(() => window.__plazaWorld?.listenerCount())).toBe(0);
+    expect(await page.evaluate(() => window.__bululuWorld?.liveGames())).toBe(0);
+    await expect.poll(() => page.evaluate(() => window.__bululuWorld?.listenerCount())).toBe(0);
   });
 });

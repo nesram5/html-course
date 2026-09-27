@@ -1,4 +1,4 @@
-import type { AdminMetricsResponse, DurationStats } from '@plaza/shared';
+import type { AdminMetricsResponse, DurationStats } from '@bululu/shared';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 

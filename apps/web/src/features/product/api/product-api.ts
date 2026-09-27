@@ -4,7 +4,7 @@ import {
   type AdminMetricsResponse,
   type FeedbackBody,
   type TelemetrySample,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { http } from '@/shared/api';
 

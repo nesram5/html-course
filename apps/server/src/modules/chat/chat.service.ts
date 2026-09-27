@@ -1,14 +1,14 @@
-import { CHAT_HISTORY, type ChatMessageDto, type ReactionEmoji } from '@plaza/shared';
+import { CHAT_HISTORY, type ChatMessageDto, type ReactionEmoji } from '@bululu/shared';
 
 import type { Database } from '../../platform/db.js';
-import type { PlazaIo, PlazaSocket } from '../../platform/socket.js';
+import type { BululuIo, BululuSocket } from '../../platform/socket.js';
 import type { SpacesService } from '../spaces/index.js';
 import { spaceRoom, type WorldService } from '../world/index.js';
 import { ChatRepository } from './chat.repository.js';
 
 export interface ChatServiceDeps {
   db: Database;
-  io: PlazaIo;
+  io: BululuIo;
   world: WorldService;
   spaces: SpacesService;
 }
@@ -30,7 +30,7 @@ export class ChatService {
    * else in the space; the sender gets it in the ack. The body is already validated (trimmed,
    * 1..1000 characters) by the shared schema.
    */
-  async send(socket: PlazaSocket, body: string): Promise<ChatMessageDto> {
+  async send(socket: BululuSocket, body: string): Promise<ChatMessageDto> {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
     const { spaceId } = runtime;
     const message = await this.deps.db.$transaction(async (tx) => {
@@ -50,7 +50,7 @@ export class ChatService {
   }
 
   /** `reaction`: shown over the avatar of the person for everyone in the space, sender included. */
-  react(socket: PlazaSocket, emoji: ReactionEmoji): void {
+  react(socket: BululuSocket, emoji: ReactionEmoji): void {
     const { runtime, userId } = this.deps.world.joinedRuntime(socket);
     this.deps.io.to(spaceRoom(runtime.spaceId)).emit('reaction', { userId, emoji });
   }

@@ -59,7 +59,7 @@ describe('web error reports (E8-S1)', () => {
     const events = sentEvents();
     const sent = events.join('\n');
     expect(events).toHaveLength(1);
-    expect(sent).toContain('"release":"plaza-web@9.8.7"');
+    expect(sent).toContain('"release":"bululu-web@9.8.7"');
     expect(sent).toContain('"user":{"id":"user-1"}');
     expect(sent).toContain('"spaceId":"space-1"');
     expect(sent).toContain('Could not open /join/[redacted] for [email] with [redacted]');

@@ -1,6 +1,6 @@
 /**
  * Game and protocol constants. They live ONLY here (standards §6): web and server import them
- * from `@plaza/shared` so both sides always agree.
+ * from `@bululu/shared` so both sides always agree.
  */
 
 /** Size of a map tile in pixels. */
@@ -61,11 +61,11 @@ export const DESK_DECOR_SLOTS = 3;
  * is `Secure`, has `Path=/` and no `Domain`: a sibling subdomain cannot plant or overwrite it
  * (cookie tossing, login CSRF).
  */
-export const SESSION_COOKIE_NAME = '__Host-plaza_sid';
+export const SESSION_COOKIE_NAME = '__Host-bululu_sid';
 /** Sliding session lifetime: 30 days. */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Header required on state-changing requests (CSRF defence, architecture §11.1). */
-export const CLIENT_HEADER = 'x-plaza-client';
+export const CLIENT_HEADER = 'x-bululu-client';
 
 /**
  * LiveKit token lifetime in seconds (E5-S3). Short on purpose: a member removed from the space is

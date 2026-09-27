@@ -1,4 +1,4 @@
-import { MEDIA_TOKEN_REFRESH_MARGIN_SECONDS, type MediaTokenResponse } from '@plaza/shared';
+import { MEDIA_TOKEN_REFRESH_MARGIN_SECONDS, type MediaTokenResponse } from '@bululu/shared';
 import {
   ConnectionState,
   DisconnectReason,
@@ -626,7 +626,7 @@ export class MediaController {
   #attachAudio(track: RemoteTrack, participant: RemoteParticipant): void {
     if (this.#audioElements.has(track)) return;
     const element = track.attach();
-    element.dataset.plazaAudio = participant.identity;
+    element.dataset.bululuAudio = participant.identity;
     (this.#deps.audioContainer?.() ?? document.body).append(element);
     this.#audioElements.set(track, [element]);
   }

@@ -1,12 +1,12 @@
-import { parseManifest } from '@plaza/maps';
-import type { WorldMap } from '@plaza/shared';
+import { parseManifest } from '@bululu/maps';
+import type { WorldMap } from '@bululu/shared';
 
 import { ManifestMapsCatalog, mapsPackageDir, type MapRoomArea } from '../platform/maps-catalog.js';
 
 let packageCatalog: ManifestMapsCatalog | undefined;
 
 /**
- * The real `@plaza/maps` catalog (generated templates parsed with `parseMap`, 8 avatars), loaded
+ * The real `@bululu/maps` catalog (generated templates parsed with `parseMap`, 8 avatars), loaded
  * once per test file. Integration tests use it through `buildTestApp`.
  */
 export function packageMapsCatalog(): ManifestMapsCatalog {

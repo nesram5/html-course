@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type SpaceSnapshot } from '@plaza/shared';
+import { PROTOCOL_VERSION, type SpaceSnapshot } from '@bululu/shared';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentType } from 'react';
@@ -160,7 +160,7 @@ describe('SpacePage (/s/:slug)', () => {
       expect(games).toHaveLength(1);
     });
     const enter = fetchMock.mock.calls.find(([url]) => url === '/api/spaces/by-slug/acme/enter');
-    expect(enter?.[1]).toMatchObject({ method: 'POST', headers: { 'x-plaza-client': 'web' } });
+    expect(enter?.[1]).toMatchObject({ method: 'POST', headers: { 'x-bululu-client': 'web' } });
     const [options] = games;
     expect(options?.displayName).toBe('Ana');
     // The sprite comes from the avatar catalog (GET /api/avatars).

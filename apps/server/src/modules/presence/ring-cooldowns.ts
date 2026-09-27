@@ -1,4 +1,4 @@
-import { RING_COOLDOWN_MS } from '@plaza/shared';
+import { RING_COOLDOWN_MS } from '@bululu/shared';
 
 /**
  * RN-11: a person may ring the same person once every 30 s. Pure bookkeeping keyed by

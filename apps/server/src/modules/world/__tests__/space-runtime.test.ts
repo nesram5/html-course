@@ -1,4 +1,4 @@
-import type { WorldMap } from '@plaza/shared';
+import type { WorldMap } from '@bululu/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { packageMapsCatalog } from '../../../test/maps-fixture.js';

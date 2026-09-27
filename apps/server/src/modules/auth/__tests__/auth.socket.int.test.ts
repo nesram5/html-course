@@ -5,7 +5,7 @@ import {
   type ClientToServerEvents,
   type ErrorPayload,
   type ServerToClientEvents,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

@@ -1,4 +1,4 @@
-import { apiPath, WEB_PATHS, type SpaceDetailDto } from '@plaza/shared';
+import { apiPath, WEB_PATHS, type SpaceDetailDto } from '@bululu/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';

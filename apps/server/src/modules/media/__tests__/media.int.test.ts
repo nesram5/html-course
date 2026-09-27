@@ -4,7 +4,7 @@ import {
   CLIENT_HEADER,
   ErrorResponseSchema,
   MediaTokenResponseSchema,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { TokenVerifier } from 'livekit-server-sdk';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -100,7 +100,7 @@ describe('POST /api/spaces/:spaceId/media-token (E5-S3)', () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it('requires a session (401) and the X-Plaza-Client header (403)', async () => {
+  it('requires a session (401) and the X-Bululu-Client header (403)', async () => {
     const anonymous = await requestToken(t.app, { spaceId });
     expect(anonymous.statusCode).toBe(401);
     expect(ErrorResponseSchema.parse(anonymous.json()).error.code).toBe('UNAUTHORIZED');

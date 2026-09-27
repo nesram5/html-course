@@ -1,4 +1,4 @@
-import { TICK_MS } from '@plaza/shared';
+import { TICK_MS } from '@bululu/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {

@@ -10,7 +10,7 @@ import {
   type AvatarDto,
   type Me,
   type UpdateMeBody,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { http, isApiError } from '@/shared/api';
 

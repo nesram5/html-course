@@ -8,7 +8,7 @@ import {
   type ClientToServerEvents,
   type ErrorPayload,
   type ServerToClientEvents,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import type { FastifyInstance } from 'fastify';
 import { Server, type Socket } from 'socket.io';
 
@@ -30,13 +30,13 @@ export interface SocketData {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- single server process (no adapter) in the MVP
 export interface InterServerEvents {}
 
-export type PlazaIo = Server<
+export type BululuIo = Server<
   ClientToServerEvents,
   ServerToClientEvents,
   InterServerEvents,
   SocketData
 >;
-export type PlazaSocket = Socket<
+export type BululuSocket = Socket<
   ClientToServerEvents,
   ServerToClientEvents,
   InterServerEvents,
@@ -46,7 +46,7 @@ export type PlazaSocket = Socket<
 declare module 'fastify' {
   interface FastifyInstance {
     /** Typed Socket.IO server mounted at `/realtime`. */
-    io: PlazaIo;
+    io: BululuIo;
   }
 }
 
@@ -96,7 +96,7 @@ export interface ConnectionLimit {
 export function attachSocketServer(
   app: FastifyInstance,
   options: { corsOrigin: string; heartbeat?: Heartbeat; connectionLimit?: ConnectionLimit },
-): PlazaIo {
+): BululuIo {
   const allowedOrigin = new URL(options.corsOrigin).origin;
   const heartbeat = options.heartbeat ?? REALTIME_HEARTBEAT;
   const limit = options.connectionLimit;
@@ -108,7 +108,7 @@ export function attachSocketServer(
           refillPerSecond: limit.perMinute / 60,
           ...(limit.now !== undefined && { now: limit.now }),
         });
-  const io: PlazaIo = new Server(app.server, {
+  const io: BululuIo = new Server(app.server, {
     path: REALTIME_PATH,
     transports: ['websocket'],
     serveClient: false,
@@ -174,7 +174,7 @@ function protocolVersionOf(raw: unknown): unknown {
 /**
  * Wraps a socket event handler (standards §4):
  * - rejects payloads whose `v` differs from `PROTOCOL_VERSION` with `PROTOCOL_MISMATCH`;
- * - validates the payload with its zod schema from `@plaza/shared` (`VALIDATION_ERROR`);
+ * - validates the payload with its zod schema from `@bululu/shared` (`VALIDATION_ERROR`);
  * - catches every error: `AppError` keeps its code, anything else is logged, reported and
  *   answered as `INTERNAL`. An error never crashes the process;
  * - answers through the ack when the client sent one, otherwise emits `error`.
@@ -183,7 +183,7 @@ function protocolVersionOf(raw: unknown): unknown {
  */
 export function safeHandler<E extends ClientEventName>(
   deps: SafeHandlerDeps,
-  socket: PlazaSocket,
+  socket: BululuSocket,
   event: E,
   handler: (payload: ClientEventPayload<E>) => AckDataOf<E> | Promise<AckDataOf<E>>,
 ): (raw: unknown, ack?: unknown) => void {

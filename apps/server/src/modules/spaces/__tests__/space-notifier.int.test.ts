@@ -10,7 +10,7 @@ import {
   type ServerToClientEvents,
   type SpaceDetailDto,
   type SpaceKicked,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
 import { z } from 'zod';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';

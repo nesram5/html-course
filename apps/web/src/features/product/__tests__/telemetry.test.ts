@@ -1,4 +1,4 @@
-import { CRITICAL_OUTAGE_MS, TELEMETRY_MAX_SAMPLES, type TelemetrySample } from '@plaza/shared';
+import { CRITICAL_OUTAGE_MS, TELEMETRY_MAX_SAMPLES, type TelemetrySample } from '@bululu/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

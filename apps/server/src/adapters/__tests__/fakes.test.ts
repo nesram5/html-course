@@ -1,4 +1,4 @@
-import { MEET_URI_PREFIX } from '@plaza/shared';
+import { MEET_URI_PREFIX } from '@bululu/shared';
 import { describe, expect, it } from 'vitest';
 
 import { AppError } from '../../platform/errors.js';

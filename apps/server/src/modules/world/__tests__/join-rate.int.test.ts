@@ -1,4 +1,4 @@
-import { SPACE_JOIN_BURST, SPACE_JOIN_WINDOW_MS } from '@plaza/shared';
+import { SPACE_JOIN_BURST, SPACE_JOIN_WINDOW_MS } from '@bululu/shared';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { resetDatabase } from '../../../test/db.js';

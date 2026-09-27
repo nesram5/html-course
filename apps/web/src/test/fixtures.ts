@@ -1,4 +1,4 @@
-import type { AvatarDto, Me, SpaceDetailDto } from '@plaza/shared';
+import type { AvatarDto, Me, SpaceDetailDto } from '@bululu/shared';
 
 import type { SpaceInfo } from '@/features/world';
 

@@ -8,7 +8,7 @@ import {
 } from '../adapters/fakes/index.js';
 import { buildApp } from '../app.js';
 import { createContainer, type Container } from '../container.js';
-import type { PlazaModule } from '../modules/types.js';
+import type { BululuModule } from '../modules/types.js';
 import { testConfig } from './config.js';
 import { packageMapsCatalog } from './maps-fixture.js';
 import { RecordingErrorReporter } from './recording-error-reporter.js';
@@ -25,12 +25,12 @@ export interface TestApp {
 export interface TestAppOptions {
   env?: Record<string, string | undefined>;
   /** Defaults to every module of `modules/index.ts`. */
-  modules?: readonly PlazaModule[];
+  modules?: readonly BululuModule[];
   overrides?: Partial<Omit<Container, 'config' | 'logger'>>;
 }
 
 /**
- * Builds the real app with fake adapters, the real `@plaza/maps` catalog, a silent logger and the
+ * Builds the real app with fake adapters, the real `@bululu/maps` catalog, a silent logger and the
  * test database.
  * Call `app.close()` in `afterEach`/`afterAll`.
  */

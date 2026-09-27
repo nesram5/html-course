@@ -35,8 +35,8 @@ const SENSITIVE_KEYS = new Set(
     'clientSecret',
     'sessionSecret',
     'apiSecret',
-    'plaza_sid',
-    '__host-plaza_sid',
+    'bululu_sid',
+    '__host-bululu_sid',
     'email',
     'ip_address',
     // Local variables of stack frames may hold anything (a chat message being sent).
@@ -59,7 +59,7 @@ const VALUE_PATTERNS: readonly [RegExp, string][] = [
     `$1${REDACTED}`,
   ],
   [/(\/join\/)[\w-]{16,}/g, `$1${REDACTED}`],
-  [/(plaza_sid=)[^;\s"']+/g, `$1${REDACTED}`],
+  [/(bululu_sid=)[^;\s"']+/g, `$1${REDACTED}`],
   [/(Bearer\s+)[\w.~+/=-]+/gi, `$1${REDACTED}`],
   [/[\w.+-]+@(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi, '[email]'],
 ];

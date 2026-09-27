@@ -1,7 +1,7 @@
-import { CHAT_RATE_PER_SEC, REACTION_RATE_PER_SEC } from '@plaza/shared';
+import { CHAT_RATE_PER_SEC, REACTION_RATE_PER_SEC } from '@bululu/shared';
 
 import { AppError } from '../../platform/errors.js';
-import { safeHandler, type PlazaIo, type SafeHandlerDeps } from '../../platform/socket.js';
+import { safeHandler, type BululuIo, type SafeHandlerDeps } from '../../platform/socket.js';
 import { KeyedTokenBuckets } from '../../platform/token-bucket.js';
 import { socketUserId } from '../auth/index.js';
 import type { ChatService } from './chat.service.js';
@@ -13,7 +13,7 @@ import type { ChatService } from './chat.service.js';
  * over the limit answers `RATE_LIMITED`.
  */
 export function registerChatSocket(
-  io: PlazaIo,
+  io: BululuIo,
   deps: SafeHandlerDeps,
   chat: ChatService,
   clock: () => number,

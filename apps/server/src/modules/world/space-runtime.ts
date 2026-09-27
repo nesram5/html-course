@@ -10,7 +10,7 @@ import {
   type Tile,
   type WorldDelta,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 /** Who joins: everything but the position, which the runtime decides (E4-S1). */
 export type NewPlayer = Omit<PlayerState, 'x' | 'y' | 'dir' | 'roomId' | 'reconnecting'>;
@@ -138,7 +138,7 @@ export class SpaceRuntime {
   }
 
   /**
-   * Validates one step (E4-S3, `validateStep` of `@plaza/shared`): same tile (turn) or an
+   * Validates one step (E4-S3, `validateStep` of `@bululu/shared`): same tile (turn) or an
    * adjacent walkable one. Other avatars are not obstacles (RN-10). Rejections leave the state
    * untouched and return the position the client must go back to (`player:correct`).
    */

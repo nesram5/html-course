@@ -9,7 +9,7 @@ import {
   TELEMETRY_RATE_PER_MINUTE,
   type ErrorResponse,
   type SpaceDetailDto,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { z } from 'zod';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -26,7 +26,7 @@ const MEET_OPENED = { name: 'room_meet_opened', props: { areaId: 'sala-reuniones
 
 describe('product events and telemetry (E8-S7)', () => {
   const timers = new ManualTimers();
-  const harness = new RealtimeHarness({ timers, env: { ADMIN_EMAILS: 'producto@plaza.dev' } });
+  const harness = new RealtimeHarness({ timers, env: { ADMIN_EMAILS: 'producto@bululu.dev' } });
   let ana: TestUser;
   let luis: TestUser;
   let eva: TestUser;
@@ -137,7 +137,7 @@ describe('product events and telemetry (E8-S7)', () => {
     const unauthenticated = await harness.testApp.app.inject({
       method: 'POST',
       url,
-      headers: { 'x-plaza-client': 'test' },
+      headers: { 'x-bululu-client': 'test' },
       payload: MEET_OPENED,
     });
     expect(unauthenticated.statusCode).toBe(401);
@@ -146,7 +146,7 @@ describe('product events and telemetry (E8-S7)', () => {
   });
 
   it('shows the room entries of the world and the Meet openings of the client in the admin O6 (E6-S2)', async () => {
-    const admin = await harness.signIn('producto@plaza.dev', 'Producto');
+    const admin = await harness.signIn('producto@bululu.dev', 'Producto');
     const l = await harness.enter(luis, space.id);
     const runtime = harness.world.store.get(space.id);
     if (runtime === undefined) throw new Error('runtime not loaded');
@@ -315,11 +315,11 @@ describe('client product events: room_meet_opened (E6-S2, O6)', () => {
     expect(await t.container.db.productEvent.count()).toBe(0);
   });
 
-  it('needs a session and the X-Plaza-Client header', async () => {
+  it('needs a session and the X-Bululu-Client header', async () => {
     const anonymous = await t.app.inject({
       method: 'POST',
       url: apiPath(API_PATHS.events, { spaceId }),
-      headers: { 'x-plaza-client': 'test' },
+      headers: { 'x-bululu-client': 'test' },
       payload: { name: 'room_meet_opened', props: { areaId: 'sala-reuniones' } },
     });
     const noHeader = await t.app.inject({
@@ -365,7 +365,7 @@ describe('per-session limits cannot be dodged with made-up cookies (E8-S2)', () 
           url,
           // A different made-up session token each time: it used to get a budget of its own.
           headers: {
-            'x-plaza-client': 'test',
+            'x-bululu-client': 'test',
             cookie: `${SESSION_COOKIE_NAME}=forged-${String(i)}`,
           },
           payload: { samples: [], message: 'x' },

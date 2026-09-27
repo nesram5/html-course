@@ -2,7 +2,7 @@
 # (static files with SPA fallback) and the server behind /api, /realtime and /assets/maps.
 #
 # Environment (set in infra/app/.env, see .env.production.example):
-#   SITE_ADDRESS     plaza.example.com in production (automatic HTTPS); ":80" for a local run
+#   SITE_ADDRESS     bululu.example.com in production (automatic HTTPS); ":80" for a local run
 #   SERVER_UPSTREAM  host:port of the server container (default server:3000)
 #   CSP_CONNECT_SRC  extra origins the browser may connect to: LiveKit (wss:// and https://)
 #                    and the Sentry ingest host, separated by spaces

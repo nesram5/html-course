@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isWalkable, parseMap, roomAt, type Tile, type WorldMap } from '@plaza/shared';
+import { isWalkable, parseMap, roomAt, type Tile, type WorldMap } from '@bululu/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { parseManifest } from '../../src/manifest.js';
@@ -48,7 +48,7 @@ describe('generator', () => {
       .filter((file) => !readFileSync(join(root, file.path)).equals(file.bytes))
       .map((file) => file.path);
 
-    expect(different, 'run `pnpm --filter @plaza/maps generate` and commit the result').toEqual([]);
+    expect(different, 'run `pnpm --filter @bululu/maps generate` and commit it').toEqual([]);
   });
 
   it('lists 2 templates with 3 themes, 8 avatars and at least 12 decor items in the manifest', () => {

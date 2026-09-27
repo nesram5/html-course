@@ -1,4 +1,4 @@
-import type { MeetingRoomDto } from '@plaza/shared';
+import type { MeetingRoomDto } from '@bululu/shared';
 
 import type { CodeExchange } from '../../adapters/identity-provider.js';
 import type { MeetingProvider } from '../../adapters/meeting-provider.js';

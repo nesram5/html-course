@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 import { defaultClientConditions } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-const apiTarget = process.env.PLAZA_API_URL ?? 'http://localhost:3000';
+const apiTarget = process.env.BULULU_API_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -13,7 +13,7 @@ export default defineConfig({
   envDir: '../..',
   resolve: {
     // Workspace packages are consumed from source (see tsconfig.base.json `customConditions`).
-    conditions: ['@plaza/source', ...defaultClientConditions],
+    conditions: ['@bululu/source', ...defaultClientConditions],
     alias: { '@': new URL('./src', import.meta.url).pathname },
   },
   server: {

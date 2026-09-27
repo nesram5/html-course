@@ -5,7 +5,7 @@ import {
   REALTIME_PATH,
   type ClientToServerEvents,
   type ServerToClientEvents,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import * as Sentry from '@sentry/node';
 import { pino } from 'pino';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
@@ -118,7 +118,7 @@ describe('Sentry reports (E8-S1)', () => {
     expect(response.statusCode).toBe(500);
     const sent = envelopes.join('\n');
     expect(envelopes).toHaveLength(1);
-    expect(sent).toContain('"release":"plaza-server@9.8.7"');
+    expect(sent).toContain('"release":"bululu-server@9.8.7"');
     expect(sent).toContain(`"user":{"id":"${ana.user.id}"}`);
     expect(sent).toContain('"spaceId":"space-42"');
     expect(sent).toContain('Google refused [redacted] for [email]');

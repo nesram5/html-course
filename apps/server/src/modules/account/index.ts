@@ -2,10 +2,10 @@ import {
   AccountDeletionPreviewSchema,
   API_PATHS,
   type AccountDeletionPreview,
-} from '@plaza/shared';
+} from '@bululu/shared';
 
 import { clearSessionCookie, currentUser } from '../auth/index.js';
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { AccountService } from './account.service.js';
 
 export { AccountService } from './account.service.js';
@@ -14,7 +14,7 @@ export { AccountService } from './account.service.js';
  * Account module (E8-S6): `GET /api/me/deletion` (what deleting would do) and `DELETE /api/me`.
  * Registered after `world`, whose kick listener takes the avatar out of every office.
  */
-export const accountModule: PlazaModule = {
+export const accountModule: BululuModule = {
   name: 'account',
   register({ app, io, container, services }) {
     const spaces = services.get('spaces');

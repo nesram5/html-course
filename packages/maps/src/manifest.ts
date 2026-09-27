@@ -1,4 +1,4 @@
-import { MapTemplateIdSchema, SlugIdSchema } from '@plaza/shared';
+import { MapTemplateIdSchema, SlugIdSchema } from '@bululu/shared';
 import { z } from 'zod';
 
 /** A license entry: every asset must declare where it comes from (LICENSES.md). */

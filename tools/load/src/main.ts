@@ -11,7 +11,7 @@ import {
   type Direction,
   type ServerToClientEvents,
   type WorldMap,
-} from '@plaza/shared';
+} from '@bululu/shared';
 import { io, type Socket } from 'socket.io-client';
 
 import { createSpace, fetchWorldMap, health, joinSpace, signIn, type BotSession } from './api.js';
@@ -21,7 +21,7 @@ import { nextStep } from './walker.js';
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-const USAGE = `Usage: pnpm --filter @plaza/load load [options]
+const USAGE = `Usage: pnpm --filter @bululu/load load [options]
 
   --url <url>             API origin (default http://localhost:3000)
   --bots <n>              bots in one space (default 50)
@@ -29,7 +29,7 @@ const USAGE = `Usage: pnpm --filter @plaza/load load [options]
   --steps-per-second <n>  steps per bot and second (default 4, the server allows 10)
   --template <id>         map template of the new space (default office-small@1)
   --sample-every <s>      read /api/health every s seconds (default 30): memory, tick, latency
-  --health-token <token>  X-Health-Token for the figures (default $PLAZA_HEALTH_TOKEN)
+  --health-token <token>  X-Health-Token for the figures (default $BULULU_HEALTH_TOKEN)
 
 The server needs AUTH_TEST_LOGIN=true and enough RATE_LIMIT_PER_MINUTE for 2 requests per bot.
 `;
@@ -42,7 +42,7 @@ const { values } = parseArgs({
     'steps-per-second': { type: 'string', default: '4' },
     template: { type: 'string', default: 'office-small@1' },
     'sample-every': { type: 'string', default: '30' },
-    'health-token': { type: 'string', default: process.env.PLAZA_HEALTH_TOKEN ?? '' },
+    'health-token': { type: 'string', default: process.env.BULULU_HEALTH_TOKEN ?? '' },
     help: { type: 'boolean', default: false },
   },
 });
@@ -164,7 +164,7 @@ async function main(): Promise<void> {
   const sessions: BotSession[] = [];
   for (let i = 0; i < botCount; i++) {
     const name = `Bot ${String(i + 1).padStart(2, '0')}`;
-    sessions.push(await signIn(url, `bot-${run}-${String(i + 1)}@load.plaza.test`, name));
+    sessions.push(await signIn(url, `bot-${run}-${String(i + 1)}@load.bululu.test`, name));
   }
   const [owner] = sessions;
   if (owner === undefined) throw new Error('No bots');

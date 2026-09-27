@@ -1,4 +1,4 @@
-import type { MeetingRoomDto, WorldMap } from '@plaza/shared';
+import type { MeetingRoomDto, WorldMap } from '@bululu/shared';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

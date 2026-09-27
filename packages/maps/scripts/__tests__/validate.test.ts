@@ -21,7 +21,7 @@ interface TmjLayer {
 
 /** A throwaway copy of the package assets that a test can break. */
 function copyPackage(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'plaza-maps-'));
+  const dir = mkdtempSync(join(tmpdir(), 'bululu-maps-'));
   copies.push(dir);
   for (const entry of ['manifest.json', 'LICENSES.md', 'templates', 'avatars', 'decor']) {
     cpSync(join(root, entry), join(dir, entry), { recursive: true });
@@ -212,7 +212,7 @@ describe('validate:maps', () => {
     const run = () =>
       execFileSync(
         'pnpm',
-        ['exec', 'tsx', '--conditions=@plaza/source', 'scripts/validate-maps.ts', dir],
+        ['exec', 'tsx', '--conditions=@bululu/source', 'scripts/validate-maps.ts', dir],
         {
           cwd: root,
           stdio: 'pipe',

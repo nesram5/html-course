@@ -4,12 +4,12 @@ import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
-import { API_PATHS, CLIENT_HEADER } from '@plaza/shared';
+import { API_PATHS, CLIENT_HEADER } from '@bululu/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { Container } from './container.js';
 import { modules as defaultModules } from './modules/index.js';
-import { ServiceRegistry, type PlazaModule } from './modules/types.js';
+import { ServiceRegistry, type BululuModule } from './modules/types.js';
 import { AppError, registerErrorHandling } from './platform/errors.js';
 import { MAP_ASSETS_PREFIX, mapsPackageDir } from './platform/maps-catalog.js';
 import { attachSocketServer } from './platform/socket.js';
@@ -20,12 +20,12 @@ const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * signature instead (the LiveKit webhook, E6-S3).
  */
 const CSRF_EXEMPT_PATHS: ReadonlySet<string> = new Set([API_PATHS.mediaWebhook]);
-/** Public folders of @plaza/maps served at /assets/maps/. */
+/** Public folders of @bululu/maps served at /assets/maps/. */
 const MAP_ASSET_FOLDERS = ['templates/', 'avatars/', 'decor/'];
 
 export interface BuildAppOptions {
   /** Defaults to every module of `modules/index.ts`. */
-  modules?: readonly PlazaModule[];
+  modules?: readonly BululuModule[];
 }
 
 function originOf(url: string): string {
@@ -86,7 +86,7 @@ export async function buildApp(
       STATE_CHANGING_METHODS.has(request.method) &&
       !(route !== undefined && CSRF_EXEMPT_PATHS.has(route)) &&
       request.headers[CLIENT_HEADER] === undefined;
-    done(missingHeader ? new AppError('FORBIDDEN', 'Missing X-Plaza-Client header') : undefined);
+    done(missingHeader ? new AppError('FORBIDDEN', 'Missing X-Bululu-Client header') : undefined);
   });
 
   await app.register(fastifyStatic, {

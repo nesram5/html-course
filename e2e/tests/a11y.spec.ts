@@ -11,7 +11,7 @@ import { createSpace, enterOffice, joinByInvite, signIn } from './support/world'
  */
 
 /** The admin of the metrics page (`ADMIN_EMAILS` of the E2E server). */
-const ADMIN = 'producto@plaza.test';
+const ADMIN = 'producto@bululu.test';
 
 async function settled(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');

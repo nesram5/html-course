@@ -1,4 +1,4 @@
-import type { DeskDecor } from '@plaza/shared';
+import type { DeskDecor } from '@bululu/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import {

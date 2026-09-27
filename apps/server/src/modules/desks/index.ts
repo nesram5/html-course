@@ -1,4 +1,4 @@
-import type { PlazaModule } from '../types.js';
+import type { BululuModule } from '../types.js';
 import { registerDesksRoutes } from './desks.routes.js';
 import { DesksService } from './desks.service.js';
 
@@ -15,7 +15,7 @@ declare module '../types.js' {
  * one's own desk. Broadcasts `desk:updated` through the spaces notifier. The office style
  * (E9-S1) is a space setting: `PATCH /api/spaces/:spaceId` in the spaces module.
  */
-export const desksModule: PlazaModule = {
+export const desksModule: BululuModule = {
   name: 'desks',
   register({ app, container, services }) {
     const spaces = services.get('spaces');

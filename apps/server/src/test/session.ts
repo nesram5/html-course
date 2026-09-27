@@ -1,11 +1,11 @@
-import { API_PATHS, CLIENT_HEADER, SESSION_COOKIE_NAME, type Me } from '@plaza/shared';
+import { API_PATHS, CLIENT_HEADER, SESSION_COOKIE_NAME, type Me } from '@bululu/shared';
 import type { FastifyInstance } from 'fastify';
 
 export interface TestUser {
   user: Me;
-  /** `Cookie` header value with the session (`__Host-plaza_sid=<token>`). */
+  /** `Cookie` header value with the session (`__Host-bululu_sid=<token>`). */
   cookie: string;
-  /** Headers for authenticated state-changing requests (cookie + `X-Plaza-Client`). */
+  /** Headers for authenticated state-changing requests (cookie + `X-Bululu-Client`). */
   headers: Record<string, string>;
 }
 
