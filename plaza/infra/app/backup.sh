@@ -9,7 +9,10 @@
 #
 # Dumps: /backups/plaza-YYYYMMDD-HHMMSS.dump (pg_dump custom format, restore with pg_restore;
 # see docs/runbook.md). Copy them off the VM too (provider snapshots or rclone).
+# The dumps hold the whole database (e-mails, names, chat, feedback): readable by their owner
+# only (umask 077, folder 700).
 set -eu
+umask 077
 
 BACKUP_HOUR="${BACKUP_HOUR:-3}"
 BACKUP_KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
@@ -29,6 +32,7 @@ dump() {
 }
 
 mkdir -p "$DIR"
+chmod 700 "$DIR"
 if [ "${BACKUP_ON_START:-0}" = "1" ]; then dump || true; fi
 
 last_day=""

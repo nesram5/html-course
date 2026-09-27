@@ -5,8 +5,10 @@
 #   docker compose --profile db up -d  # with the bundled PostgreSQL + daily pg_dump
 #   docker compose up -d               # with a managed PostgreSQL (DATABASE_URL in .env)
 #
-# Every `up` runs `migrate` (prisma migrate deploy) first; the server starts only if it
-# succeeds. Deploy, rollback, restore and key rotation: docs/runbook.md.
+# Every `up` runs `migrate` (prisma migrate deploy) before starting the server, but it recreates
+# changed containers first: a failed migration inside `up` leaves server and web stopped. So
+# deploy.sh runs `docker compose run --rm migrate` on its own first and only then `up`.
+# Deploy, rollback, restore and key rotation: docs/runbook.md.
 name: plaza
 
 x-server-image: &server-image ${PLAZA_SERVER_IMAGE:-plaza-server:local}
