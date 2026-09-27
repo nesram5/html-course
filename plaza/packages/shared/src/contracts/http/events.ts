@@ -142,7 +142,10 @@ export const AdminMetricsResponseSchema = z.object({
   }),
   /** O5: time from opening the invitation link to being inside the map. */
   o5: DurationStatsSchema,
-  /** O6: entries to a meeting room that end in "Unirse a la reunión". */
+  /**
+   * O6: entries to a meeting room, and how many of them ended in "Unirse a la reunión" (each
+   * visit counts once, whatever the clicks).
+   */
   o6: z.object({
     roomEntries: z.number().int().nonnegative(),
     meetOpened: z.number().int().nonnegative(),

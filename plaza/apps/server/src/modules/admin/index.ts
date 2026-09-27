@@ -44,6 +44,7 @@ export class AdminService {
     const window = metricsWindow(this.now(), days);
     const events = await this.db.productEvent.findMany({
       where: { createdAt: { gte: window.from, lte: window.to } },
+      orderBy: { createdAt: 'asc' },
       select: { name: true, spaceId: true, actorId: true, props: true, createdAt: true },
     });
     const spaceIds = [

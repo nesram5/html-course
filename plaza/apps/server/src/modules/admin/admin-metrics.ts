@@ -77,7 +77,10 @@ function dayIndex(window: MetricsWindow, at: Date): number {
  * - O3 / O5: p50 and p95 of the client samples `av_first_frame` / `join_time`.
  * - O4: `session_started` visits minus the ones with a `session_error` (a cut not recovered in
  *   30 s), over the visits.
- * - O6: `room_meet_opened` over `room_entered`.
+ * - O6: `room_entered` visits with at least one `room_meet_opened` of the same person, space and
+ *   room after the entry and before their next one, over the visits. Clicking "Unirse a la
+ *   reunión" twice counts once, and openings with no matching visit (a forged or stale event)
+ *   do not count, so the figure is a true share of visits.
  */
 export function computeAdminMetrics(
   events: readonly MetricEvent[],
@@ -93,8 +96,11 @@ export function computeAdminMetrics(
   const failedSessions = new Set<string>();
   let roomEntries = 0;
   let meetOpened = 0;
+  /** O6: the latest room visit of each person in each space (`actorId|spaceId`). */
+  const visits = new Map<string, { areaId: string | null; opened: boolean }>();
 
-  for (const event of events) {
+  const ordered = [...events].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  for (const event of ordered) {
     const day = dayIndex(window, event.createdAt);
     if (day < 0 || day >= window.days) continue;
     switch (event.name) {
@@ -123,12 +129,28 @@ export function computeAdminMetrics(
         if (key !== null) (event.name === 'session_started' ? sessions : failedSessions).add(key);
         break;
       }
-      case 'room_entered':
+      case 'room_entered': {
         roomEntries++;
+        if (event.actorId !== null) {
+          visits.set(`${event.actorId}|${String(event.spaceId)}`, {
+            areaId: stringProp(event.props, 'areaId'),
+            opened: false,
+          });
+        }
         break;
-      case 'room_meet_opened':
+      }
+      case 'room_meet_opened': {
+        const visit =
+          event.actorId === null
+            ? undefined
+            : visits.get(`${event.actorId}|${String(event.spaceId)}`);
+        const areaId = stringProp(event.props, 'areaId');
+        if (visit === undefined || visit.opened) break;
+        if (visit.areaId !== null && areaId !== null && visit.areaId !== areaId) break;
+        visit.opened = true;
         meetOpened++;
         break;
+      }
       default:
         break;
     }

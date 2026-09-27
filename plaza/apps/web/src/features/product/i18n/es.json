@@ -63,9 +63,9 @@
     },
     "o6": {
       "title": "O6 · Entradas a sala que abren Meet",
-      "detail": "{{opened}} clics en «Unirse a la reunión» de {{entries}} entradas a una sala",
+      "detail": "{{opened}} de {{entries}} entradas a una sala acabaron en «Unirse a la reunión»",
       "target": "Objetivo: 70 % o más",
-      "how": "Entradas a una sala de reunión del mapa, calculadas por el servidor, y clics en «Unirse a la reunión»."
+      "how": "Entradas a una sala de reunión del mapa, calculadas por el servidor; cada una cuenta como abierta si la persona pulsó «Unirse a la reunión» en esa sala antes de su siguiente entrada (varios clics cuentan una vez)."
     },
     "spaces": {
       "title": "Días de uso por espacio",

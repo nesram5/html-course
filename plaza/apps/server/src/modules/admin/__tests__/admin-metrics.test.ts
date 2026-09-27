@@ -124,15 +124,48 @@ describe('computeAdminMetrics (O1–O6)', () => {
   });
 
   it('O6: room entries that open Meet', () => {
+    const room = { props: { areaId: 'sala-1' } };
     const events = [
-      ...Array.from({ length: 4 }, () => event('room_entered', at('20'))),
-      ...Array.from({ length: 3 }, () => event('room_meet_opened', at('20'))),
+      ...['a1', 'a2', 'a3', 'a4'].map((actorId) =>
+        event('room_entered', at('20'), { ...room, actorId }),
+      ),
+      ...['a1', 'a2', 'a3'].map((actorId) =>
+        event('room_meet_opened', at('20', 11), { ...room, actorId }),
+      ),
     ];
 
     expect(computeAdminMetrics(events, WINDOW, new Map()).o6).toEqual({
       roomEntries: 4,
       meetOpened: 3,
       rate: 0.75,
+    });
+  });
+
+  it('O6: counts each visit once and ignores openings without a matching visit', () => {
+    const inRoom = (areaId: string) => ({ props: { areaId } });
+    const events = [
+      // a1: two visits; opens Meet three times in the first (counted once), never in the second.
+      event('room_entered', at('20', 9), inRoom('sala-1')),
+      event('room_meet_opened', at('20', 10), inRoom('sala-1')),
+      event('room_meet_opened', at('20', 10), inRoom('sala-1')),
+      event('room_meet_opened', at('20', 11), inRoom('sala-1')),
+      event('room_entered', at('21', 9), inRoom('sala-1')),
+      // a2: opens a room they did not enter, in another space, and before entering.
+      event('room_meet_opened', at('20', 8), { ...inRoom('sala-2'), actorId: 'a2' }),
+      event('room_entered', at('20', 9), { ...inRoom('sala-2'), actorId: 'a2' }),
+      event('room_meet_opened', at('20', 10), { ...inRoom('sala-1'), actorId: 'a2' }),
+      event('room_meet_opened', at('20', 10), {
+        ...inRoom('sala-2'),
+        actorId: 'a2',
+        spaceId: 's2',
+      }),
+      // Given newest first: the order of the rows does not matter.
+    ].reverse();
+
+    expect(computeAdminMetrics(events, WINDOW, new Map()).o6).toEqual({
+      roomEntries: 3,
+      meetOpened: 1,
+      rate: 1 / 3,
     });
   });
 });
