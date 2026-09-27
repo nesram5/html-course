@@ -10,6 +10,7 @@ import {
   openOffice,
   remoteAvatar,
   signIn,
+  step,
   tapKey,
   tile,
   type CreatedSpace,
@@ -129,12 +130,11 @@ test.describe('multiplayer in real time (E4)', () => {
     const { ana, luis, space } = await anaAndLuis(browser);
     await openOffice(ana.page, space.slug);
     await openOffice(luis.page, space.slug);
+    // One step up, confirmed by the server: Ana sees Luis on the new tile.
     await luis.page.getByTestId('world-canvas').focus();
-    await tapKey(luis.page, 'ArrowUp');
-    const before = { x: (await tile(luis.page)).x, y: (await tile(luis.page)).y };
-    await expect
-      .poll(async () => (await remoteAvatar(ana.page, luis.userId))?.tileY)
-      .toBe(before.y);
+    const before = await step(luis.page, 'ArrowUp', {
+      seenBy: { page: ana.page, userId: luis.userId },
+    });
 
     // The network goes away: the open WebSocket closes and new connections fail.
     await luis.context.setOffline(true);
