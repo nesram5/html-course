@@ -54,12 +54,14 @@ export function useJoinPreview(token: string) {
 /**
  * Space of `/s/:slug` (for the world feature): members get it; people whose verified e-mail
  * matches the allowed domain join first (E2-S4). Non-members get a 404 `NOT_A_MEMBER` error.
+ * Always stale: membership is checked again every time the page is opened, so someone removed
+ * from the space loses access at once (E2-S6) even if the space is still cached.
  */
 export function useEnterSpace(slug: string) {
   return useQuery({
     queryKey: spacesKeys.enter(slug),
     queryFn: () => enterSpace(slug),
-    staleTime: Infinity,
+    staleTime: 0,
   });
 }
 
