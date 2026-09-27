@@ -1,0 +1,45 @@
+# Caddy (with the layer4 module) in front of LiveKit on TCP 443 (E5-S7, E5-S8).
+# Rendered to caddy.yaml by ./render-config.sh with the domains of .env: ${LIVEKIT_DOMAIN} and
+# ${TURN_DOMAIN} are replaced there. Certificates: Let's Encrypt, obtained and renewed by Caddy
+# (LiveKit clients refuse self-signed certificates).
+#
+#   livekit.<domain>:443  TLS terminated here → LiveKit signalling (WebSocket + API) on :7880
+#   turn.<domain>:443     TLS terminated here → LiveKit TURN (external_tls) on :5349
+logging:
+  logs:
+    default:
+      level: INFO
+storage:
+  module: file_system
+  root: /data
+apps:
+  tls:
+    certificates:
+      automate:
+        - ${LIVEKIT_DOMAIN}
+        - ${TURN_DOMAIN}
+  layer4:
+    servers:
+      main:
+        listen: [':443']
+        routes:
+          - match:
+              - tls:
+                  sni:
+                    - ${TURN_DOMAIN}
+            handle:
+              - handler: tls
+              - handler: proxy
+                upstreams:
+                  - dial: ['localhost:5349']
+          - match:
+              - tls:
+                  sni:
+                    - ${LIVEKIT_DOMAIN}
+            handle:
+              - handler: tls
+                connection_policies:
+                  - alpn: ['http/1.1']
+              - handler: proxy
+                upstreams:
+                  - dial: ['localhost:7880']

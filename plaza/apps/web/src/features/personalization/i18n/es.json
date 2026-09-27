@@ -1,0 +1,54 @@
+{
+  "desk": {
+    "name": "Escritorio {{n}}"
+  },
+  "hint": {
+    "desk": "Escritorio",
+    "deskLabel": "Escritorio (tecla X): reclamar, decorar o ver de quién es",
+    "deskLabelNoKey": "Escritorio: reclamar, decorar o ver de quién es"
+  },
+  "menu": {
+    "freeTitle": "Escritorio libre",
+    "claim": "Reclamar este escritorio",
+    "claimed": "Este escritorio ya es tuyo.",
+    "changeTitle": "¿Cambiar de escritorio?",
+    "changeQuestion": "Ya tienes un escritorio. Si reclamas este, el anterior quedará libre.",
+    "changeConfirm": "Cambiar a este escritorio",
+    "mineTitle": "Tu escritorio",
+    "decorate": "Decorar",
+    "release": "Liberar escritorio",
+    "released": "Has liberado tu escritorio.",
+    "takenTitle": "Escritorio de {{name}}",
+    "taken": "Este escritorio ya tiene dueño.",
+    "cancel": "Cancelar",
+    "close": "Cerrar"
+  },
+  "decor": {
+    "title": "Decorar mi escritorio",
+    "help": "Elige un hueco de la mesa y después un objeto. Verás el resultado en el mapa antes de guardar.",
+    "slots": "Huecos de la mesa",
+    "slotEmpty": "Hueco {{n}}: vacío",
+    "slotWith": "Hueco {{n}}: {{name}}",
+    "clear": "Vaciar hueco {{n}}",
+    "catalog": "Objetos para el hueco {{n}}",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Tu escritorio está decorado.",
+    "cancel": "Cancelar"
+  },
+  "myDesk": {
+    "label": "Mi escritorio",
+    "title": "Volver junto a mi escritorio"
+  },
+  "members": {
+    "none": "Sin escritorio",
+    "assign": "Asignar",
+    "assignLabel": "Escritorio para {{name}}",
+    "assigned": "Escritorio asignado a {{name}}.",
+    "release": "Liberar",
+    "releaseLabel": "Liberar el escritorio de {{name}}",
+    "released": "El escritorio de {{name}} está libre.",
+    "goto": "Ir a su escritorio",
+    "gotoLabel": "Ir al escritorio de {{name}}"
+  }
+}

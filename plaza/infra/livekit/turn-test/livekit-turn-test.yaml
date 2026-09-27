@@ -1,0 +1,28 @@
+# Local TURN/TLS check (E5-S8), NOT for production: a second LiveKit on other ports whose only
+# usable path is TURN over TLS. The browser of the test has UDP disabled
+# (--force-webrtc-ip-handling-policy=disable_non_proxied_udp) and uses iceTransportPolicy
+# "relay"; ICE over TCP is off here. Keys are throwaway test values.
+port: 7980
+rtc:
+  # No ICE over TCP: the media must go through TURN.
+  tcp_port: 0
+  port_range_start: 52000
+  port_range_end: 52100
+  use_external_ip: false
+  # Everything runs on this machine: the SFU must offer its loopback address to the relay.
+  enable_loopback_candidate: true
+turn:
+  enabled: true
+  domain: turn.localhost
+  # TLS terminated by LiveKit itself with a throwaway self-signed certificate for localhost
+  # (Chromium resolves *.localhost to the loopback; on the VM, Caddy terminates it with a Let's Encrypt certificate on 443).
+  tls_port: 443
+  cert_file: /certs/cert.pem
+  key_file: /certs/key.pem
+  udp_port: 3479
+  relay_range_start: 41000
+  relay_range_end: 41100
+keys:
+  turntest: turn-test-secret-with-at-least-32-characters
+logging:
+  level: info

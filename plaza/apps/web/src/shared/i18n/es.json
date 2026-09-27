@@ -1,0 +1,101 @@
+{
+  "appName": "Plaza",
+  "home": {
+    "title": "Plaza",
+    "tagline": "La oficina virtual de tu equipo: acércate a alguien y hablad, como en la oficina.",
+    "cta": "Entrar a mis espacios",
+    "serverStatus": {
+      "label": "Estado del servidor",
+      "checking": "Comprobando…",
+      "online": "Conectado (versión {{version}})",
+      "offline": "No disponible"
+    }
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o se ha movido.",
+    "backHome": "Volver al inicio"
+  },
+  "errorBoundary": {
+    "title": "Algo ha fallado",
+    "description": "Ha ocurrido un error inesperado. Ya nos ha llegado el aviso.",
+    "retry": "Reintentar"
+  },
+  "toasts": {
+    "dismiss": "Cerrar aviso",
+    "region": "Avisos"
+  },
+  "footer": {
+    "label": "Pie de página",
+    "privacy": "Privacidad",
+    "feedback": "Enviar comentarios"
+  },
+  "privacy": {
+    "back": "Volver al inicio",
+    "title": "Tus datos en Plaza",
+    "intro": "Plaza es la oficina virtual de tu equipo. Guardamos solo lo necesario para que funcione y nunca grabamos lo que dices ni lo que se ve en tu cámara.",
+    "stored": {
+      "title": "Qué guardamos",
+      "profile": "Tu perfil básico de Google: nombre, correo, foto de perfil y el identificador de tu cuenta. También el nombre visible y el avatar que elijas.",
+      "spaces": "Los espacios a los que perteneces: tu rol, el estado que elijas (Disponible u Ocupado), tu escritorio y su decoración.",
+      "chat": "Los mensajes del chat de cada espacio (los últimos 100).",
+      "feedback": "Los comentarios que nos envías desde la aplicación, con tu nombre y tu correo para poder responderte.",
+      "events": "Eventos de producto sin datos personales (por ejemplo, «alguien entró en la oficina» o «una conversación de pasillo duró 2 minutos») y tiempos de conexión, con un identificador seudónimo que no permite saber quién eres. Los usamos para medir si Plaza funciona bien.",
+      "session": "Tu sesión: una cookie que te mantiene dentro 30 días. En el servidor solo guardamos su huella, no la cookie."
+    },
+    "notStored": {
+      "title": "Qué no guardamos nunca",
+      "media": "Audio ni vídeo: las conversaciones de pasillo van en directo entre personas a través de nuestro servidor de medios y no se graban.",
+      "positions": "Tu posición en el mapa: solo existe mientras estás conectado.",
+      "googleTokens": "Tokens de Google: usamos el permiso de Google solo al iniciar sesión (y al crear las salas de Meet) y lo descartamos en ese momento.",
+      "browser": "Tu navegador recuerda en tu equipo la cámara, el micrófono y el altavoz que elegiste; esos datos no salen de él."
+    },
+    "meet": {
+      "title": "Las salas de reunión usan Google Meet",
+      "text": "Cada sala del mapa tiene su propio Google Meet, que se abre en otra pestaña. Lo que ocurra en Meet (pantalla compartida, grabaciones, transcripciones o su chat) lo gestiona Google según sus condiciones y la configuración de Google Workspace de tu empresa."
+    },
+    "hallway": {
+      "title": "El pasillo no es privado",
+      "text": "Como en una oficina abierta, cualquiera que se acerque a tu avatar te ve y te oye. Para hablar en privado, entra en una sala de reunión."
+    },
+    "rights": {
+      "title": "Tus derechos",
+      "text": "Puedes borrar tu cuenta cuando quieras desde «Mi perfil»: se borran tu perfil, tus sesiones y tus membresías, y tus mensajes del chat quedan como «Usuario eliminado». Para cualquier otra petición sobre tus datos, escríbenos.",
+      "profile": "Ir a Mi perfil",
+      "feedback": "Escribir al equipo de Plaza"
+    }
+  },
+  "errors": {
+    "NETWORK_ERROR": "No hay conexión con el servidor. Comprueba tu red.",
+    "UNAUTHORIZED": "Tu sesión ha caducado. Vuelve a entrar.",
+    "FORBIDDEN": "No tienes permiso para hacer esto.",
+    "NOT_FOUND": "No lo encontramos.",
+    "VALIDATION_ERROR": "Revisa los datos introducidos.",
+    "CONFLICT": "Alguien ha cambiado esto a la vez. Inténtalo de nuevo.",
+    "RATE_LIMITED": "Vas demasiado rápido. Espera un momento.",
+    "INTERNAL": "Ha ocurrido un error inesperado.",
+    "OAUTH_FAILED": "No se completó el inicio de sesión.",
+    "UNKNOWN_AVATAR": "Ese avatar no existe.",
+    "SOLE_OWNER": "Eres la única persona administradora de un espacio con más miembros.",
+    "UNKNOWN_MAP_TEMPLATE": "Esa plantilla de oficina no existe.",
+    "INVALID_INVITE": "Esta invitación ya no es válida.",
+    "DOMAIN_NOT_ALLOWED": "Tu cuenta no pertenece al dominio permitido de este espacio.",
+    "LAST_OWNER": "El espacio necesita al menos una persona administradora.",
+    "NOT_A_MEMBER": "No eres miembro de este espacio.",
+    "BANNED_FROM_SPACE": "La administración te ha expulsado de este espacio. Pídele que te readmita.",
+    "UNKNOWN_ROOM": "Esa sala no existe.",
+    "INVALID_MEET_URI": "El enlace debe empezar por https://meet.google.com/.",
+    "MEETING_PROVIDER_ERROR": "Google Meet no respondió. Puedes reintentar o pegar el enlace a mano.",
+    "SPACE_FULL": "El espacio está lleno (máximo 50 personas).",
+    "PROTOCOL_MISMATCH": "Hay una versión nueva de Plaza. Recarga la página.",
+    "SESSION_REPLACED": "Has abierto Plaza en otra pestaña.",
+    "NOT_IN_SPACE": "Todavía no has entrado en el espacio.",
+    "MEDIA_PROVIDER_ERROR": "No se pudo conectar el audio y el vídeo.",
+    "RING_COOLDOWN": "Espera un poco antes de volver a llamar.",
+    "UNKNOWN_USER": "Esa persona no existe.",
+    "UNKNOWN_THEME": "Ese estilo no existe para esta oficina.",
+    "UNKNOWN_DESK": "Ese escritorio no existe.",
+    "DESK_TAKEN": "Ese escritorio ya tiene dueño.",
+    "UNKNOWN_DECOR_ITEM": "Ese objeto no está en el catálogo."
+  }
+}

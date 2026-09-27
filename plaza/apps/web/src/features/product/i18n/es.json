@@ -1,0 +1,85 @@
+{
+  "feedback": {
+    "title": "Enviar comentarios",
+    "intro": "Cuéntanos qué te gusta, qué falla o qué echas de menos. Lo leemos todo el equipo de Plaza y te responderemos si hace falta.",
+    "message": "¿Qué te gustaría contarnos?",
+    "hint": "Hasta {{max}} caracteres. Enviamos tu nombre y tu correo con el mensaje para poder responderte.",
+    "rating": "¿Cómo valorarías Plaza? (opcional)",
+    "ratings": {
+      "1": "1 · Muy mal",
+      "2": "2 · Mal",
+      "3": "3 · Regular",
+      "4": "4 · Bien",
+      "5": "5 · Muy bien"
+    },
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "thanks": "¡Gracias! Hemos recibido tus comentarios."
+  },
+  "metrics": {
+    "title": "Métricas de la beta",
+    "periodLabel": "Periodo",
+    "days_one": "Último día",
+    "days_other": "Últimos {{count}} días",
+    "period": "Del {{from}} al {{to}} (días en hora UTC).",
+    "denied": "Esta página solo está disponible para el equipo de producto.",
+    "none": "Sin datos",
+    "duration_one": "{{count}} medición · mediana {{p50}}",
+    "duration_other": "{{count}} mediciones · mediana {{p50}}",
+    "status": {
+      "met": "Cumple el objetivo",
+      "notMet": "No cumple el objetivo",
+      "noData": "Sin datos suficientes"
+    },
+    "o1": {
+      "title": "O1 · Conversaciones espontáneas",
+      "detail": "{{conversations}} conversaciones de más de 30 s en {{days}} días-persona activos",
+      "target": "Objetivo: 3 o más por persona activa y día",
+      "how": "Una conversación empieza cuando alguien pasa a tener a otra persona cerca en el pasillo y acaba cuando ya no tiene a nadie; cuenta si dura más de 30 s. Se divide entre los días en que cada persona entró en la oficina."
+    },
+    "o2": {
+      "title": "O2 · Días de uso por semana",
+      "value_one": "{{count}} de {{total}} equipos",
+      "value_other": "{{count}} de {{total}} equipos",
+      "detail": "Equipos (espacios) que usan Plaza 3 días o más en cada una de las {{weeks}} semanas",
+      "target": "Objetivo: 3 de los 5 equipos piloto, 4 semanas seguidas",
+      "how": "Un día cuenta si alguien del espacio entró en la oficina. Detalle por espacio en la tabla de abajo."
+    },
+    "o3": {
+      "title": "O3 · Latencia de audio y vídeo (p95)",
+      "target": "Objetivo: menos de 1,5 s",
+      "how": "Tiempo desde que el servidor conecta a dos personas cercanas hasta que se ve el primer fotograma del vídeo del otro, medido en el navegador."
+    },
+    "o4": {
+      "title": "O4 · Sesiones sin errores críticos",
+      "detail": "{{errors}} de {{sessions}} visitas con un error crítico",
+      "target": "Objetivo: 98 % o más",
+      "how": "Una visita tiene un error crítico si la conexión con el servidor o el audio y vídeo del pasillo se pierden y no se recuperan en 30 s. Salir, ser expulsado o abrir otra pestaña no cuenta como error."
+    },
+    "o5": {
+      "title": "O5 · Tiempo de entrada (p95)",
+      "target": "Objetivo: menos de 30 s",
+      "how": "Tiempo desde que se abre el enlace de invitación hasta estar dentro del mapa (incluye iniciar sesión, elegir avatar y la pantalla previa), medido en el navegador."
+    },
+    "o6": {
+      "title": "O6 · Entradas a sala que abren Meet",
+      "detail": "{{opened}} de {{entries}} entradas a una sala acabaron en «Unirse a la reunión»",
+      "target": "Objetivo: 70 % o más",
+      "how": "Entradas a una sala de reunión del mapa, calculadas por el servidor; cada una cuenta como abierta si la persona pulsó «Unirse a la reunión» en esa sala antes de su siguiente entrada (varios clics cuentan una vez)."
+    },
+    "spaces": {
+      "title": "Días de uso por espacio",
+      "empty": "Nadie ha entrado en una oficina en este periodo.",
+      "space": "Espacio",
+      "week": "Semana {{week}}",
+      "average": "Media",
+      "deleted": "Espacio borrado"
+    },
+    "feedback": {
+      "title": "Comentarios de los pilotos",
+      "empty": "Todavía no hay comentarios.",
+      "meta": "{{name}} ({{email}}) · {{date}}",
+      "rating": "Valoración {{rating}}/5"
+    }
+  }
+}

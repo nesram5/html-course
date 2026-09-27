@@ -1,0 +1,14 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    include: ['src/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/__tests__/**', 'src/**/index.ts'],
+      // Standards §7: packages/shared keeps >= 90 % line coverage.
+      thresholds: { lines: 90 },
+    },
+  },
+});

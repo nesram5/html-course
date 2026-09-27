@@ -1,0 +1,194 @@
+# Plaza deploy (E8-S5, docs/runbook.md "Despliegue de la app").
+#
+# - Staging: every push to main whose "Plaza CI" run succeeds builds the server and web images,
+#   pushes them to GHCR (tags sha-<commit> and main) and deploys them to the staging VM.
+# - Beta: pushing a v0.x tag builds and pushes images tagged with the version; the deploy job
+#   targets the "beta" environment, whose required reviewers give the manual approval.
+# - Rollback: run this workflow by hand ("Run workflow") on main with an environment and an
+#   existing image tag.
+#
+# It never runs on pull requests or other branches. Secrets are read by name from the GitHub
+# environments "staging" and "beta": APP_SSH_HOST, APP_SSH_USER, APP_SSH_KEY,
+# APP_SSH_KNOWN_HOSTS and APP_DIR (optional, default /opt/plaza). The web build reads the
+# repository variable VITE_SENTRY_DSN (public: it ends up in the JavaScript bundle).
+name: Plaza deploy
+
+on:
+  workflow_run:
+    workflows: ["Plaza CI"]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v0.*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Where to deploy"
+        type: choice
+        options: [staging, beta]
+        required: true
+      tag:
+        description: "Existing image tag to deploy (e.g. v0.2.0 or sha-abc1234) — rollbacks"
+        type: string
+        required: true
+
+concurrency:
+  group: plaza-deploy-${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and push images
+    # main after a green CI run (never a PR's CI run), or a v0.x tag.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v0.'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      server: ${{ steps.meta.outputs.server }}
+      web: ${{ steps.meta.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Image names and tag
+        id: meta
+        env:
+          HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then tag="${GITHUB_REF_NAME}"; else tag="sha-${HEAD_SHA::7}"; fi
+          {
+            echo "tag=$tag"
+            echo "server=ghcr.io/$owner/plaza-server"
+            echo "web=ghcr.io/$owner/plaza-web"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Server image
+        uses: docker/build-push-action@v6
+        with:
+          context: plaza
+          file: plaza/apps/server/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.server }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.server }}:${{ github.event_name == 'push' && 'beta' || 'main' }}
+          cache-from: type=gha,scope=plaza-server
+          cache-to: type=gha,mode=max,scope=plaza-server
+
+      - name: Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: plaza
+          file: plaza/apps/web/Dockerfile
+          push: true
+          build-args: |
+            VITE_APP_VERSION=${{ steps.meta.outputs.tag }}
+            VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN }}
+          tags: |
+            ${{ steps.meta.outputs.web }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.web }}:${{ github.event_name == 'push' && 'beta' || 'main' }}
+          cache-from: type=gha,scope=plaza-web
+          cache-to: type=gha,mode=max,scope=plaza-web
+
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
+    needs: build
+    # A manual run (rollback) only from main: "Run workflow" lets anyone with write access pick a
+    # branch, and that branch's copy of deploy.sh would run on the VM. The environments' own
+    # deployment-branch rules (main for staging; main and v0.* tags for beta) back this up, since
+    # a branch could also edit this file (docs/runbook.md).
+    if: >-
+      always() &&
+      (needs.build.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && needs.build.result == 'skipped' &&
+        github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    # "beta" has required reviewers: the job waits for the manual approval.
+    environment: ${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          sparse-checkout: plaza/infra/app
+
+      - name: Images to deploy
+        id: images
+        env:
+          BUILT_TAG: ${{ needs.build.outputs.tag }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          tag="${INPUT_TAG:-$BUILT_TAG}"
+          if ! printf '%s' "$tag" | grep -Eq '^(v0\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?|sha-[0-9a-f]{7}|main|beta)$'; then
+            echo "Invalid image tag: $tag" >&2
+            exit 1
+          fi
+          {
+            echo "server=ghcr.io/$owner/plaza-server:$tag"
+            echo "web=ghcr.io/$owner/plaza-web:$tag"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: SSH access
+        env:
+          APP_SSH_KEY: ${{ secrets.APP_SSH_KEY }}
+          APP_SSH_KNOWN_HOSTS: ${{ secrets.APP_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$APP_SSH_KEY" > ~/.ssh/plaza_deploy
+          chmod 600 ~/.ssh/plaza_deploy
+          printf '%s\n' "$APP_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          APP_SSH_HOST: ${{ secrets.APP_SSH_HOST }}
+          APP_SSH_USER: ${{ secrets.APP_SSH_USER }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          SERVER_IMAGE: ${{ steps.images.outputs.server }}
+          WEB_IMAGE: ${{ steps.images.outputs.web }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dir="${APP_DIR:-/opt/plaza}"
+          target="$APP_SSH_USER@$APP_SSH_HOST"
+          ssh_opts=(-i "$HOME/.ssh/plaza_deploy" -o StrictHostKeyChecking=yes)
+          # The compose file and scripts of this release; .env stays on the VM.
+          scp "${ssh_opts[@]}" plaza/infra/app/docker-compose.yml plaza/infra/app/backup.sh plaza/infra/app/deploy.sh "$target:$dir/"
+          # shellcheck disable=SC2029 # the values are expanded here on purpose
+          printf '%s' "$REGISTRY_TOKEN" | ssh "${ssh_opts[@]}" "$target" "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" "sh '$dir/deploy.sh' '$SERVER_IMAGE' '$WEB_IMAGE'; status=\$?; docker logout ghcr.io; exit \$status"
+
+      - name: Summary
+        env:
+          SERVER_IMAGE: ${{ steps.images.outputs.server }}
+          WEB_IMAGE: ${{ steps.images.outputs.web }}
+        run: |
+          {
+            echo "### Plaza deployed"
+            echo "- server: \`$SERVER_IMAGE\`"
+            echo "- web: \`$WEB_IMAGE\`"
+          } >> "$GITHUB_STEP_SUMMARY"

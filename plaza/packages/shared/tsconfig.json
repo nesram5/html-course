@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Compiled with tsc and executed by Node in production: relative imports need `.js`.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // No DOM and no Node globals: this package must run unchanged in the browser and in Node.
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src"]
+}

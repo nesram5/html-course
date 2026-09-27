@@ -1,0 +1,39 @@
+{
+  "page": {
+    "loading": "Entrando en el espacio…",
+    "errorTitle": "No pudimos abrir este espacio",
+    "retry": "Reintentar",
+    "backToSpaces": "Volver a mis espacios",
+    "leave": "Salir",
+    "hallway": "En el pasillo",
+    "inRoom": "En {{name}}",
+    "reload": "Recargar"
+  },
+  "canvas": {
+    "label": "Mapa de {{space}}. Camina con las flechas o WASD; + y - cambian el zoom.",
+    "loading": "Cargando la oficina…",
+    "loadError": "No se pudieron cargar las imágenes de la oficina.",
+    "retry": "Reintentar"
+  },
+  "toolbar": {
+    "label": "Controles del mapa",
+    "center": "Centrar en mí",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoom": "{{zoom}}×"
+  },
+  "bottomBar": {
+    "label": "Tus controles"
+  },
+  "connection": {
+    "connecting": "Conectando…",
+    "reconnecting": "Reconectando…"
+  },
+  "session": {
+    "replacedTitle": "Abriste Plaza en otra pestaña",
+    "replacedBody": "Solo puedes estar en la oficina desde una pestaña a la vez. Puedes seguir en la otra o usar Plaza aquí.",
+    "takeOver": "Usar Plaza aquí",
+    "removed": "Te han quitado de este espacio.",
+    "accountDeleted": "Tu cuenta se ha eliminado."
+  }
+}

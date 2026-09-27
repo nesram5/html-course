@@ -1,0 +1,49 @@
+{
+  "name": "@plaza/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Plaza web app (React UI + Phaser world).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "i18n:audit": "vitest run src/app/__tests__/i18n-audit.test.ts"
+  },
+  "dependencies": {
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
+    "@plaza/shared": "workspace:*",
+    "@sentry/react": "^10.75.3",
+    "@tanstack/react-query": "^5.104.0",
+    "i18next": "^26.4.2",
+    "livekit-client": "^2.22.3",
+    "phaser": "~3.90.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.15",
+    "react-router": "^7.18.4",
+    "socket.io-client": "^4.8.4",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.10.0",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "jsdom": "^27.4.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  }
+}

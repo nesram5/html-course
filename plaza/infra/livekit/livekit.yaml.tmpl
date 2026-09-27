@@ -1,0 +1,56 @@
+# LiveKit on the media VM (E5-S7, architecture §11.5). Versioned WITHOUT secrets: docker-compose.yml
+# passes them as environment variables, which LiveKit reads on top of this file:
+#   LIVEKIT_KEYS           "<api key>: <api secret>" (the same pair as the app server's
+#                          LIVEKIT_API_KEY / LIVEKIT_API_SECRET)
+#   LIVEKIT_TURN_DOMAIN    turn.<domain>
+# ./render-config.sh renders it to livekit.yaml, filling ${LIVEKIT_API_KEY} and ${APP_URL} from .env.
+# Upgrades: change the image tag in docker-compose.yml by hand (see docs/runbook.md).
+
+# Signalling (WebSocket + HTTP API). Reached through Caddy (TLS on 443, livekit.<domain>); the
+# firewall keeps 7880 closed from outside.
+port: 7880
+
+rtc:
+  # ICE over TCP when UDP is not possible (7881 is open on the firewall).
+  tcp_port: 7881
+  # Media over UDP: one port per connection in this range (open on the firewall).
+  port_range_start: 50000
+  port_range_end: 60000
+  # The VM has a public IP: discover it with STUN and advertise it to clients.
+  use_external_ip: true
+
+# Embedded TURN for corporate networks that only allow 443 (E5-S8):
+# - TURN/TLS on TCP 443: Caddy terminates TLS for turn.<domain> (valid certificate, Let's
+#   Encrypt) and forwards the plain TURN stream to tls_port on localhost (external_tls).
+# - TURN/UDP on UDP 443 (UDP 443 does not clash with Caddy, which only uses TCP 443).
+turn:
+  enabled: true
+  tls_port: 5349
+  external_tls: true
+  udp_port: 443
+  relay_range_start: 30000
+  relay_range_end: 40000
+
+room:
+  # One room per space (space_<spaceId>), created on the first join.
+  auto_create: true
+  empty_timeout: 300
+  # RN-06: at most 50 people per space.
+  max_participants: 60
+
+# Metrics for the monitoring agent, on localhost only (not open on the firewall).
+prometheus:
+  port: 6789
+
+logging:
+  json: true
+  level: info
+
+# Signed webhooks to the app server (E6-S3): on "participant_joined" and "track_published" the
+# app isolates again someone who connected from inside a meeting room with a token fetched in the
+# hallway, and drops someone no longer a member of the space who reuses a token they kept.
+# Signed with the secret of this API key; the app refuses anything else (401).
+webhook:
+  api_key: ${LIVEKIT_API_KEY}
+  urls:
+    - ${APP_URL}/api/media/livekit-webhook
