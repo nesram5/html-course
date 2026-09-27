@@ -124,6 +124,31 @@ describe('rooms, media and desks', () => {
     expect(UpdateRoomBodySchema.safeParse({ meetUri: 'https://zoom.us/j/1' }).success).toBe(false);
   });
 
+  it('never lets a Meet link open anything but meet.google.com (E6-S2, link injection)', () => {
+    for (const meetUri of [
+      'javascript:alert(1)',
+      'javascript://meet.google.com/%0aalert(1)',
+      'data:text/html,https://meet.google.com/',
+      'https://meet.google.com@evil.example/',
+      'https://meet.google.com.evil.example/abc',
+      'http://meet.google.com/abc',
+      '//meet.google.com/abc',
+    ]) {
+      expect(UpdateRoomBodySchema.safeParse({ meetUri }).success, meetUri).toBe(false);
+    }
+    // Odd but accepted links still open Google Meet: with the whole "https://meet.google.com/"
+    // prefix, a WHATWG URL parser (browsers, Node) always reads meet.google.com as the host.
+    for (const meetUri of [
+      'https://meet.google.com/@evil.example',
+      'https://meet.google.com/\\evil.example',
+      'https://meet.google.com/%2e%2e/',
+    ]) {
+      const parsed = UpdateRoomBodySchema.safeParse({ meetUri });
+      expect(parsed.success, meetUri).toBe(true);
+      expect(parsed.data?.meetUri.startsWith('https://meet.google.com/'), meetUri).toBe(true);
+    }
+  });
+
   it('returns a websocket URL for media and the lifetime of the token', () => {
     const token = { url: 'wss://lk.example.com', token: 't', expiresInSeconds: 600 };
     expect(MediaTokenResponseSchema.safeParse(token).success).toBe(true);

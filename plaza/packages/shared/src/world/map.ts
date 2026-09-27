@@ -1,6 +1,6 @@
 import { DESK_DECOR_SLOTS, TILE_SIZE } from '../constants.js';
 import { SlugIdSchema } from '../contracts/http/common.js';
-import type { Tile, TileRect } from './geometry.js';
+import { isInsideRect, type Tile, type TileRect } from './geometry.js';
 import {
   TiledMapSchema,
   TiledObjectLayerSchema,
@@ -306,6 +306,7 @@ function parseSpawns(
   ctx: ParseContext,
   layer: TiledObjectLayer,
   collision: Uint8Array | undefined,
+  rooms: readonly RoomArea[],
 ): Tile[] {
   const spawns: Tile[] = [];
   const { width, height, tilewidth, tileheight } = ctx.tmj;
@@ -322,6 +323,12 @@ function parseSpawns(
     }
     if (collision !== undefined && collision[tile.y * width + tile.x] !== 0) {
       ctx.problems.push(`${where} is on a blocked tile (${String(tile.x)},${String(tile.y)})`);
+      continue;
+    }
+    // Someone appearing there would start inside a meeting, cut from the hallway (E6).
+    const room = rooms.find((area) => isInsideRect(tile, area));
+    if (room !== undefined) {
+      ctx.problems.push(`${where} is inside meeting room "${room.areaId}"`);
       continue;
     }
     spawns.push(tile);
@@ -350,7 +357,8 @@ function parseDesks(ctx: ParseContext, layer: TiledObjectLayer): DeskArea[] {
 /**
  * Parses a Tiled JSON map (`.tmj`) into a {@link WorldMap}.
  * Validates the required layers (`floor`, `collision`, `rooms` with tile-aligned rectangles and
- * `areaId`/`name`, `spawns` as points on walkable tiles, `desks` with unique `deskId`) and throws
+ * `areaId`/`name`, `spawns` as points on walkable tiles outside the rooms, `desks` with unique
+ * `deskId`) and throws
  * a {@link MapParseError} listing every problem, which `pnpm validate:maps` reports.
  */
 export function parseMap(tmj: unknown): WorldMap {
@@ -377,7 +385,8 @@ export function parseMap(tmj: unknown): WorldMap {
   const desksLayer = objectLayer(ctx, 'desks');
 
   const rooms = roomsLayer === undefined ? [] : parseRooms(ctx, roomsLayer);
-  const spawns = spawnsLayer === undefined ? [] : parseSpawns(ctx, spawnsLayer, collisionGrid);
+  const spawns =
+    spawnsLayer === undefined ? [] : parseSpawns(ctx, spawnsLayer, collisionGrid, rooms);
   const desks = desksLayer === undefined ? [] : parseDesks(ctx, desksLayer);
 
   if (ctx.problems.length > 0 || collisionGrid === undefined) throw new MapParseError(ctx.problems);

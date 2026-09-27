@@ -218,7 +218,7 @@ describe('parseMap', () => {
     expect(problemsOf(overlapping)).toContain('rooms: object 9 overlaps room "sala-a"');
   });
 
-  it('requires spawns to be points on walkable tiles inside the map', () => {
+  it('requires spawns to be points on walkable tiles inside the map and outside rooms', () => {
     const rect = tinyTmj();
     objects(rect, 'spawns')[0] = { id: 2, x: 64, y: 64, width: 32, height: 32 };
     expect(problemsOf(rect)).toContain('spawns: object 2 must be a point, found a rectangle');
@@ -230,6 +230,11 @@ describe('parseMap', () => {
     const blocked = tinyTmj();
     objects(blocked, 'spawns')[0] = { id: 2, x: 16, y: 16, point: true };
     expect(problemsOf(blocked)).toContain('spawns: object 2 is on a blocked tile (0,0)');
+
+    // Inside "sala-a" (3,1)-(4,2): a newcomer would start cut from the hallway (E6).
+    const inRoom = tinyTmj();
+    objects(inRoom, 'spawns')[0] = { id: 2, x: 3 * T + 16, y: T + 16, point: true };
+    expect(problemsOf(inRoom)).toContain('spawns: object 2 is inside meeting room "sala-a"');
 
     const none = tinyTmj();
     layer(none, 'spawns').objects = [];
