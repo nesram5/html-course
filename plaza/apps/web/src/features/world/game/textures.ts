@@ -5,6 +5,11 @@ export const TEXTURES = {
   localAvatar: 'avatar-local',
 } as const;
 
+/** Texture key of the sprite sheet of a catalog avatar (remote players). */
+export function avatarTextureKey(avatarId: string): string {
+  return `avatar:${avatarId}`;
+}
+
 /** Scene keys. */
 export const SCENES = {
   preload: 'preload',

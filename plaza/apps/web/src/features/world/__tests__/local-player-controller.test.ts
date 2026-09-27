@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { LocalStep } from '../bridge/event-bus';
 import { STEP_MS } from '../game/constants';
-import { LocalPlayerController, pickSpawn } from '../game/controller/local-player-controller';
+import { LocalPlayerController } from '../game/controller/local-player-controller';
 import { testMap } from './fixtures';
 
 function setup(start = { x: 1, y: 3 }) {
@@ -153,17 +153,5 @@ describe('LocalPlayerController', () => {
 
     expect(controller.snapshot).toMatchObject({ tile: { x: 4, y: 1 }, dir: 'left', moving: false });
     expect(steps).toEqual([]);
-  });
-});
-
-describe('pickSpawn', () => {
-  it('returns one of the spawn points of the map', () => {
-    const map = testMap();
-    expect(pickSpawn(map, () => 0)).toEqual({ x: 1, y: 1 });
-    expect(pickSpawn(map, () => 0.99)).toEqual({ x: 1, y: 3 });
-  });
-
-  it('fails clearly on a map without spawns', () => {
-    expect(() => pickSpawn({ ...testMap(), spawns: [] })).toThrow(/no spawn points/);
   });
 });

@@ -41,6 +41,7 @@
     "DOMAIN_NOT_ALLOWED": "Tu cuenta no pertenece al dominio permitido de este espacio.",
     "LAST_OWNER": "El espacio necesita al menos una persona administradora.",
     "NOT_A_MEMBER": "No eres miembro de este espacio.",
+    "BANNED_FROM_SPACE": "Ya no tienes acceso a este espacio. Si crees que es un error, pide a quien lo administra que te vuelva a admitir.",
     "UNKNOWN_ROOM": "Esa sala no existe.",
     "INVALID_MEET_URI": "El enlace debe empezar por https://meet.google.com/.",
     "MEETING_PROVIDER_ERROR": "Google Meet no respondió. Puedes reintentar o pegar el enlace a mano.",

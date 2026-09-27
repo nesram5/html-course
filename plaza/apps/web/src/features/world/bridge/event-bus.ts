@@ -1,4 +1,4 @@
-import type { Direction } from '@plaza/shared';
+import type { Direction, PlayerCorrect, SpaceSnapshot, WorldDelta } from '@plaza/shared';
 
 /** One step (or a turn in place, when the tile does not change) of the local avatar. */
 export interface LocalStep {
@@ -8,14 +8,26 @@ export interface LocalStep {
 }
 
 /**
- * Typed events between React and Phaser (architecture §6). Commands flow React → scene
- * (`camera:*`); facts flow scene → the rest of the app (`local:step`).
+ * Typed events between React, the realtime session and Phaser (architecture §6). Commands flow
+ * towards the scene (`camera:*`, `world:*`, `player:correct`); facts flow from the scene to the
+ * rest of the app (`local:step`).
  */
 export interface WorldEvents {
-  /** The local controller moved or turned the avatar. E4 sends it to the server as `player:move`. */
+  /** The local controller moved or turned the avatar. Sent to the server as `player:move`. */
   'local:step': LocalStep;
   /** "Centrar en mí": center the camera on the local avatar. */
   'camera:center': undefined;
+  /**
+   * Full state of the space (join and every reconnection, E4-S1 / E4-S6): the scene places the
+   * local avatar where the server says and redraws the other people.
+   */
+  'world:snapshot': SpaceSnapshot;
+  /** Changes of one server tick (E4-S4): the scene animates the other people. */
+  'world:delta': WorldDelta;
+  /** A step was rejected (E4-S3): the scene puts the local avatar back on this tile. */
+  'player:correct': PlayerCorrect;
+  /** Development only: simulate this many remote avatars walking (0 stops), E4-S5 perf. */
+  'debug:stress': { readonly count: number };
 }
 
 export type WorldEventName = keyof WorldEvents;

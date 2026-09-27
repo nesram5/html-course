@@ -37,3 +37,22 @@ export {
   type WorldState,
 } from './store/world-store';
 export { ZOOM_LEVELS, type ZoomLevel } from './game/constants';
+export {
+  RealtimeClient,
+  RealtimeRequestError,
+  isRealtimeRequestError,
+  realtimeClient,
+  type RealtimeErrorCode,
+} from './realtime/realtime-client';
+export {
+  connectionStore,
+  useConnectionStore,
+  type ConnectionState,
+  type ConnectionStatus,
+} from './realtime/connection-store';
+export {
+  sessionStore,
+  useSessionStore,
+  type SessionState,
+  type SpaceSessionState,
+} from './realtime/space-session';

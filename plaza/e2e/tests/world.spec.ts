@@ -2,12 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test, type Page } from '@playwright/test';
 
-declare global {
-  interface Window {
-    /** Development-only probes installed by `features/world/debug.ts`. */
-    __plazaWorld?: { liveGames(): number; listenerCount(): number };
-  }
-}
+import { tile } from './support/world';
 
 /**
  * E3 smoke test: open `/s/:slug`, see the office drawn by Phaser and walk with the keyboard.
@@ -54,14 +49,6 @@ async function createSpace(
   return space;
 }
 
-async function tile(page: Page): Promise<{ x: number; y: number }> {
-  const canvas = page.getByTestId('world-canvas');
-  return {
-    x: Number(await canvas.getAttribute('data-tile-x')),
-    y: Number(await canvas.getAttribute('data-tile-y')),
-  };
-}
-
 test.describe('2D map engine (E3)', () => {
   test('renders the office and walks with the keyboard, colliding with walls', async ({ page }) => {
     const space = await createSpace(page);
@@ -71,6 +58,8 @@ test.describe('2D map engine (E3)', () => {
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
     await expect(canvas.locator('canvas')).toBeVisible();
+    // The server decides the spawn (space:snapshot.self): the avatar appears once joined.
+    await expect(canvas).toHaveAttribute('data-tile-x', /^\d+$/, { timeout: 15_000 });
     const start = await tile(page);
     // Spawn points of office-small@1 are on row 25, columns 11..14.
     expect(start.y).toBe(25);
@@ -125,6 +114,7 @@ test.describe('2D map engine (E3)', () => {
 
     const canvas = page.getByTestId('world-canvas');
     await expect(canvas).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+    await expect(canvas).toHaveAttribute('data-tile-x', /^\d+$/, { timeout: 15_000 });
     // Campus spawns are around the fountain: (29|34, 44|49).
     const start = await tile(page);
     expect([29, 34]).toContain(start.x);

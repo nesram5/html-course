@@ -1,45 +1,84 @@
-# `features/world` — the 2D map (E3)
+# `features/world` — the 2D map (E3) and real time (E4)
 
-The only feature that imports Phaser. React owns the page and the DOM; Phaser owns one `<canvas>`.
-They talk through two objects only (architecture §6):
+The only feature that imports Phaser, and home of the `RealtimeClient` (the only Socket.IO
+client). React owns the page and the DOM; Phaser owns one `<canvas>`. They talk through two
+objects only (architecture §6):
 
-| Bridge       | File                   | Direction                  | Used for                                                          |
-| ------------ | ---------------------- | -------------------------- | ----------------------------------------------------------------- |
-| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room         |
-| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center` (React → scene), `local:step` (scene → E4 client) |
+| Bridge       | File                   | Direction                  | Used for                                                                                             |
+| ------------ | ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `worldStore` | `store/world-store.ts` | both (state)               | loading progress/errors, zoom, local player tile and room                                            |
+| `EventBus`   | `bridge/event-bus.ts`  | commands and one-off facts | `camera:center`, `world:snapshot`, `world:delta`, `player:correct` (→ scene), `local:step` (scene →) |
 
 ```text
 SpacePage (/s/:slug) ── useEnterSpace (spaces), useSession/useAvatars (auth), map.tmj → parseMap, theme.json
-  └─ WorldCanvas ── lazy import('game/create-game') → Phaser.Game
-       ├─ PreloadScene   below.png / above.png / avatar sheet → worldStore.load (progress, error)
-       └─ WorldScene     below → room borders → AvatarSprite (+ name) → above; camera follow
-            ├─ LocalPlayerController   pure: tile steps every STEP_MS, isWalkable collisions
-            └─ KeyboardInput           window listeners: arrows/WASD, +/-, ignores text fields
+  ├─ useSpaceSession ── SpaceSession (realtime/space-session.ts) ── RealtimeClient ── Socket.IO /realtime
+  │     connect → wait for "map drawn" → space:join → world:snapshot (EventBus)
+  │     local:step → player:move · world:delta / player:correct → EventBus · space:kicked → sessionStore
+  ├─ WorldCanvas ── lazy import('game/create-game') → Phaser.Game
+  │    ├─ PreloadScene   below.png / above.png / local avatar sheet → worldStore.load (progress, error)
+  │    └─ WorldScene     below → room borders → avatars (100 + row) → above → names (above + 1 + row)
+  │         ├─ LocalPlayerController   pure: tile steps every STEP_MS, isWalkable; teleport() for
+  │         │                          server-decided positions (spawn, reconnection, player:correct)
+  │         ├─ RemotePlayersSystem     AvatarSprites of the others; logic in the pure RemotePlayersModel
+  │         ├─ AvatarTextures          remote sprite sheets loaded on demand, once per avatar
+  │         └─ KeyboardInput           window listeners: arrows/WASD, +/-, ignores text fields
+  ├─ ConnectionBanner ── "Conectando…" / "Reconectando…" (connectionStore, sessionStore)
+  ├─ SessionNotice ── "Abriste Plaza en otra pestaña" + "Usar Plaza aquí"; refused joins
   └─ WorldToolbar ── "Centrar en mí" (EventBus) and zoom 1× / 1,5× / 2× (worldStore)
 ```
+
+## Real time (E4)
+
+- **`RealtimeClient`** (`realtime/realtime-client.ts`, exported as `realtimeClient`): one socket
+  (`/realtime`, WebSocket only, session cookie), typed with the shared `ClientToServerEvents` /
+  `ServerToClientEvents`. Every incoming event and ack is validated with the shared zod schemas;
+  invalid ones are dropped and reported. Typed methods (`join`, `move`, `setStatus`, `setAway`,
+  `sendChat`, `react`, `ring`, `gotoDesk`) stamp `v: PROTOCOL_VERSION`. Fire-and-forget events are
+  dropped while disconnected (never replayed after a reconnection). Status in `connectionStore`:
+  `connecting` / `connected` / `reconnecting` / `disconnected` (+ the handshake error code).
+- **`SpaceSession`**: joins when the socket is connected **and** the map is drawn; re-joins after
+  every reconnection or redraw, and the new snapshot moves the local avatar where the server says
+  (no client-side spawn). `player:correct` just relocates the avatar (architecture §9.3). Kicks:
+  `SESSION_REPLACED` shows a page with "Usar Plaza aquí" (reconnect + join, which replaces the other
+  tab); `REMOVED` / `ACCOUNT_DELETED` go back to "Mis espacios" with a toast. Refused joins show the
+  translated error (`NOT_A_MEMBER`, `BANNED_FROM_SPACE`: no retry).
+- **Remote avatars** (`game/remote/`): `RemotePlayersModel` applies snapshots and deltas and, every
+  frame, interpolates each step over one tick (`TICK_MS`) with the walk animation, fades in/out on
+  joined/left (250 ms) and draws people in the reconnection grace at 50 % opacity. It allocates
+  nothing per frame (dense array, objects mutated in place; `remote-players.perf.test.ts` checks
+  the heap). `AvatarSprite` setters are no-ops when nothing changes, and depth changes by whole rows,
+  so walking does not re-sort the scene every frame.
 
 ## Rules of the pattern
 
 - **React never touches Phaser objects** and scenes never import React. React sends commands with
   `worldEvents.emit(...)` or store actions; scenes read the store with `store.subscribe`.
 - **Everything a scene registers is released on `SHUTDOWN`/`DESTROY`** (`WorldScene.cleanups`):
-  store subscriptions, `EventBus` listeners and `KeyboardInput`. `WorldCanvas` destroys the game in
-  its effect cleanup, so leaving the page frees the canvas, textures and listeners. The E2E test
-  checks it through `window.__plazaWorld` (development builds only, `debug.ts`).
-- **Game logic stays out of Phaser**: movement is `LocalPlayerController` (unit tested, uses
-  `isWalkable` from `@plaza/shared`, the same function as the server); map parsing is `parseMap`.
+  store subscriptions, `EventBus` listeners, `KeyboardInput`, remote sprites. `WorldCanvas` destroys
+  the game in its effect cleanup and `useSpaceSession` stops the session (listeners + socket), so
+  leaving the page frees everything. The E2E test checks it through `window.__plazaWorld`.
+- **Game logic stays out of Phaser**: movement is `LocalPlayerController` (uses `isWalkable` from
+  `@plaza/shared`, the same function as the server); remote players are `RemotePlayersModel`; map
+  parsing is `parseMap`; draw order is `game/sprites/depth.ts`.
 - **Keyboard**: handled on `window` (Phaser's keyboard plugin is disabled) so keys typed in inputs
   never move the avatar and `Tab` always moves the focus on. The canvas container is focusable
   (`role="application"`).
-- **Office styles** (§8.1): the scene draws `below.png` → avatars (depth `100 + row`) → `above.png`
-  (depth 100 000). Color variants (`theme.json` with `baseThemeId` + `colorMatrix`) reuse the base
-  images, recolored once on the CPU (`game/color-matrix.ts`).
-- **E4 hooks**: listen to `local:step` (`{ x, y, dir }`, same tile = turn) to send `player:move`;
-  call `LocalPlayerController.teleport` on `player:correct`; reuse `AvatarSprite` for remote players.
+- **Office styles** (§8.1): `below.png` → avatars (depth `100 + row`) → `above.png` (depth 100 000)
+  → name labels (depth `100 001 + row`, never hidden by trees). Color variants (`theme.json` with
+  `baseThemeId` + `colorMatrix`) reuse the base images, recolored once on the CPU.
+
+## Development probes
+
+`window.__plazaWorld` (development builds only, `debug.ts`): `liveGames()`, `listenerCount()`,
+`localPlayer()`, `avatars()` (tile, drawn position, opacity, label depth), `fps()`, `realtime()`,
+`stress(n)` (n fake people walking through the real remote system; `0` stops) and
+`dropConnection()` (closes the transport like a network cut).
 
 ## Tests
 
-- Unit (Vitest, jsdom): controller, keyboard, bus/store, asset loading, `WorldCanvas` lifecycle with a
-  fake game factory, `SpacePage` with mocked `fetch`.
-- E2E (`e2e/tests/world.spec.ts`): real Phaser in Chromium, walking, collisions, zoom, Tab and
-  teardown.
+- Unit (Vitest, jsdom): controller, keyboard, bus/store, assets, `WorldCanvas` lifecycle with a fake
+  game factory, `SpacePage` with mocked `fetch` and a `FakeSocket`, `RealtimeClient` (validation,
+  typing, acks, status), `SpaceSession` (join, reconnection, kicks), `RemotePlayersModel` (+ heap
+  check with 50 avatars), `StressDriver`.
+- E2E: `world.spec.ts` (walking, collisions, zoom, teardown), `realtime.spec.ts` (two people see
+  each other walk, reconnection, second tab, removal), `world-performance.spec.ts` (50 avatars).
