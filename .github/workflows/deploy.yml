@@ -1,9 +1,9 @@
-# Plaza deploy (E8-S5, docs/runbook.md "Despliegue de la app").
+# Bululu deploy (E8-S5, docs/runbook.md "Despliegue de la app").
 #
-# - Staging: every push to main whose "Plaza CI" run succeeds builds the server and web images,
+# - Staging: every push to main whose "Bululu CI" run succeeds builds the server and web images,
 #   pushes them to GHCR (tags sha-<commit> and main) and deploys them to the staging VM.
 # - Beta: pushing a v0.x tag builds and pushes images tagged with the version, but only when the
-#   tagged commit is on main and "Plaza CI" passed on it; the deploy job targets the "beta"
+#   tagged commit is on main and "Bululu CI" passed on it; the deploy job targets the "beta"
 #   environment, whose required reviewers give the manual approval. The floating `beta` image
 #   tag moves only after the deploy succeeded.
 # - Rollback: run this workflow by hand ("Run workflow") on main with an environment and an
@@ -12,13 +12,13 @@
 #
 # It never runs on pull requests or other branches. Secrets are read by name from the GitHub
 # environments "staging" and "beta": APP_SSH_HOST, APP_SSH_USER, APP_SSH_KEY,
-# APP_SSH_KNOWN_HOSTS and APP_DIR (optional, default /opt/plaza). The web build reads the
+# APP_SSH_KNOWN_HOSTS and APP_DIR (optional, default /opt/bululu). The web build reads the
 # repository variable VITE_SENTRY_DSN (public: it ends up in the JavaScript bundle).
-name: Plaza deploy
+name: Bululu deploy
 
 on:
   workflow_run:
-    workflows: ['Plaza CI']
+    workflows: ['Bululu CI']
     types: [completed]
     branches: [main]
   push:
@@ -36,7 +36,7 @@ on:
         required: true
 
 concurrency:
-  group: plaza-deploy-${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
+  group: bululu-deploy-${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
   cancel-in-progress: false
 
 permissions:
@@ -70,7 +70,7 @@ jobs:
 
       # Staging only builds after a green CI run on main (workflow_run above). A tag can be put on
       # any commit, and CI does not run for tags: require the same for beta.
-      - name: The tagged commit is on main and passed Plaza CI
+      - name: The tagged commit is on main and passed Bululu CI
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -79,9 +79,9 @@ jobs:
             echo "The tag $GITHUB_REF_NAME points to a commit that is not on main." >&2
             exit 1
           fi
-          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/plaza-ci.yml/runs?head_sha=$GITHUB_SHA&status=success&event=push" --jq '.total_count')
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success&event=push" --jq '.total_count')
           if [ "${runs:-0}" -eq 0 ]; then
-            echo "No successful \"Plaza CI\" run on main for $GITHUB_SHA: tag a commit whose CI passed." >&2
+            echo "No successful \"Bululu CI\" run on main for $GITHUB_SHA: tag a commit whose CI passed." >&2
             exit 1
           fi
 
@@ -94,8 +94,8 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then tag="${GITHUB_REF_NAME}"; else tag="sha-${HEAD_SHA::7}"; fi
           {
             echo "tag=$tag"
-            echo "server=ghcr.io/$owner/plaza-server"
-            echo "web=ghcr.io/$owner/plaza-web"
+            echo "server=ghcr.io/$owner/bululu-server"
+            echo "web=ghcr.io/$owner/bululu-web"
           } >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
@@ -113,13 +113,13 @@ jobs:
           file: apps/server/Dockerfile
           push: true
           build-args: |
-            PLAZA_VERSION=${{ steps.meta.outputs.tag }}
+            BULULU_VERSION=${{ steps.meta.outputs.tag }}
           # The floating `beta` tag moves in the deploy job, once the deploy succeeded.
           tags: |
             ${{ steps.meta.outputs.server }}:${{ steps.meta.outputs.tag }}
             ${{ github.event_name != 'push' && format('{0}:main', steps.meta.outputs.server) || '' }}
-          cache-from: type=gha,scope=plaza-server
-          cache-to: type=gha,mode=max,scope=plaza-server
+          cache-from: type=gha,scope=bululu-server
+          cache-to: type=gha,mode=max,scope=bululu-server
 
       - name: Web image
         uses: docker/build-push-action@v6
@@ -134,8 +134,8 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.web }}:${{ steps.meta.outputs.tag }}
             ${{ github.event_name != 'push' && format('{0}:main', steps.meta.outputs.web) || '' }}
-          cache-from: type=gha,scope=plaza-web
-          cache-to: type=gha,mode=max,scope=plaza-web
+          cache-from: type=gha,scope=bululu-web
+          cache-to: type=gha,mode=max,scope=bululu-web
 
   deploy:
     name: Deploy to ${{ github.event.inputs.environment || (github.event_name == 'push' && 'beta') || 'staging' }}
@@ -185,16 +185,16 @@ jobs:
             echo "$INPUT_TAG is not a commit of main." >&2
             exit 1
           fi
-          # Versions from before the app moved to the repository root keep them in plaza/infra/app.
-          if git cat-file -e "$commit:infra/app/deploy.sh" 2>/dev/null; then
-            src=infra/app strip=2
-          else
-            src=plaza/infra/app strip=3
+          # Every image pushed as bululu-server/bululu-web comes from a commit with infra/app at the
+          # repository root: older commits were never published under these names.
+          if ! git cat-file -e "$commit:infra/app/deploy.sh" 2>/dev/null; then
+            echo "$INPUT_TAG predates the Bululu images: it cannot be deployed." >&2
+            exit 1
           fi
           rm -rf infra/app && mkdir -p infra/app
           set -o pipefail
-          git archive "$commit" "$src" | tar -x -C infra/app --strip-components="$strip"
-          echo "Infra files of $INPUT_TAG ($commit, $src)"
+          git archive "$commit" infra/app | tar -x -C infra/app --strip-components=2
+          echo "Infra files of $INPUT_TAG ($commit)"
 
       - name: Images to deploy
         id: images
@@ -209,8 +209,8 @@ jobs:
             exit 1
           fi
           {
-            echo "server=ghcr.io/$owner/plaza-server:$tag"
-            echo "web=ghcr.io/$owner/plaza-web:$tag"
+            echo "server=ghcr.io/$owner/bululu-server:$tag"
+            echo "web=ghcr.io/$owner/bululu-web:$tag"
           } >> "$GITHUB_OUTPUT"
 
       - name: SSH access
@@ -219,8 +219,8 @@ jobs:
           APP_SSH_KNOWN_HOSTS: ${{ secrets.APP_SSH_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$APP_SSH_KEY" > ~/.ssh/plaza_deploy
-          chmod 600 ~/.ssh/plaza_deploy
+          printf '%s\n' "$APP_SSH_KEY" > ~/.ssh/bululu_deploy
+          chmod 600 ~/.ssh/bululu_deploy
           printf '%s\n' "$APP_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
       - name: Deploy
@@ -232,9 +232,9 @@ jobs:
           WEB_IMAGE: ${{ steps.images.outputs.web }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          dir="${APP_DIR:-/opt/plaza}"
+          dir="${APP_DIR:-/opt/bululu}"
           target="$APP_SSH_USER@$APP_SSH_HOST"
-          ssh_opts=(-i "$HOME/.ssh/plaza_deploy" -o StrictHostKeyChecking=yes)
+          ssh_opts=(-i "$HOME/.ssh/bululu_deploy" -o StrictHostKeyChecking=yes)
           # The compose file and scripts of this release; .env stays on the VM.
           scp "${ssh_opts[@]}" infra/app/docker-compose.yml infra/app/backup.sh infra/app/deploy.sh "$target:$dir/"
           # shellcheck disable=SC2029 # the values are expanded here on purpose
@@ -264,7 +264,7 @@ jobs:
           WEB_IMAGE: ${{ steps.images.outputs.web }}
         run: |
           {
-            echo "### Plaza deployed"
+            echo "### Bululu deployed"
             echo "- server: \`$SERVER_IMAGE\`"
             echo "- web: \`$WEB_IMAGE\`"
           } >> "$GITHUB_STEP_SUMMARY"

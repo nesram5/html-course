@@ -1,5 +1,5 @@
-# Dependency updates for Plaza (E0-S6). Weekly, grouped so the team reviews one PR per ecosystem;
-# CI (Plaza CI) must pass before merging. Major versions come in their own PRs.
+# Dependency updates for Bululu (E0-S6). Weekly, grouped so the team reviews one PR per ecosystem;
+# CI (Bululu CI) must pass before merging. Major versions come in their own PRs.
 version: 2
 updates:
   - package-ecosystem: npm

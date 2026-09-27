@@ -1,6 +1,6 @@
-# Plaza CI (E0-S6, standards §9): lint → typecheck → unit + integration tests → build → validate:maps.
+# Bululu CI (E0-S6, standards §9): lint → typecheck → unit + integration tests → build → validate:maps.
 # E2E runs on main and on PRs labelled "e2e".
-name: Plaza CI
+name: Bululu CI
 
 # The whole repository is the app: every pull request and every push to main runs it.
 on:
@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: plaza-ci-${{ github.ref }}
+  group: bululu-ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,7 +17,7 @@ permissions:
 
 env:
   HUSKY: '0'
-  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plaza_test
+  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bululu_test
 
 jobs:
   ci:
@@ -30,7 +30,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: plaza_test
+          POSTGRES_DB: bululu_test
         ports:
           - 5432:5432
         options: >-
@@ -73,7 +73,7 @@ jobs:
       - name: Unit and integration tests
         run: pnpm test
 
-      - name: Coverage of @plaza/shared (>= 90 % lines)
+      - name: Coverage of @bululu/shared (>= 90 % lines)
         run: pnpm test:coverage
 
       - name: Build
@@ -97,7 +97,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: plaza_e2e
+          POSTGRES_DB: bululu_e2e
         ports:
           - 5432:5432
         options: >-
@@ -106,7 +106,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plaza_e2e
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bululu_e2e
     steps:
       - uses: actions/checkout@v4
 
