@@ -102,6 +102,15 @@ describe('chat module: space chat and reactions (E7-S3, E7-S4)', () => {
       expect(await harness.testApp.container.db.chatMessage.count()).toBe(1);
     });
 
+    it('refuses a NUL character with VALIDATION_ERROR, not an unexpected error', async () => {
+      const me = await harness.enter(ana, spaceId);
+
+      const nul = await send(me.client, 'hola\u0000');
+
+      expect(nul).toMatchObject({ ok: false, error: { code: 'VALIDATION_ERROR' } });
+      expect(harness.testApp.reporter.captured).toEqual([]);
+    });
+
     it('accepts 5 messages per second and refuses more with RATE_LIMITED', async () => {
       const me = await harness.enter(ana, spaceId);
 

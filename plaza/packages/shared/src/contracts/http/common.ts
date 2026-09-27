@@ -2,6 +2,41 @@ import { z } from 'zod';
 
 import { DESK_DECOR_SLOTS } from '../../constants.js';
 
+/**
+ * Characters a name may not contain: C0/C1 controls (PostgreSQL rejects NUL outright, which
+ * would surface as an unexpected 500) and bidi overrides, which can disguise a name.
+ */
+// eslint-disable-next-line no-control-regex -- matching control characters is the point
+const NAME_FORBIDDEN = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u;
+/** Characters a free text (chat, feedback) may not contain: controls except tab and new lines. */
+// eslint-disable-next-line no-control-regex -- matching control characters is the point
+const TEXT_FORBIDDEN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
+
+/** A trimmed one-line name of `1..max` characters without control characters (400 otherwise). */
+export function nameSchema(max: number) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .max(max)
+    .refine((value) => !NAME_FORBIDDEN.test(value), 'control characters are not allowed');
+}
+
+/** A trimmed free text of `1..max` characters; tabs and new lines are fine, other controls not. */
+export function textSchema(max: number) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .max(max)
+    .refine((value) => !TEXT_FORBIDDEN.test(value), 'control characters are not allowed');
+}
+
+/** Removes what {@link nameSchema} refuses (names that come from Google, E1-S2). */
+export function stripNameControls(value: string): string {
+  return value.replace(new RegExp(NAME_FORBIDDEN.source, 'gu'), '');
+}
+
 /** Database identifiers are cuids, but we only require a sane non-empty token. */
 export const IdSchema = z.string().min(1).max(64);
 

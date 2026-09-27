@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { CHAT_MAX_LEN } from '../../constants.js';
-import { IdSchema, IsoDateTimeSchema } from './common.js';
+import { IdSchema, IsoDateTimeSchema, textSchema } from './common.js';
 
-/** Chat text: trimmed, 1..1000 characters (E7-S3). */
-export const ChatBodySchema = z.string().trim().min(1).max(CHAT_MAX_LEN);
+/** Chat text: trimmed, 1..1000 characters, no control characters but new lines (E7-S3). */
+export const ChatBodySchema = textSchema(CHAT_MAX_LEN);
 
 /** A persisted chat message. Also the payload of the realtime `chat:message` event. */
 export const ChatMessageDtoSchema = z.object({
