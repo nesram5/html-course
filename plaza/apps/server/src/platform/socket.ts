@@ -46,6 +46,21 @@ declare module 'fastify' {
   }
 }
 
+/** Heartbeat of a realtime connection: the server pings, the client must answer in time. */
+export interface Heartbeat {
+  pingIntervalMs: number;
+  pingTimeoutMs: number;
+}
+
+/**
+ * A silent network cut (no TCP reset: the Wi-Fi drops, the laptop changes access point) is
+ * noticed by both ends after at most `pingIntervalMs + pingTimeoutMs` = 20 s: then the person
+ * sees "Reconectando…" and the others their semi-transparent avatar (E4-S6). With the Socket.IO
+ * defaults (25 s + 20 s) the others saw a frozen, opaque avatar for up to 45 s before the 30 s
+ * grace even started. The client learns both values in the handshake.
+ */
+export const REALTIME_HEARTBEAT: Heartbeat = { pingIntervalMs: 10_000, pingTimeoutMs: 10_000 };
+
 /**
  * Mounts Socket.IO on Fastify's HTTP server at `/realtime` (WebSocket transport only).
  * CORS does not apply to WebSocket upgrades, so the handshake itself checks `Origin`: a browser
@@ -53,12 +68,18 @@ declare module 'fastify' {
  * hijacking). Requests without `Origin` come from non-browser clients, which cannot ride on
  * someone else's cookie.
  */
-export function attachSocketServer(app: FastifyInstance, options: { corsOrigin: string }): PlazaIo {
+export function attachSocketServer(
+  app: FastifyInstance,
+  options: { corsOrigin: string; heartbeat?: Heartbeat },
+): PlazaIo {
   const allowedOrigin = new URL(options.corsOrigin).origin;
+  const heartbeat = options.heartbeat ?? REALTIME_HEARTBEAT;
   const io: PlazaIo = new Server(app.server, {
     path: REALTIME_PATH,
     transports: ['websocket'],
     serveClient: false,
+    pingInterval: heartbeat.pingIntervalMs,
+    pingTimeout: heartbeat.pingTimeoutMs,
     cors: { origin: options.corsOrigin, credentials: true },
     allowRequest: (request, callback) => {
       const { origin } = request.headers;

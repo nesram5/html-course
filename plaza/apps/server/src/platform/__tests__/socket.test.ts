@@ -7,12 +7,13 @@ import {
   type ServerToClientEvents,
   type SpaceSnapshot,
 } from '@plaza/shared';
+import Fastify from 'fastify';
 import { io as connect, type Socket as ClientSocket } from 'socket.io-client';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp, type TestApp } from '../../test/app.js';
 import { AppError } from '../errors.js';
-import { safeHandler } from '../socket.js';
+import { attachSocketServer, REALTIME_HEARTBEAT, safeHandler } from '../socket.js';
 
 type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -117,5 +118,54 @@ describe('realtime platform', () => {
 
     const response = await client.emitWithAck('space:join', { v: PROTOCOL_VERSION, spaceId: 's' });
     expect(response.ok).toBe(true);
+  });
+});
+
+describe('realtime heartbeat (E4-S6)', () => {
+  it('notices a silent network cut within 20 s', () => {
+    expect(
+      REALTIME_HEARTBEAT.pingIntervalMs + REALTIME_HEARTBEAT.pingTimeoutMs,
+    ).toBeLessThanOrEqual(20_000);
+  });
+
+  it('announces the heartbeat in the handshake and drops a client that stops answering', async () => {
+    const app = Fastify();
+    const io = attachSocketServer(app, {
+      corsOrigin: 'http://localhost:5173',
+      heartbeat: { pingIntervalMs: 100, pingTimeoutMs: 100 },
+    });
+    const reasons: string[] = [];
+    io.on('connection', (socket) => {
+      socket.on('disconnect', (reason) => reasons.push(reason));
+    });
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const { port } = app.server.address() as AddressInfo;
+    // A raw Engine.IO client that connects and then goes silent (never answers a ping), like a
+    // browser whose network vanished without closing the TCP connection.
+    const ws = new WebSocket(
+      `ws://127.0.0.1:${String(port)}${REALTIME_PATH}/?EIO=4&transport=websocket`,
+    );
+    const received: string[] = [];
+    ws.addEventListener('message', (event) => {
+      received.push(String(event.data));
+    });
+    await new Promise((resolve) => {
+      ws.addEventListener('open', resolve);
+    });
+    ws.send('40'); // Socket.IO CONNECT to the main namespace.
+
+    try {
+      await vi.waitFor(() => {
+        expect(reasons).toEqual(['ping timeout']);
+      });
+      const open = received.find((packet) => packet.startsWith('0'));
+      expect(JSON.parse(open?.slice(1) ?? '{}')).toMatchObject({
+        pingInterval: 100,
+        pingTimeout: 100,
+      });
+    } finally {
+      ws.close();
+      await app.close();
+    }
   });
 });
