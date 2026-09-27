@@ -1,8 +1,13 @@
 import type { WorldMap } from '@plaza/shared';
 import * as Phaser from 'phaser';
 
-import { avatarUrl as conventionalAvatarUrl, type ThemeAssets } from '../api/assets';
+import {
+  avatarUrl as conventionalAvatarUrl,
+  decorUrl as conventionalDecorUrl,
+  type ThemeAssets,
+} from '../api/assets';
 import type { EventBus } from '../bridge/event-bus';
+import type { OfficeStore } from '../store/office-store';
 import type { WorldStore } from '../store/world-store';
 import { registerGame } from './game-registry';
 import { PreloadScene } from './scenes/PreloadScene';
@@ -19,6 +24,12 @@ export interface WorldGameOptions {
   readonly avatarUrls?: Readonly<Record<string, string>>;
   readonly events: EventBus;
   readonly store: WorldStore;
+  /** Office style and desks (E9). */
+  readonly office: OfficeStore;
+  /** Resolves another style of this map for live changes (E9-S1). */
+  readonly resolveTheme: (themeId: string) => Promise<ThemeAssets>;
+  /** Sprites of the decoration catalog by id; missing ids use the default path (E9-S3). */
+  readonly decorUrls?: Readonly<Record<string, string>>;
 }
 
 /** Handle of a running world: the only thing React keeps. */
@@ -55,6 +66,9 @@ export function createWorldGame(options: WorldGameOptions): WorldGame {
           options.avatarUrls?.[avatarId] ?? conventionalAvatarUrl(avatarId),
         events,
         store,
+        office: options.office,
+        resolveTheme: options.resolveTheme,
+        decorUrlOf: (itemId) => options.decorUrls?.[itemId] ?? conventionalDecorUrl(itemId),
       }),
     ],
   });

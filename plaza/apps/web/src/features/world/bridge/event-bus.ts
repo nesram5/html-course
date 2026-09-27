@@ -26,6 +26,11 @@ export interface WorldEvents {
   'world:delta': WorldDelta;
   /** A step was rejected (E4-S3): the scene puts the local avatar back on this tile. */
   'player:correct': PlayerCorrect;
+  /**
+   * Show a desk (E9-S2 "Ir a su escritorio"): the camera leaves the local avatar and centers on
+   * the desk; "Centrar en mí" follows the avatar again.
+   */
+  'camera:desk': { readonly deskId: string };
   /** Development only: simulate this many remote avatars walking (0 stops), E4-S5 perf. */
   'debug:stress': { readonly count: number };
 }

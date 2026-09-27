@@ -31,6 +31,8 @@ const theme: ThemeAssets = {
   colorMatrix: null,
 };
 
+const resolveTheme = () => Promise.resolve(theme);
+
 function renderCanvas(store: WorldStore, events: EventBus) {
   const map = testMap();
   return render(
@@ -40,6 +42,7 @@ function renderCanvas(store: WorldStore, events: EventBus) {
         theme={theme}
         displayName="Ana"
         avatarUrl="/avatar.png"
+        resolveTheme={resolveTheme}
         label="Mapa de Acme"
         store={store}
         events={events}

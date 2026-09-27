@@ -68,7 +68,8 @@
     "kick": "Expulsar",
     "kickConfirm": "¿Expulsar a {{name}}? Perderá el acceso al instante.",
     "kicked": "{{name}} ya no es miembro del espacio.",
-    "you": "(tú)"
+    "you": "(tú)",
+    "desk": "Escritorio"
   },
   "bans": {
     "title": "Personas expulsadas",
@@ -109,5 +110,16 @@
   "confirm": {
     "yes": "Confirmar",
     "no": "Cancelar"
+  },
+  "theme": {
+    "title": "Estilo",
+    "description": "Elige cómo se ve la oficina. La distribución no cambia y todas las personas conectadas verán el nuevo estilo al instante.",
+    "membersReadOnly": "Este es el estilo de la oficina. Solo la administración del espacio puede cambiarlo.",
+    "legend": "Estilos de la oficina",
+    "thumbnailAlt": "Miniatura del estilo {{name}}",
+    "current": "(actual)",
+    "apply": "Aplicar estilo",
+    "applying": "Aplicando…",
+    "applied": "Estilo «{{name}}» aplicado."
   }
 }

@@ -1,4 +1,4 @@
-import type { SpaceSnapshot } from '@plaza/shared';
+import { PROTOCOL_VERSION, type SpaceSnapshot } from '@plaza/shared';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +7,7 @@ import { renderApp } from '@/test/render';
 
 import { worldEvents } from '../bridge/event-bus';
 import type { WorldGameOptions } from '../game/create-game';
+import { officeStore } from '../store/office-store';
 import { worldStore } from '../store/world-store';
 import type { FakeSocket } from './fake-socket';
 import { testSnapshot } from './fixtures';
@@ -376,5 +377,64 @@ describe('SpacePage realtime (E4)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('No eres miembro de este espacio.');
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver a mis espacios' })).toBeInTheDocument();
+  });
+});
+
+describe('SpacePage personalization (E9)', () => {
+  it('follows style changes live without drawing the office again', async () => {
+    await openOffice();
+    await answerJoin({ ok: true, data: testSnapshot({ themeId: 'night' }) });
+    expect(officeStore.getState().themeId).toBe('night');
+
+    act(() => {
+      socket().serverEmit('space:theme', { themeId: 'pixel' });
+    });
+
+    expect(officeStore.getState().themeId).toBe('pixel');
+    expect(games).toHaveLength(1);
+    // The scene resolves the new style of the same map by itself.
+    await expect(games[0]?.resolveTheme('night')).resolves.toMatchObject({
+      themeId: 'night',
+      belowUrl: '/assets/maps/templates/office-small/themes/pixel/below.png',
+    });
+  });
+
+  it('offers "Mi escritorio" once I have a desk and sends desk:goto', async () => {
+    const user = userEvent.setup();
+    await openOffice();
+    await answerJoin({ ok: true, data: testSnapshot() });
+    expect(screen.queryByRole('button', { name: 'Mi escritorio' })).not.toBeInTheDocument();
+
+    act(() => {
+      socket().serverEmit('desk:updated', {
+        deskId: 'desk-01',
+        userId: 'user-1',
+        displayName: 'Ana',
+        decor: null,
+      });
+    });
+    await user.click(screen.getByRole('button', { name: 'Mi escritorio' }));
+
+    expect(socket().sent).toContainEqual({ event: 'desk:goto', payload: { v: PROTOCOL_VERSION } });
+  });
+
+  it('shows the desk of "Ir a su escritorio" (?desk=) once in the office', async () => {
+    const shown: string[] = [];
+    const off = worldEvents.on('camera:desk', ({ deskId }) => shown.push(deskId));
+    mockServer();
+    renderApp({ route: '/s/acme?desk=desk-07' });
+    await waitFor(() => {
+      expect(games).toHaveLength(1);
+    });
+    act(() => {
+      worldStore.getState().setLoad({ kind: 'ready' });
+      socket().accept();
+    });
+    expect(shown).toEqual([]);
+
+    await answerJoin({ ok: true, data: testSnapshot() });
+
+    expect(shown).toEqual(['desk-07']);
+    off();
   });
 });

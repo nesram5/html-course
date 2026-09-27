@@ -1,15 +1,16 @@
 import { WEB_PATHS } from '@plaza/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { useAvatars, useSession } from '@/features/auth';
+import { DeskHud, MyDeskButton, useDecorCatalog } from '@/features/personalization';
 import { useEnterSpace } from '@/features/spaces';
 import { errorMessageKey, isApiError } from '@/shared/api';
 import { toast } from '@/shared/ui';
 
-import { avatarUrl, loadWorldAssets } from '../api/assets';
+import { avatarUrl, loadTheme, loadWorldAssets } from '../api/assets';
 import { worldKeys } from '../api/space-api';
 import { installWorldDebug } from '../debug';
 import { useSpaceSession } from '../hooks/useSpaceSession';
@@ -34,13 +35,29 @@ export function SpacePage() {
   const { user } = useSession();
   const avatars = useAvatars();
   const detail = space.data?.space;
+  // The style the office is first drawn with. Later changes (E9-S1) are applied live by the
+  // scene, so a refetched space with another theme must not reload (and redraw) the office.
+  const [firstTheme, setFirstTheme] = useState<{ spaceId: string; themeId: string } | null>(null);
+  if (detail !== undefined && firstTheme?.spaceId !== detail.id) {
+    setFirstTheme({ spaceId: detail.id, themeId: detail.themeId });
+  }
+  const mapTemplateId = detail?.mapTemplateId ?? '';
+  const themeId = firstTheme?.spaceId === detail?.id ? (firstTheme?.themeId ?? '') : '';
   const assets = useQuery({
-    queryKey: worldKeys.assets(detail?.mapTemplateId ?? '', detail?.themeId ?? ''),
-    queryFn: ({ signal }) =>
-      loadWorldAssets(detail?.mapTemplateId ?? '', detail?.themeId ?? '', signal),
-    enabled: detail !== undefined,
+    queryKey: worldKeys.assets(mapTemplateId, themeId),
+    queryFn: ({ signal }) => loadWorldAssets(mapTemplateId, themeId, signal),
+    enabled: detail !== undefined && themeId !== '',
     staleTime: Number.POSITIVE_INFINITY,
   });
+  const resolveTheme = useCallback(
+    (nextThemeId: string) => loadTheme(mapTemplateId, nextThemeId),
+    [mapTemplateId],
+  );
+  const decor = useDecorCatalog();
+  const decorUrls = useMemo(
+    () => Object.fromEntries((decor.data ?? []).map((item) => [item.id, item.spriteUrl])),
+    [decor.data],
+  );
   const { session, connection, retry } = useSpaceSession(detail?.id);
   const roomId = useWorldStore((state) => state.localPlayer?.roomId ?? null);
   const avatarUrls = useMemo(
@@ -122,10 +139,14 @@ export function SpacePage() {
           displayName={user.displayName}
           avatarUrl={sprite}
           avatarUrls={avatarUrls}
+          resolveTheme={resolveTheme}
+          decorUrls={decorUrls}
           label={t('canvas.label', { space: detail.name })}
         />
         <ConnectionBanner connection={connection} session={session} />
-        <div className="absolute right-3 bottom-3">
+        <DeskHud spaceId={detail.id} map={map} selfUserId={user.id} />
+        <div className="absolute right-3 bottom-3 flex items-center gap-2">
+          <MyDeskButton selfUserId={user.id} />
           <WorldToolbar />
         </div>
       </div>
